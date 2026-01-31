@@ -1,0 +1,74 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Alat</h4>
+            </div>
+            <div class="card-body">
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <%= error %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+
+                <form action="/admin/alat/edit/<%= alat.id %>" method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nama_alat" class="form-label">Nama Alat</label>
+                                <input type="text" class="form-control" id="nama_alat" name="nama_alat" value="<%= alat.nama_alat %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="kategori_id" class="form-label">Kategori</label>
+                                <select class="form-select" id="kategori_id" name="kategori_id" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <% if (typeof kategori !== 'undefined' && kategori) { %>
+                                        <% kategori.forEach(function(kat) { %>
+                                            <option value="<%= kat.id %>" <%= alat.kategori_id == kat.id ? 'selected' : '' %>><%= kat.nama_kategori %></option>
+                                        <% }); %>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="stok" class="form-label">Stok</label>
+            <input type="number" class="form-control" id="stok" name="stok" value="<%= alat.stok %>" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label for="kondisi" class="form-label">Kondisi</label>
+            <select class="form-select" id="kondisi" name="kondisi" required>
+              <option value="baik" <%= alat.kondisi === 'baik' ? 'selected' : '' %>>Baik</option>
+              <option value="rusak_ringan" <%= alat.kondisi === 'rusak_ringan' ? 'selected' : '' %>>Rusak Ringan</option>
+              <option value="rusak_berat" <%= alat.kondisi === 'rusak_berat' ? 'selected' : '' %>>Rusak Berat</option>
+            </select>
+          </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="tersedia" <%= alat.status === 'tersedia' ? 'selected' : '' %>>Tersedia</option>
+                                    <option value="dipinjam" <%= alat.status === 'dipinjam' ? 'selected' : '' %>>Dipinjam</option>
+                                    <option value="maintenance" <%= alat.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Alat
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,77 @@
+<div class="row">
+    <div class="col-12">
+        <h2>Kelola Peminjaman</h2>
+        <p class="text-muted">Pantau semua data peminjaman alat.</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Peminjam</th>
+                        <th>Alat</th>
+                        <th>Tanggal Pinjam</th>
+                        <th>Tanggal Kembali</th>
+                        <th>Status</th>
+                        <th>Tanggal Pengembalian</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
+                        <% peminjaman.forEach(function(item, index) { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td>
+                                    <%= item.user.nama %><br>
+                                    <small class="text-muted">
+                                        @<%= item.user.username %> | <%= item.user.email %>
+                                    </small>
+                                </td>
+                                <td>
+                                    <%= item.alat.nama_alat %><br>
+                                    <small class="text-muted">
+                                        Kategori: <%= item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
+                                    </small>
+                                </td>
+                                <td><%= new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') %></td>
+                                <td><%= new Date(item.tanggal_kembali).toLocaleDateString('id-ID') %></td>
+                                <td>
+                                    <% if (item.status === 'pending') { %>
+                                        <span class="badge bg-warning">Menunggu Persetujuan</span>
+                                    <% } else if (item.status === 'disetujui') { %>
+                                        <span class="badge bg-info">Disetujui</span>
+                                    <% } else if (item.status === 'dipinjam') { %>
+                                        <span class="badge bg-primary">Sedang Dipinjam</span>
+                                    <% } else if (item.status === 'dikembalikan') { %>
+                                        <span class="badge bg-success">Dikembalikan</span>
+                                    <% } else if (item.status === 'ditolak') { %>
+                                        <span class="badge bg-danger">Ditolak</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (item.tanggal_pengembalian) { %>
+                                        <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle"></i> Belum ada data peminjaman.
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

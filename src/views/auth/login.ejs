@@ -1,0 +1,93 @@
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Login</h4>
+            </div>
+            <div class="card-body">
+                <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <% if (Array.isArray(error)) { %>
+                            <% error.forEach(function(err) { %>
+                                <div><i class="fas fa-exclamation-circle"></i> <%= err %></div>
+                            <% }); %>
+                        <% } else { %>
+                            <i class="fas fa-exclamation-circle"></i> <%= error %>
+                        <% } %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+
+                <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <% if (Array.isArray(success)) { %>
+                            <% success.forEach(function(msg) { %>
+                                <div><i class="fas fa-check-circle"></i> <%= msg %></div>
+                            <% }); %>
+                        <% } else { %>
+                            <i class="fas fa-check-circle"></i> <%= success %>
+                        <% } %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+                
+                <form action="/login" method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <div class="form-text">Masukkan username Anda</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Masukkan password Anda</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p class="mb-0">Belum punya akun?</p>
+                    <a href="/register" class="btn btn-outline-success mt-2">
+                        <i class="fas fa-user-plus"></i> Daftar disini
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Password toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function() {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                const icon = this.querySelector('i');
+                if (icon) {
+                    if (type === 'text') {
+                        icon.outerHTML = '<i class="fas fa-eye-slash"></i>';
+                    } else {
+                        icon.outerHTML = '<i class="fas fa-eye"></i>';
+                    }
+                }
+            });
+        }
+    });
+</script>

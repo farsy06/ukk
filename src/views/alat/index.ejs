@@ -1,0 +1,41 @@
+<div class="row">
+    <div class="col-12">
+        <h2>Daftar Alat Tersedia</h2>
+        <p class="text-muted">Pilih alat yang ingin Anda pinjam.</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <% if (typeof alat !== 'undefined' && alat && alat.length > 0) { %>
+        <% alat.forEach(function(item) { %>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= item.nama_alat %></h5>
+                        <p class="card-text">
+                            <strong>Kategori:</strong> <%= item.kategori ? item.kategori.nama_kategori : 'Tidak ada kategori' %><br>
+                            <strong>Stok:</strong> <%= item.stok %><br>
+                            <strong>Kondisi:</strong>
+                            <% if (item.kondisi === 'baik') { %>
+                                <span class="badge bg-success">Baik</span>
+                            <% } else if (item.kondisi === 'rusak_ringan') { %>
+                                <span class="badge bg-warning">Rusak Ringan</span>
+                            <% } else if (item.kondisi === 'rusak_berat') { %>
+                                <span class="badge bg-danger">Rusak Berat</span>
+                            <% } %>
+                        </p>
+                        <a href="/peminjaman/ajukan/<%= item.id %>" class="btn btn-primary">
+                            <i class="fas fa-hand-holding"></i> Ajukan Peminjaman
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    <% } else { %>
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Saat ini tidak ada alat yang tersedia.
+            </div>
+        </div>
+    <% } %>
+</div>

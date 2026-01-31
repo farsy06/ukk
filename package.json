@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "ukk",
+  "version": "1.0.0",
+  "description": "Sistem Peminjaman Alat Laboratorium - Aplikasi web untuk mengelola sistem peminjaman alat laboratorium dengan Node.js, Express.js, dan MySQL",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "create-admin": "node scripts/create-admin.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:api": "jest --testPathPattern=api",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "db:migrate": "echo \"Running database migrations...\"",
+    "db:seed": "echo \"Seeding database...\""
+  },
+  "keywords": [
+    "ukk",
+    "nodejs",
+    "express",
+    "mysql",
+    "peminjaman",
+    "alat-laboratorium",
+    "web-app",
+    "crud",
+    "authentication"
+  ],
+  "author": "Farisya Fatanansyah",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bootstrap": "^5.3.8",
+    "connect-flash": "^0.1.1",
+    "dotenv": "^17.2.3",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-rate-limit": "^8.2.1",
+    "express-session": "^1.18.2",
+    "mysql2": "^3.16.2",
+    "node-cache": "^5.1.2",
+    "prompt-sync": "^4.2.0",
+    "sequelize": "^6.37.7",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.2.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "prettier": "^3.8.1",
+    "supertest": "^7.2.2"
+  }
+}

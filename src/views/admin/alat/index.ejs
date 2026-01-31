@@ -1,0 +1,82 @@
+<div class="row">
+    <div class="col-12">
+        <h2>Kelola Alat</h2>
+        <p class="text-muted">Kelola inventori alat yang tersedia untuk dipinjam.</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between mb-3">
+            <a href="/admin/alat/tambah" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Tambah Alat
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Alat</th>
+                        <th>Kategori</th>
+                        <th>Stok</th>
+                        <th>Kondisi</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (typeof alat !== 'undefined' && alat && alat.length > 0) { %>
+                        <% alat.forEach(function(item, index) { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= item.nama_alat %></td>
+                                <td><%= item.kategori ? item.kategori.nama_kategori : 'Tidak ada kategori' %></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <%= item.stok %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (item.kondisi === 'baik') { %>
+                                        <span class="badge bg-success">Baik</span>
+                                    <% } else if (item.kondisi === 'rusak_ringan') { %>
+                                        <span class="badge bg-warning">Rusak Ringan</span>
+                                    <% } else if (item.kondisi === 'rusak_berat') { %>
+                                        <span class="badge bg-danger">Rusak Berat</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (item.status === 'tersedia') { %>
+                                        <span class="badge bg-success">Tersedia</span>
+                                    <% } else if (item.status === 'dipinjam') { %>
+                                        <span class="badge bg-primary">Dipinjam</span>
+                                    <% } else if (item.status === 'maintenance') { %>
+                                        <span class="badge bg-secondary">Maintenance</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <a href="/admin/alat/edit/<%= item.id %>" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="/admin/alat/hapus/<%= item.id %>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus alat ini?')">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle"></i> Belum ada data alat.
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

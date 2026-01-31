@@ -1,0 +1,186 @@
+<div class="row">
+    <div class="col-12">
+        <h2>Dashboard Admin</h2>
+        <p class="text-muted">Selamat datang, <%= user.nama %>!</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Kategori Alat</h6>
+                        <p class="card-text">Kelola kategori alat</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-2x text-primary"></i>
+                    </div>
+                </div>
+                <a href="/admin/kategori" class="btn btn-primary mt-2">Kelola Kategori</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Data Alat</h6>
+                        <p class="card-text">Kelola inventori alat</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x text-success"></i>
+                    </div>
+                </div>
+                <a href="/admin/alat" class="btn btn-success mt-2">Kelola Alat</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Peminjaman</h6>
+                        <p class="card-text">Pantau semua peminjaman</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-hand-holding fa-2x text-info"></i>
+                    </div>
+                </div>
+                <a href="/admin/peminjaman" class="btn btn-info mt-2">Lihat Peminjaman</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Kelola User</h6>
+                        <p class="card-text">Tambah admin & petugas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <a href="/admin/user" class="btn btn-warning mt-2">Kelola User</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h6>Total Kategori</h6>
+                <h3><%= stats.kategori %></h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h6>Total Alat</h6>
+                <h3><%= stats.alat %></h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h6>Peminjaman Aktif</h6>
+                <h3><%= stats.peminjaman %></h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6>Total User</h6>
+                <h3><%= stats.user %></h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Log Aktivitas</h6>
+                        <p class="card-text">Pantau aktivitas sistem</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-history fa-2x text-secondary"></i>
+                    </div>
+                </div>
+                <a href="/admin/catak" class="btn btn-secondary mt-2">Lihat Catatan</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Laporan</h6>
+                        <p class="card-text">Generate laporan sistem</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-bar fa-2x text-danger"></i>
+                    </div>
+                </div>
+                <button class="btn btn-danger mt-2" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Fitur laporan akan segera hadir!">
+                    <i class="fas fa-print"></i> Buat Laporan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="/admin/kategori/tambah" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-plus-circle"></i> Tambah Kategori
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/admin/alat/tambah" class="btn btn-outline-success w-100 mb-2">
+                            <i class="fas fa-plus-circle"></i> Tambah Alat
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/admin/user/tambah" class="btn btn-outline-warning w-100 mb-2">
+                            <i class="fas fa-plus-circle"></i> Tambah User
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/admin/peminjaman" class="btn btn-outline-info w-100 mb-2">
+                            <i class="fas fa-list"></i> Lihat Semua Peminjaman
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
