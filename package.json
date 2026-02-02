@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "ukk",
   "version": "1.0.0",
-  "description": "Sistem Peminjaman Alat Laboratorium - Aplikasi web untuk mengelola sistem peminjaman alat laboratorium dengan Node.js, Express.js, dan MySQL",
+  "description": "ToolShare Pro - Aplikasi web untuk mengelola sistem peminjaman alat laboratorium dengan Node.js, Express.js, dan MySQL",
   "main": "index.js",
   "scripts": {
     "start": "node src/app.js",
@@ -14,8 +14,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
-    "db:migrate": "echo \"Running database migrations...\"",
-    "db:seed": "echo \"Seeding database...\""
+    "copy:bootstrap": "mkdir -p public/css public/js && copy node_modules/bootstrap/dist/css/bootstrap.min.css public/css/ && copy node_modules/bootstrap/dist/js/bootstrap.bundle.min.js public/js/",
+    "build": "npm run copy:bootstrap"
   },
   "keywords": [
     "ukk",
@@ -41,6 +41,7 @@
     "express-ejs-layouts": "^2.5.1",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
     "mysql2": "^3.16.2",
     "node-cache": "^5.1.2",
     "prompt-sync": "^4.2.0",

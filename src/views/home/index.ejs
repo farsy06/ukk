@@ -1,227 +1,306 @@
-<!-- Hero Section -->
-<div class="hero-section bg-primary text-white py-5">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold mb-3">Selamat Datang di ToolShare Pro</h1>
-                <p class="lead mb-4">
-                    Platform modern untuk berbagi dan meminjam alat dengan mudah dan efisien.
-                    Kelola inventori alat, pantau peminjaman, dan tingkatkan produktivitas Anda.
-                </p>
-                <% if (typeof user === 'undefined' || !user) { %>
-                    <div class="d-flex gap-3">
-                        <a href="/register" class="btn btn-light btn-lg">
-                            <i class="fas fa-user-plus"></i> Daftar Sekarang
-                        </a>
-                        <a href="/login" class="btn btn-outline-light btn-lg">
-                            <i class="fas fa-sign-in-alt"></i> Masuk
-                        </a>
-                    </div>
-                <% } else { %>
-                    <% if (user.role === 'peminjam') { %>
-                        <a href="/alat" class="btn btn-light btn-lg">
-                            <i class="fas fa-tools"></i> Lihat Alat Tersedia
-                        </a>
-                    <% } else if (user.role === 'petugas') { %>
-                        <a href="/petugas" class="btn btn-light btn-lg">
-                            <i class="fas fa-tasks"></i> Dashboard Petugas
-                        </a>
-                    <% } else if (user.role === 'admin') { %>
-                        <a href="/admin" class="btn btn-light btn-lg">
-                            <i class="fas fa-cog"></i> Dashboard Admin
-                        </a>
-                    <% } %>
-                <% } %>
-            </div>
-            <div class="col-lg-4 text-center">
-                <img src="/images/tools-illustration.png" alt="Tools Illustration" class="img-fluid rounded shadow" style="max-height: 300px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-                <i class="fas fa-tools fa-6x text-primary opacity-50" style="display: none;"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Section -->
-<div class="container my-5">
-    <div class="row text-center">
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="display-4 text-primary mb-2">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <h3 class="h2 mb-1"><%= totalAlatTersedia %></h3>
-                    <p class="text-muted mb-0">Alat Tersedia</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="display-4 text-success mb-2">
-                        <i class="fas fa-tags"></i>
-                    </div>
-                    <h3 class="h2 mb-1"><%= totalKategori %></h3>
-                    <p class="text-muted mb-0">Kategori Alat</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="display-4 text-info mb-2">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3 class="h2 mb-1">3</h3>
-                    <p class="text-muted mb-0">Tipe Pengguna</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Featured Tools Section -->
-<% if (typeof alat !== 'undefined' && alat && alat.length > 0) { %>
-<div class="bg-light py-5">
-    <div class="container">
-        <div class="row mb-4">
-            <div class="col-12 text-center">
-                <h2 class="mb-3">Alat Tersedia</h2>
-                <p class="text-muted">Beberapa alat yang bisa Anda pinjam saat ini</p>
-            </div>
-        </div>
-
-        <div class="row">
-            <% alat.forEach(function(item) { %>
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-wrench fa-lg"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h5 class="card-title mb-1"><%= item.nama_alat %></h5>
-                                    <small class="text-muted">
-                                        Kategori: <%= item.kategori ? item.kategori.nama_kategori : 'Tidak ada kategori' %>
-                                    </small>
+<div class="row">
+    <div class="col-12">
+        <div class="hero-section text-center py-5 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px;">
+            <h1 class="display-4 text-white mb-3">
+                <i class="fas fa-tools"></i> ToolShare Pro
+            </h1>
+            <p class="lead text-white mb-4">Platform manajemen peminjaman alat yang mudah, cepat, dan terpercaya</p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-white shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">Cepat</h6>
+                                    <p class="card-text small text-muted">Proses peminjaman dalam hitungan menit</p>
                                 </div>
                             </div>
-
-                            <div class="mb-3">
-                                <span class="badge bg-success me-2">
-                                    <i class="fas fa-check-circle"></i> Tersedia
-                                </span>
-                                <span class="badge bg-info">
-                                    Kondisi: <%= item.kondisi === 'baik' ? 'Baik' : item.kondisi === 'rusak_ringan' ? 'Rusak Ringan' : 'Rusak Berat' %>
-                                </span>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-white shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                    <h6 class="card-title">Aman</h6>
+                                    <p class="card-text small text-muted">Sistem keamanan terpercaya</p>
+                                </div>
                             </div>
-
-                            <% if (typeof user !== 'undefined' && user && user.role === 'peminjam') { %>
-                                <a href="/peminjaman/ajukan/<%= item.id %>" class="btn btn-primary w-100">
-                                    <i class="fas fa-hand-holding"></i> Ajukan Peminjaman
-                                </a>
-                            <% } else if (typeof user === 'undefined' || !user) { %>
-                                <a href="/login" class="btn btn-outline-primary w-100">
-                                    <i class="fas fa-sign-in-alt"></i> Login untuk Meminjam
-                                </a>
-                            <% } %>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-white shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-2x text-info mb-2"></i>
+                                    <h6 class="card-title">Mudah</h6>
+                                    <p class="card-text small text-muted">Antarmuka user-friendly</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            <% }); %>
-        </div>
-
-        <div class="text-center mt-4">
-            <% if (typeof user !== 'undefined' && user && user.role === 'peminjam') { %>
-                <a href="/alat" class="btn btn-outline-primary btn-lg">
-                    <i class="fas fa-list"></i> Lihat Semua Alat
-                </a>
-            <% } else { %>
-                <a href="/register" class="btn btn-primary btn-lg">
-                    <i class="fas fa-user-plus"></i> Daftar untuk Melihat Semua Alat
-                </a>
-            <% } %>
-        </div>
-    </div>
-</div>
-<% } %>
-
-<!-- Features Section -->
-<div class="container my-5">
-    <div class="row">
-        <div class="col-12 text-center mb-5">
-            <h2>Fitur Utama</h2>
-            <p class="text-muted">ToolShare Pro dengan fitur lengkap dan mudah digunakan</p>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="text-center">
-                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="fas fa-search fa-2x"></i>
-                </div>
-                <h4>Mudah Dicari</h4>
-                <p class="text-muted">Temukan alat yang Anda butuhkan dengan cepat melalui sistem pencarian dan filter kategori.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="text-center">
-                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="fas fa-clock fa-2x"></i>
-                </div>
-                <h4>Proses Cepat</h4>
-                <p class="text-muted">Pengajuan peminjaman diproses dengan cepat oleh petugas yang bertugas.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="text-center">
-                <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="fas fa-shield-alt fa-2x"></i>
-                </div>
-                <h4>Aman & Terpercaya</h4>
-                <p class="text-muted">Sistem keamanan yang ketat memastikan data Anda aman dan proses peminjaman transparan.</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- About Section -->
-<div class="bg-secondary text-white py-5">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h3 class="mb-3">Tentang ToolShare Pro</h3>
-                <p class="mb-4">
-                    ToolShare Pro dibuat untuk memudahkan pengelolaan peminjaman alat di berbagai institusi.
-                    Dengan fitur-fitur modern dan antarmuka yang user-friendly, sistem ini memastikan
-                    proses peminjaman alat berjalan efisien dan terorganisir dengan baik.
-                </p>
-                <div class="d-flex gap-3">
-                    <div class="text-center">
-                        <div class="h4 mb-0">Admin</div>
-                        <small>Kelola Sistem</small>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Tentang Sistem</h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">ToolShare Pro adalah platform digital yang dirancang khusus untuk memudahkan proses peminjaman alat di berbagai instansi. Dengan sistem ini, Anda dapat:</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Meminjam alat</strong> secara online dengan mudah
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Melihat ketersediaan</strong> alat secara real-time
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Melacak status</strong> peminjaman Anda
+                            </li>
+                        </ul>
                     </div>
-                    <div class="vr"></div>
-                    <div class="text-center">
-                        <div class="h4 mb-0">Petugas</div>
-                        <small>Kelola Peminjaman</small>
-                    </div>
-                    <div class="vr"></div>
-                    <div class="text-center">
-                        <div class="h4 mb-0">Peminjam</div>
-                        <small>Pengguna Akhir</small>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Mengelola inventori</strong> alat secara efisien
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Memantau aktivitas</strong> peminjaman
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success"></i> 
+                                <strong>Menghasilkan laporan</strong> secara otomatis
+                            </li>
+                        </ul>
                     </div>
                 </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Pastikan Anda sudah memiliki akun untuk dapat meminjam alat. Jika belum memiliki akun, silakan daftar terlebih dahulu.
+                </div>
             </div>
-            <div class="col-lg-4 text-center">
-                <i class="fas fa-cogs fa-5x text-primary"></i>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Status Pengguna</h5>
+            </div>
+            <div class="card-body">
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <div class="text-center">
+                        <div class="bg-primary rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user text-white fa-2x"></i>
+                        </div>
+                        <h6 class="mb-1"><%= user.nama %></h6>
+                        <p class="text-muted mb-2"><%= user.email %></p>
+                        <span class="badge <%= user.role === 'admin' ? 'bg-danger' : user.role === 'petugas' ? 'bg-warning' : 'bg-info' %>">
+                            <i class="fas fa-user-shield"></i> <%= user.role %>
+                        </span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="text-muted small">Alat Tersedia</div>
+                            <div class="h5 mb-0"><%= totalAlatTersedia || 0 %></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">Total Kategori</div>
+                            <div class="h5 mb-0"><%= totalKategori || 0 %></div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <% if (user.role === 'admin') { %>
+                            <a href="/admin" class="btn btn-primary">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard Admin
+                            </a>
+                        <% } else if (user.role === 'petugas') { %>
+                            <a href="/petugas" class="btn btn-warning text-white">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard Petugas
+                            </a>
+                        <% } else { %>
+                            <a href="/alat" class="btn btn-success">
+                                <i class="fas fa-box"></i> Lihat Alat Tersedia
+                            </a>
+                        <% } %>
+                        <a href="/peminjaman" class="btn btn-info">
+                            <i class="fas fa-list"></i> Riwayat Peminjaman
+                        </a>
+                    </div>
+                <% } else { %>
+                    <div class="text-center">
+                        <div class="bg-secondary rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user text-white fa-2x"></i>
+                        </div>
+                        <h6 class="mb-1">Pengunjung</h6>
+                        <p class="text-muted mb-3">Silakan login untuk menggunakan fitur sistem</p>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="/login" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                            <a href="/register" class="btn btn-outline-success">
+                                <i class="fas fa-user-plus"></i> Daftar
+                            </a>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistik</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-muted small">Alat Tersedia</div>
+                        <div class="h4 text-primary mb-0"><%= totalAlatTersedia || 0 %></div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Total Kategori</div>
+                        <div class="h4 text-info mb-0"><%= totalKategori || 0 %></div>
+                    </div>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="text-muted small">Alat Terdaftar</div>
+                        <div class="h4 text-success mb-0"><%= alat ? alat.length : 0 %></div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Pengguna</div>
+                        <div class="h4 text-warning mb-0">-</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bullhorn"></i> Pengumuman</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Perhatian!</h6>
+                    <p class="mb-2">Untuk menjaga kualitas alat, harap periksa kondisi alat sebelum dan sesudah peminjaman.</p>
+                    <hr>
+                    <p class="mb-0 small">
+                        <i class="fas fa-clock"></i> 
+                        Jam operasional peminjaman: Senin - Jumat, 08:00 - 17:00
+                    </p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6><i class="fas fa-calendar-alt text-warning"></i> Batas Waktu</h6>
+                                <p class="small text-muted">Maksimal peminjaman 7 hari. Denda keterlambatan Rp 5.000/hari.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6><i class="fas fa-shield-alt text-info"></i> Keamanan</h6>
+                                <p class="small text-muted">Data pribadi Anda aman bersama kami. Kami tidak akan membagikan data Anda kepada pihak ketiga.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h6><i class="fas fa-headset text-success"></i> Bantuan</h6>
+                                <p class="small text-muted">Butuh bantuan? Hubungi petugas kami atau lihat panduan penggunaan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animation to hero section
+        const heroSection = document.querySelector('.hero-section');
+        if (heroSection) {
+            heroSection.style.opacity = '0';
+            heroSection.style.transform = 'translateY(20px)';
+            heroSection.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+            
+            setTimeout(() => {
+                heroSection.style.opacity = '1';
+                heroSection.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+        // Add hover effects to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Add loading animation to buttons
+        const actionButtons = document.querySelectorAll('.btn-primary, .btn-success, .btn-warning, .btn-info');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 1000);
+            });
+        });
+
+        // Add typing effect to hero text
+        const heroText = document.querySelector('.hero-section .lead');
+        if (heroText) {
+            const text = heroText.textContent;
+            heroText.textContent = '';
+            let i = 0;
+            const typeWriter = () => {
+                if (i < text.length) {
+                    heroText.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 50);
+                }
+            };
+            setTimeout(typeWriter, 1000);
+        }
+    });
+</script>

@@ -27,6 +27,18 @@ const User = require("./models/User"); // Import User model at the top
 const app = express();
 const PORT = appConfig.app.port;
 
+// Environment validation
+const requiredEnvVars = ["DB_HOST", "DB_NAME", "DB_USER", "SESSION_SECRET"];
+// Note: DB_PASS can be empty for MySQL root user without password
+const missingEnvVars = requiredEnvVars.filter((env) => !process.env[env]);
+
+if (missingEnvVars.length > 0) {
+  logger.error(
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`,
+  );
+  process.exit(1);
+}
+
 // Test koneksi database
 testConnection().catch((error) => {
   logger.error("Database connection test failed:", error);
@@ -83,6 +95,26 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: appConfig.app.environment,
+    version: process.env.npm_package_version || "1.0.0",
+  });
+});
+
+// API health check
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    database: "connected",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Routes
 app.use("/", webRoutes);
 
@@ -93,25 +125,72 @@ app.use(errorHandler);
 app.use(notFoundHandler);
 
 // Sync database dan start server
-sequelize
-  .sync({ alter: true })
-  .then(() => {
+async function startServer() {
+  try {
+    logger.info("Starting application...");
+
+    // Sync database
+    await sequelize.sync({ alter: true });
     logger.info("Database synced");
 
     // Define model associations after database sync
-    try {
-      defineAssociations();
-    } catch (error) {
-      logger.error("Failed to define model associations:", error);
-      process.exit(1);
-    }
+    defineAssociations();
+    logger.info("Model associations defined");
 
-    app.listen(PORT, () => {
+    // Start server
+    const server = app.listen(PORT, () => {
       logger.info(`Server running on ${appConfig.app.baseUrl}`);
       logger.info(`Environment: ${appConfig.app.environment}`);
+      logger.info(`Process ID: ${process.pid}`);
     });
-  })
-  .catch((error) => {
-    logger.error("Error syncing database:", error);
+
+    // Graceful shutdown handling
+    const shutdown = (signal) => {
+      logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+      server.close((err) => {
+        if (err) {
+          logger.error("Error during server shutdown:", err);
+          process.exit(1);
+        }
+
+        logger.info("HTTP server closed");
+
+        // Close database connection
+        sequelize
+          .close()
+          .then(() => {
+            logger.info("Database connection closed");
+            logger.info("Application shutdown complete");
+            process.exit(0);
+          })
+          .catch((err) => {
+            logger.error("Error closing database connection:", err);
+            process.exit(1);
+          });
+      });
+    };
+
+    // Handle shutdown signals
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+
+    // Handle uncaught exceptions
+    process.on("uncaughtException", (err) => {
+      logger.error("Uncaught Exception:", err);
+      process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on("unhandledRejection", (reason, promise) => {
+      logger.error("Unhandled Rejection at:", promise, "reason:", reason);
+      process.exit(1);
+    });
+  } catch (error) {
+    logger.error("Failed to start application:", error);
     process.exit(1);
-  });
+  }
+}
+
+// Start the server
+startServer();

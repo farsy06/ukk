@@ -12,7 +12,7 @@ const index = async (req, res) => {
   if (cachedData) {
     logger.info("Home index: Cache hit");
     return res.render("home/index", {
-      title: "Selamat Datang di Sistem Peminjaman Alat",
+      title: "Selamat Datang di ToolShare Pro",
       alat: cachedData.alat,
       totalAlatTersedia: cachedData.totalAlatTersedia,
       totalKategori: cachedData.totalKategori,
@@ -52,7 +52,7 @@ const index = async (req, res) => {
   cacheHelper.set(cacheKey, cacheData, 600); // Cache 10 menit
 
   res.render("home/index", {
-    title: "Selamat Datang di Sistem Peminjaman Alat",
+    title: "Selamat Datang di ToolShare Pro",
     alat,
     totalAlatTersedia,
     totalKategori,

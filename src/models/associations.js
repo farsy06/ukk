@@ -65,6 +65,13 @@ function defineAssociations() {
       onUpdate: "CASCADE",
     });
 
+    Alat.hasMany(Peminjaman, {
+      foreignKey: "alat_id",
+      as: "peminjaman",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+
     // Peminjaman associations
     logger.info("Setting up Peminjaman associations");
     Peminjaman.belongsTo(User, {
@@ -112,7 +119,7 @@ function getAssociationInfo() {
       belongsTo: [],
     },
     Alat: {
-      hasMany: [],
+      hasMany: ["Peminjaman"],
       belongsTo: ["Kategori"],
     },
     Peminjaman: {
@@ -129,8 +136,49 @@ function getAssociationInfo() {
   return associations;
 }
 
+/**
+ * Validate associations are properly set up
+ * @returns {boolean} True if all associations are valid
+ */
+function validateAssociations() {
+  try {
+    const models = { User, Kategori, Alat, Peminjaman, LogAktivitas };
+    const validationResults = {};
+
+    Object.entries(models).forEach(([modelName, model]) => {
+      if (!model || typeof model !== "function") {
+        validationResults[modelName] = "Model not properly defined";
+        return;
+      }
+
+      const associations = model.associations || {};
+      validationResults[modelName] = {
+        hasAssociations: Object.keys(associations).length > 0,
+        associationCount: Object.keys(associations).length,
+        associations: Object.keys(associations),
+      };
+    });
+
+    const allValid = Object.values(validationResults).every(
+      (result) =>
+        result !== "Model not properly defined" && result.hasAssociations,
+    );
+
+    logger.info("Association validation completed", {
+      allValid,
+      results: validationResults,
+    });
+
+    return allValid;
+  } catch (error) {
+    logger.error("Association validation failed:", error);
+    return false;
+  }
+}
+
 // Export functions for potential use in other files
 module.exports = {
   defineAssociations,
   getAssociationInfo,
+  validateAssociations,
 };

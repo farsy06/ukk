@@ -1,70 +1,150 @@
 <div class="row">
     <div class="col-12">
-        <h2>Riwayat Peminjaman</h2>
-        <p class="text-muted">Berikut adalah riwayat pengajuan peminjaman alat Anda.</p>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Alat</th>
-                        <th>Tanggal Pinjam</th>
-                        <th>Tanggal Kembali</th>
-                        <th>Status</th>
-                        <th>Tanggal Pengembalian</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
-                        <% peminjaman.forEach(function(item, index) { %>
-                            <tr>
-                                <td><%= index + 1 %></td>
-                                <td>
-                                    <%= item.alat.nama_alat %><br>
-                                    <small class="text-muted">
-                                        Kategori: <%= item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
-                                    </small>
-                                </td>
-                                <td><%= new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') %></td>
-                                <td><%= new Date(item.tanggal_kembali).toLocaleDateString('id-ID') %></td>
-                                <td>
-                                    <% if (item.status === 'pending') { %>
-                                        <span class="badge bg-warning">Menunggu Persetujuan</span>
-                                    <% } else if (item.status === 'disetujui') { %>
-                                        <span class="badge bg-info">Disetujui</span>
-                                    <% } else if (item.status === 'dipinjam') { %>
-                                        <span class="badge bg-primary">Sedang Dipinjam</span>
-                                    <% } else if (item.status === 'dikembalikan') { %>
-                                        <span class="badge bg-success">Dikembalikan</span>
-                                    <% } else if (item.status === 'ditolak') { %>
-                                        <span class="badge bg-danger">Ditolak</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <% if (item.tanggal_pengembalian) { %>
-                                        <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
-                                    <% } else { %>
-                                        -
-                                    <% } %>
-                                </td>
-                            </tr>
-                        <% }); %>
-                    <% } else { %>
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle"></i> Belum ada riwayat peminjaman.
-                                </div>
-                            </td>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="mb-1">Riwayat Peminjaman</h2>
+                <p class="text-muted mb-0">Berikut adalah riwayat pengajuan peminjaman alat Anda.</p>
+            </div>
+            <div>
+                <a href="/alat" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajukan Peminjaman
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="text-center">#</th>
+                                    <th scope="col">Alat</th>
+                                    <th scope="col">Tanggal Pinjam</th>
+                                    <th scope="col">Tanggal Kembali</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Tanggal Pengembalian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% peminjaman.forEach(function(item, index) { %>
+                                    <tr>
+                                        <td class="text-center"><%= index + 1 %></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1 fw-semibold">
+                                                        <%= item.alat ? item.alat.nama_alat : 'Alat tidak ditemukan' %>
+                                                    </h6>
+                                                    <small class="text-muted">
+                                                        Kategori: <%= item.alat && item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                <%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') : 'Tidak tersedia' %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                <%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID') : 'Tidak tersedia' %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <% if (item.status === 'pending') { %>
+                                                <span class="badge bg-warning d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-clock me-2"></i> Menunggu Persetujuan
+                                                </span>
+                                            <% } else if (item.status === 'disetujui') { %>
+                                                <span class="badge bg-info d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-check-circle me-2"></i> Disetujui
+                                                </span>
+                                            <% } else if (item.status === 'dipinjam') { %>
+                                                <span class="badge bg-primary d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-handshake me-2"></i> Sedang Dipinjam
+                                                </span>
+                                            <% } else if (item.status === 'dikembalikan') { %>
+                                                <span class="badge bg-success d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-undo me-2"></i> Dikembalikan
+                                                </span>
+                                            <% } else if (item.status === 'ditolak') { %>
+                                                <span class="badge bg-danger d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-times-circle me-2"></i> Ditolak
+                                                </span>
+                                            <% } else { %>
+                                                <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-question-circle me-2"></i> Status Tidak Diketahui
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (item.tanggal_pengembalian) { %>
+                                                <span class="badge bg-light text-dark">
+                                                    <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
+                                                </span>
+                                            <% } else { %>
+                                                <span class="text-muted fst-italic">-</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-history fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">Belum Ada Riwayat Peminjaman</h5>
+                        <p class="text-muted mb-4">Anda belum pernah mengajukan peminjaman alat. Silakan ajukan peminjaman untuk melihat riwayat di sini.</p>
+                        <a href="/alat" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus"></i> Ajukan Peminjaman Sekarang
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add some custom styles -->
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 8px;
+    }
+    
+    .card-header {
+        background-color: #fff;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    
+    .table th {
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .fw-semibold {
+        font-weight: 600;
+    }
+</style>

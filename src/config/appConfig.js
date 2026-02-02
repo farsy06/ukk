@@ -6,12 +6,23 @@
 const appConfig = {
   // Session configuration
   session: {
-    secret: process.env.SESSION_SECRET || "your-secret-key",
+    secret:
+      process.env.SESSION_SECRET ||
+      (() => {
+        if (process.env.NODE_ENV === "production") {
+          throw new Error(
+            "SESSION_SECRET environment variable is required in production",
+          );
+        }
+        return "dev-secret-key-change-in-production";
+      })(),
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      sameSite: "strict",
     },
   },
 
@@ -30,12 +41,23 @@ const appConfig = {
     requireSpecialChar: true,
     requireNumber: true,
     requireUppercase: true,
+    bcryptRounds: 12,
   },
 
   // Pagination settings
   pagination: {
     defaultLimit: 10,
     maxLimit: 50,
+  },
+
+  // Security settings
+  security: {
+    rateLimit: {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // limit each IP to 100 requests per windowMs
+      message: "Too many requests from this IP, please try again later.",
+    },
+    csrf: true,
   },
 };
 

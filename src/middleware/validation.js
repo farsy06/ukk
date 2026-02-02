@@ -1,5 +1,6 @@
 const logger = require("../config/logging");
 const { ValidationError } = require("../utils/helpers");
+const appConfig = require("../config/appConfig");
 
 /**
  * Validation middleware untuk field yang wajib diisi
@@ -55,26 +56,44 @@ const validatePassword = (field = "password") => {
     const password = req.body[field];
     if (!password) return next();
 
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
+    const minLength = appConfig.password.minLength;
+    const hasUpperCase = appConfig.password.requireUppercase
+      ? /[A-Z]/.test(password)
+      : true;
     const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasNumbers = appConfig.password.requireNumber
+      ? /\d/.test(password)
+      : true;
+    const hasSpecialChar = appConfig.password.requireSpecialChar
+      ? /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      : true;
 
+    const errors = [];
     if (password.length < minLength) {
-      logger.warn(`Validation failed: password too short for field ${field}`);
-      throw new ValidationError(
-        `Password minimal ${minLength} karakter`,
-        field,
-      );
+      errors.push(`Password minimal ${minLength} karakter`);
+    }
+    if (password.length > appConfig.password.maxLength) {
+      errors.push(`Password maksimal ${appConfig.password.maxLength} karakter`);
+    }
+    if (!hasUpperCase) {
+      errors.push("Password harus mengandung huruf kapital");
+    }
+    if (!hasLowerCase) {
+      errors.push("Password harus mengandung huruf kecil");
+    }
+    if (!hasNumbers) {
+      errors.push("Password harus mengandung angka");
+    }
+    if (!hasSpecialChar) {
+      errors.push("Password harus mengandung karakter spesial");
     }
 
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+    if (errors.length > 0) {
       logger.warn(
         `Validation failed: password not strong enough for field ${field}`,
       );
       throw new ValidationError(
-        "Password harus mengandung huruf besar, huruf kecil, angka, dan karakter spesial",
+        `Password tidak memenuhi syarat: ${errors.join(", ")}`,
         field,
       );
     }

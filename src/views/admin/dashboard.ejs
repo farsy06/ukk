@@ -1,86 +1,131 @@
 <div class="row">
     <div class="col-12">
-        <h2>Dashboard Admin</h2>
-        <p class="text-muted">Selamat datang, <%= user.nama %>!</p>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>Dashboard Admin</h2>
+                <p class="text-muted mb-0">Selamat datang, <%= user.nama %>!</p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-primary">
+                    <i class="fas fa-user-shield"></i> Admin
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-clock"></i> 
+                    <%= new Date().toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    }) %>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row mt-4">
     <div class="col-md-3">
-        <div class="card">
+        <div class="card border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Kategori Alat</h6>
-                        <p class="card-text">Kelola kategori alat</p>
+                        <h6 class="card-title text-primary">Kategori Alat</h6>
+                        <p class="card-text text-muted">Kelola kategori alat</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-tags fa-2x text-primary"></i>
                     </div>
                 </div>
-                <a href="/admin/kategori" class="btn btn-primary mt-2">Kelola Kategori</a>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-primary">Total: <%= stats.kategori %></span>
+                    <a href="/admin/kategori" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card">
+        <div class="card border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Data Alat</h6>
-                        <p class="card-text">Kelola inventori alat</p>
+                        <h6 class="card-title text-success">Data Alat</h6>
+                        <p class="card-text text-muted">Kelola inventori alat</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-tools fa-2x text-success"></i>
                     </div>
                 </div>
-                <a href="/admin/alat" class="btn btn-success mt-2">Kelola Alat</a>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-success">Total: <%= stats.alat %></span>
+                    <a href="/admin/alat" class="btn btn-success btn-sm">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card">
+        <div class="card border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Peminjaman</h6>
-                        <p class="card-text">Pantau semua peminjaman</p>
+                        <h6 class="card-title text-info">Peminjaman</h6>
+                        <p class="card-text text-muted">Pantau semua peminjaman</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-hand-holding fa-2x text-info"></i>
                     </div>
                 </div>
-                <a href="/admin/peminjaman" class="btn btn-info mt-2">Lihat Peminjaman</a>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-info">Aktif: <%= stats.peminjaman %></span>
+                    <a href="/admin/peminjaman" class="btn btn-info btn-sm">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card">
+        <div class="card border-warning">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Kelola User</h6>
-                        <p class="card-text">Tambah admin & petugas</p>
+                        <h6 class="card-title text-warning">Kelola User</h6>
+                        <p class="card-text text-muted">Tambah admin & petugas</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-users fa-2x text-warning"></i>
                     </div>
                 </div>
-                <a href="/admin/user" class="btn btn-warning mt-2">Kelola User</a>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-warning">Total: <%= stats.user %></span>
+                    <a href="/admin/user" class="btn btn-warning btn-sm">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-3">
+<div class="row mt-4">
     <div class="col-md-3">
         <div class="card text-white bg-primary">
             <div class="card-body">
-                <h6>Total Kategori</h6>
-                <h3><%= stats.kategori %></h3>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Total Kategori</h6>
+                        <h3 class="mb-0"><%= stats.kategori %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -88,8 +133,15 @@
     <div class="col-md-3">
         <div class="card text-white bg-success">
             <div class="card-body">
-                <h6>Total Alat</h6>
-                <h3><%= stats.alat %></h3>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Total Alat</h6>
+                        <h3 class="mb-0"><%= stats.alat %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -97,8 +149,15 @@
     <div class="col-md-3">
         <div class="card text-white bg-info">
             <div class="card-body">
-                <h6>Peminjaman Aktif</h6>
-                <h3><%= stats.peminjaman %></h3>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Peminjaman Aktif</h6>
+                        <h3 class="mb-0"><%= stats.peminjaman %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-hand-holding fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -106,8 +165,15 @@
     <div class="col-md-3">
         <div class="card text-white bg-warning">
             <div class="card-body">
-                <h6>Total User</h6>
-                <h3><%= stats.user %></h3>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Total User</h6>
+                        <h3 class="mb-0"><%= stats.user %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -115,37 +181,45 @@
 
 <div class="row mt-4">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card border-secondary">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Log Aktivitas</h6>
-                        <p class="card-text">Pantau aktivitas sistem</p>
+                        <h6 class="card-title text-secondary">Log Aktivitas</h6>
+                        <p class="card-text text-muted">Pantau aktivitas sistem</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-history fa-2x text-secondary"></i>
                     </div>
                 </div>
-                <a href="/admin/catak" class="btn btn-secondary mt-2">Lihat Catatan</a>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-secondary">Audit Trail</span>
+                    <a href="/admin/catak" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-6">
-        <div class="card">
+        <div class="card border-danger">
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h6 class="card-title">Laporan</h6>
-                        <p class="card-text">Generate laporan sistem</p>
+                        <h6 class="card-title text-danger">Laporan</h6>
+                        <p class="card-text text-muted">Generate laporan sistem</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-chart-bar fa-2x text-danger"></i>
                     </div>
                 </div>
-                <button class="btn btn-danger mt-2" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Fitur laporan akan segera hadir!">
-                    <i class="fas fa-print"></i> Buat Laporan
-                </button>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="badge bg-danger">Coming Soon</span>
+                    <button class="btn btn-danger btn-sm" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Fitur laporan akan segera hadir!">
+                        <i class="fas fa-print"></i> Buat Laporan
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -155,7 +229,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h6 class="mb-0">Quick Actions</h6>
+                <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -184,3 +258,86 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Sistem Info</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <i class="fas fa-database fa-2x text-primary"></i>
+                            <h6 class="mt-2">Database</h6>
+                            <span class="badge bg-success">Terhubung</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <i class="fas fa-shield-alt fa-2x text-success"></i>
+                            <h6 class="mt-2">Keamanan</h6>
+                            <span class="badge bg-success">Aman</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-user-clock"></i> Aktivitas Terakhir</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-muted small">
+                    <i class="fas fa-clock"></i> Terakhir login: 
+                    <%= user.last_login ? new Date(user.last_login).toLocaleString('id-ID') : 'Belum pernah' %>
+                </div>
+                <div class="text-muted small mt-2">
+                    <i class="fas fa-user"></i> Role: 
+                    <span class="badge bg-primary"><%= user.role %></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Add hover effects to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Add loading animation to buttons
+        const quickActionButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info');
+        quickActionButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 1000);
+            });
+        });
+    });
+</script>

@@ -7,71 +7,222 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Peminjam</th>
-                        <th>Alat</th>
-                        <th>Tanggal Pinjam</th>
-                        <th>Tanggal Kembali</th>
-                        <th>Status</th>
-                        <th>Tanggal Pengembalian</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
-                        <% peminjaman.forEach(function(item, index) { %>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex gap-2">
+                <a href="/admin/peminjaman" class="btn btn-outline-secondary" title="Refresh">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 300px;">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Cari peminjaman...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="peminjamanTable">
+                        <thead class="table-dark">
                             <tr>
-                                <td><%= index + 1 %></td>
-                                <td>
-                                    <%= item.user.nama %><br>
-                                    <small class="text-muted">
-                                        @<%= item.user.username %> | <%= item.user.email %>
-                                    </small>
-                                </td>
-                                <td>
-                                    <%= item.alat.nama_alat %><br>
-                                    <small class="text-muted">
-                                        Kategori: <%= item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
-                                    </small>
-                                </td>
-                                <td><%= new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') %></td>
-                                <td><%= new Date(item.tanggal_kembali).toLocaleDateString('id-ID') %></td>
-                                <td>
-                                    <% if (item.status === 'pending') { %>
-                                        <span class="badge bg-warning">Menunggu Persetujuan</span>
-                                    <% } else if (item.status === 'disetujui') { %>
-                                        <span class="badge bg-info">Disetujui</span>
-                                    <% } else if (item.status === 'dipinjam') { %>
-                                        <span class="badge bg-primary">Sedang Dipinjam</span>
-                                    <% } else if (item.status === 'dikembalikan') { %>
-                                        <span class="badge bg-success">Dikembalikan</span>
-                                    <% } else if (item.status === 'ditolak') { %>
-                                        <span class="badge bg-danger">Ditolak</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <% if (item.tanggal_pengembalian) { %>
-                                        <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
-                                    <% } else { %>
-                                        -
-                                    <% } %>
-                                </td>
+                                <th>No</th>
+                                <th>Peminjam</th>
+                                <th>Alat</th>
+                                <th>Tanggal Pinjam</th>
+                                <th>Tanggal Kembali</th>
+                                <th>Status</th>
+                                <th>Tanggal Pengembalian</th>
+                                <th>Aksi</th>
                             </tr>
-                        <% }); %>
-                    <% } else { %>
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle"></i> Belum ada data peminjaman.
-                                </div>
-                            </td>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
+                                <% peminjaman.forEach(function(item, index) { %>
+                                    <tr data-id="<%= item.id %>" data-peminjam="<%= item.user.nama %>" data-alat="<%= item.alat.nama_alat %>" data-status="<%= item.status %>">
+                                        <td><%= index + 1 %></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-info rounded-circle me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold"><%= item.user.nama %></div>
+                                                    <small class="text-muted">
+                                                        @<%= item.user.username %> | <%= item.user.email %>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <% if (item.alat.foto) { %>
+                                                    <img src="<%= item.alat.foto %>" alt="Foto Alat" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <% } else { %>
+                                                    <div class="bg-secondary rounded me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="fas fa-box text-white"></i>
+                                                    </div>
+                                                <% } %>
+                                                <div>
+                                                    <div class="fw-bold"><%= item.alat.nama_alat %></div>
+                                                    <small class="text-muted">
+                                                        Kategori: <%= item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-nowrap">
+                                                <%= new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') %>
+                                                <br>
+                                                <small class="text-muted"><%= new Date(item.tanggal_pinjam).toLocaleTimeString('id-ID') %></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-nowrap">
+                                                <%= new Date(item.tanggal_kembali).toLocaleDateString('id-ID') %>
+                                                <br>
+                                                <small class="text-muted"><%= new Date(item.tanggal_kembali).toLocaleTimeString('id-ID') %></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <% if (item.status === 'pending') { %>
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock"></i> Menunggu Persetujuan
+                                                </span>
+                                            <% } else if (item.status === 'disetujui') { %>
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-check-circle"></i> Disetujui
+                                                </span>
+                                            <% } else if (item.status === 'dipinjam') { %>
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-handshake"></i> Sedang Dipinjam
+                                                </span>
+                                            <% } else if (item.status === 'dikembalikan') { %>
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-undo"></i> Dikembalikan
+                                                </span>
+                                            <% } else if (item.status === 'ditolak') { %>
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Ditolak
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (item.tanggal_pengembalian) { %>
+                                                <div class="text-nowrap">
+                                                    <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
+                                                    <br>
+                                                    <small class="text-muted"><%= new Date(item.tanggal_pengembalian).toLocaleTimeString('id-ID') %></small>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group-vertical" role="group">
+                                                <% if (item.status === 'pending') { %>
+                                                    <a href="/admin/peminjaman/setujui/<%= item.id %>" class="btn btn-sm btn-success" title="Setujui">
+                                                        <i class="fas fa-check"></i>
+                                                    </a>
+                                                    <a href="/admin/peminjaman/tolak/<%= item.id %>" class="btn btn-sm btn-danger" title="Tolak">
+                                                        <i class="fas fa-times"></i>
+                                                    </a>
+                                                <% } else if (item.status === 'dipinjam') { %>
+                                                    <a href="/admin/peminjaman/kembalikan/<%= item.id %>" class="btn btn-sm btn-info" title="Kembalikan">
+                                                        <i class="fas fa-undo"></i>
+                                                    </a>
+                                                <% } %>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle"></i> Belum ada data peminjaman.
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const table = document.getElementById('peminjamanTable');
+        const rows = table.querySelectorAll('tbody tr');
+
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                rows.forEach(row => {
+                    const peminjam = row.getAttribute('data-peminjam').toLowerCase();
+                    const alat = row.getAttribute('data-alat').toLowerCase();
+                    const status = row.getAttribute('data-status').toLowerCase();
+                    
+                    const matches = peminjam.includes(searchTerm) || 
+                                   alat.includes(searchTerm) || 
+                                   status.includes(searchTerm);
+                    
+                    row.style.display = matches ? '' : 'none';
+                });
+            });
+        }
+
+        // Clear search functionality
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            });
+        }
+
+        // Add hover effects for better UX
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchInput.value) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Add loading state for actions
+        const actionButtons = document.querySelectorAll('.btn-success, .btn-danger, .btn-info');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 1000);
+            });
+        });
+    });
+</script>

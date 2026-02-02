@@ -1,10 +1,7 @@
+const userService = require("../services/userService");
 const User = require("../models/User");
 const logger = require("../config/logging");
-const {
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES,
-  ROLES,
-} = require("../utils/constants");
+const { ROLES } = require("../utils/constants");
 
 // Import cache helper
 const { cacheHelper } = require("../middleware/caching");
@@ -85,34 +82,37 @@ const register = async (req, res) => {
 
   try {
     // Check if username already exists
-    const existingUsername = await User.findOne({ where: { username } });
-    if (existingUsername) {
+    const isUsernameUnique = await userService.isUsernameUnique(username);
+    if (!isUsernameUnique) {
       logger.warn(`Registration failed: username ${username} already exists`);
-      req.flash("error", ERROR_MESSAGES.VALIDATION.USERNAME_TAKEN);
+      req.flash("error", "Username sudah digunakan");
       req.flash("data", { nama, username, email }); // Preserve form data
       return res.redirect("/register");
     }
 
     // Check if email already exists
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail) {
+    const isEmailUnique = await userService.isEmailUnique(email);
+    if (!isEmailUnique) {
       logger.warn(`Registration failed: email ${email} already exists`);
-      req.flash("error", ERROR_MESSAGES.VALIDATION.EMAIL_TAKEN);
+      req.flash("error", "Email sudah digunakan");
       req.flash("data", { nama, username, email }); // Preserve form data
       return res.redirect("/register");
     }
 
     // Create new user
-    const newUser = await User.create({
-      nama,
-      username,
-      email,
-      password,
-      role: ROLES.PEMINJAM, // Default role for registration
-    });
+    const newUser = await userService.create(
+      {
+        nama,
+        username,
+        email,
+        password,
+        role: ROLES.PEMINJAM, // Default role for registration
+      },
+      { id: 0, role: "SYSTEM" }, // System user for registration
+    );
 
     logger.info(`User registered successfully: ${newUser.id}`);
-    req.flash("success", SUCCESS_MESSAGES.REGISTRATION);
+    req.flash("success", "Registrasi berhasil, silakan login");
 
     // Invalidate cache
     cacheHelper.del("alat_user_index");
@@ -156,7 +156,7 @@ const login = async (req, res) => {
   const user = await User.findOne({ where: { username } });
   if (!user) {
     logger.warn(`Login failed: user ${username} not found`);
-    req.flash("error", ERROR_MESSAGES.AUTHENTICATION.INVALID_CREDENTIALS);
+    req.flash("error", "Username atau password salah");
     return res.redirect("/login");
   }
 
@@ -164,7 +164,7 @@ const login = async (req, res) => {
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     logger.warn(`Login failed: invalid password for user ${username}`);
-    req.flash("error", ERROR_MESSAGES.AUTHENTICATION.INVALID_CREDENTIALS);
+    req.flash("error", "Username atau password salah");
     return res.redirect("/login");
   }
 
@@ -194,7 +194,7 @@ const logout = (req, res) => {
   logger.info(`User logged out: ${userId}`);
 
   // Set flash message before destroying session
-  req.flash("success", SUCCESS_MESSAGES.LOGOUT);
+  req.flash("success", "Berhasil logout");
 
   req.session.destroy((err) => {
     if (err) {

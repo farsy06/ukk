@@ -123,7 +123,7 @@ const SUCCESS_MESSAGES = {
 
 // App Configuration
 const APP_CONFIG = {
-  NAME: "Sistem Peminjaman Alat Laboratorium",
+  NAME: "ToolShare Pro",
   VERSION: "1.0.0",
   AUTHOR: "Farisya Fatanansyah",
   DESCRIPTION:

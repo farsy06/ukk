@@ -1,10 +1,11 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
+        <div class="card border-0 shadow">
+            <div class="card-header bg-primary text-white text-center py-4">
                 <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Login</h4>
+                <p class="mb-0 mt-2 small">Masuk ke akun Anda untuk meminjam alat</p>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <% if (Array.isArray(error)) { %>
@@ -31,16 +32,20 @@
                     </div>
                 <% } %>
                 
-                <form action="/login" method="POST">
+                <form action="/login" method="POST" id="loginForm">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
                         <div class="form-text">Masukkan username Anda</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
                         <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
                             <input type="password" class="form-control" id="password" name="password" required>
                             <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                 <i class="fas fa-eye"></i>
@@ -49,14 +54,21 @@
                         <div class="form-text">Masukkan password Anda</div>
                     </div>
                     
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                        <label class="form-check-label" for="rememberMe">
+                            Ingat saya
+                        </label>
+                    </div>
+                    
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-sign-in-alt"></i> Login
                         </button>
                     </div>
                 </form>
                 
-                <hr>
+                <hr class="my-4">
                 
                 <div class="text-center">
                     <p class="mb-0">Belum punya akun?</p>
@@ -64,30 +76,108 @@
                         <i class="fas fa-user-plus"></i> Daftar disini
                     </a>
                 </div>
+
+                <div class="text-center mt-3">
+                    <a href="/forgot-password" class="text-decoration-none small text-muted">
+                        <i class="fas fa-key"></i> Lupa password?
+                    </a>
+                </div>
             </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt"></i> Sistem peminjaman alat yang aman dan terpercaya
+            </small>
         </div>
     </div>
 </div>
 
 <script>
-    // Password toggle functionality
     document.addEventListener('DOMContentLoaded', function() {
-        const togglePassword = document.getElementById('togglePassword');
+        const form = document.getElementById('loginForm');
         const password = document.getElementById('password');
+        const username = document.getElementById('username');
 
-        if (togglePassword && password) {
-            togglePassword.addEventListener('click', function() {
-                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                password.setAttribute('type', type);
-                const icon = this.querySelector('i');
-                if (icon) {
-                    if (type === 'text') {
-                        icon.outerHTML = '<i class="fas fa-eye-slash"></i>';
-                    } else {
-                        icon.outerHTML = '<i class="fas fa-eye"></i>';
-                    }
-                }
-            });
-        }
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const errors = [];
+
+            // Validate username
+            if (!username.value.trim()) {
+                errors.push('Username harus diisi');
+                isValid = false;
+            } else if (username.value.trim().length < 3) {
+                errors.push('Username minimal 3 karakter');
+                isValid = false;
+            }
+
+            // Validate password
+            if (!password.value) {
+                errors.push('Password harus diisi');
+                isValid = false;
+            } else if (password.value.length < 6) {
+                errors.push('Password minimal 6 karakter');
+                isValid = false;
+            }
+
+            // Show errors if any
+            if (!isValid) {
+                e.preventDefault();
+                const errorHtml = errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                
+                // Remove existing error messages
+                const existingErrors = document.querySelectorAll('.alert-danger');
+                existingErrors.forEach(err => err.remove());
+                
+                form.insertBefore(errorDiv, form.firstChild);
+            }
+        });
+
+        // Real-time validation for username
+        username.addEventListener('input', function() {
+            if (this.value.trim().length < 3 && this.value.trim().length > 0) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Real-time validation for password
+        password.addEventListener('input', function() {
+            if (this.value.length < 6 && this.value.length > 0) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Add loading state for submit button
+        form.addEventListener('submit', function() {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            submitButton.disabled = true;
+            
+            setTimeout(() => {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }, 2000);
+        });
+
+        // Auto-focus username field
+        username.focus();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && document.activeElement !== submitButton) {
+                e.preventDefault();
+                form.querySelector('button[type="submit"]').click();
+            }
+        });
     });
 </script>

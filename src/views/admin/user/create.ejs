@@ -19,33 +19,31 @@
                     </div>
                 <% } %>
                 
-                <form action="/admin/user/tambah" method="POST">
+                <form action="/admin/user/tambah" method="POST" id="userForm">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="nama" class="form-label">Nama Lengkap</label>
+                                <label for="nama" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nama" name="nama" required>
+                                <div class="form-text">Masukkan nama lengkap user</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="username" name="username" value="<%= typeof data !== 'undefined' && data ? data.username : '' %>" required>
                                 <div class="form-text">Username unik untuk login (minimal 3 karakter)</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control" id="email" name="email" value="<%= typeof data !== 'undefined' && data ? data.email : '' %>" required>
                                 <div class="form-text">Email yang valid untuk komunikasi</div>
                             </div>
                         </div>
 
-                    </div>
-                    
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
+                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="password" name="password" required>
                                     <button class="btn btn-outline-secondary" type="button" id="togglePassword">
@@ -63,10 +61,9 @@
                                     </ul>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
+                            
                             <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Konfirmasi Password</label>
+                                <label for="confirmPassword" class="form-label">Konfirmasi Password <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
                                     <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
@@ -75,13 +72,9 @@
                                 </div>
                                 <div id="password-match-message" class="form-text"></div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
+                            
                             <div class="mb-3">
-                                <label for="role" class="form-label">Role</label>
+                                <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
                                 <select class="form-select" id="role" name="role" required>
                                     <option value="">Pilih Role</option>
                                     <option value="petugas">Petugas</option>
@@ -92,7 +85,10 @@
                         </div>
                     </div>
                     
-                    <div class="d-grid">
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/user" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Simpan User
                         </button>
@@ -104,11 +100,15 @@
 </div>
 
 <script>
-    // Password strength validation
     document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('userForm');
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
         const passwordMatchMessage = document.getElementById('password-match-message');
+        const nama = document.getElementById('nama');
+        const username = document.getElementById('username');
+        const email = document.getElementById('email');
+        const role = document.getElementById('role');
         
         // Password strength indicators
         const lengthCheck = document.getElementById('length-check');
@@ -178,39 +178,51 @@
             }
         }
 
-        // Password toggle functionality
-        const togglePassword = document.getElementById('togglePassword');
-        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        function validateForm() {
+            let isValid = true;
+            const errors = [];
 
-        if (togglePassword && password) {
-            togglePassword.addEventListener('click', function() {
-                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                password.setAttribute('type', type);
-                const icon = this.querySelector('i');
-                if (icon) {
-                    if (type === 'text') {
-                        icon.outerHTML = '<i class="fas fa-eye-slash"></i>';
-                    } else {
-                        icon.outerHTML = '<i class="fas fa-eye"></i>';
-                    }
-                }
-            });
+            // Validate nama
+            if (nama.value.trim().length < 2) {
+                errors.push('Nama minimal 2 karakter');
+                isValid = false;
+            }
+
+            // Validate username
+            if (username.value.trim().length < 3) {
+                errors.push('Username minimal 3 karakter');
+                isValid = false;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.value)) {
+                errors.push('Format email tidak valid');
+                isValid = false;
+            }
+
+            // Validate password strength
+            const pwd = password.value;
+            if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/\d/.test(pwd) || !/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+                errors.push('Password tidak memenuhi kriteria keamanan');
+                isValid = false;
+            }
+
+            // Validate password match
+            if (password.value !== confirmPassword.value) {
+                errors.push('Password dan konfirmasi password tidak cocok');
+                isValid = false;
+            }
+
+            // Validate role
+            if (!role.value) {
+                errors.push('Pilih role user');
+                isValid = false;
+            }
+
+            return { isValid, errors };
         }
 
-        if (toggleConfirmPassword && confirmPassword) {
-            toggleConfirmPassword.addEventListener('click', function() {
-                const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-                confirmPassword.setAttribute('type', type);
-                const icon = this.querySelector('i');
-                if (icon) {
-                    if (type === 'text') {
-                        icon.outerHTML = '<i class="fas fa-eye-slash"></i>';
-                    } else {
-                        icon.outerHTML = '<i class="fas fa-eye"></i>';
-                    }
-                }
-            });
-        }
 
         // Real-time validation
         if (password) {
@@ -220,5 +232,31 @@
         if (confirmPassword) {
             confirmPassword.addEventListener('input', validatePasswordMatch);
         }
+
+        // Form submission validation
+        form.addEventListener('submit', function(e) {
+            const validation = validateForm();
+            
+            if (!validation.isValid) {
+                e.preventDefault();
+                const errorHtml = validation.errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                
+                // Remove existing error messages
+                const existingErrors = document.querySelectorAll('.alert-danger');
+                existingErrors.forEach(err => err.remove());
+                
+                form.insertBefore(errorDiv, form.firstChild);
+            }
+        });
+
+        // Auto-capitalize nama
+        nama.addEventListener('blur', function() {
+            if (this.value.trim().length > 0) {
+                this.value = this.value.trim().replace(/\b\w/g, l => l.toUpperCase());
+            }
+        });
     });
 </script>

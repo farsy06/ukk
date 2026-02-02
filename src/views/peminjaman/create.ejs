@@ -14,48 +14,110 @@
 
                 <div class="row">
                     <div class="col-md-6">
-                        <h5>Detail Alat</h5>
+                        <h5><i class="fas fa-info-circle"></i> Detail Alat</h5>
                         <% if (typeof alat !== 'undefined' && alat) { %>
-                            <p><strong>Nama Alat:</strong> <%= alat.nama_alat %></p>
-                            <p><strong>Kategori:</strong> <%= alat.kategori ? alat.kategori.nama_kategori : 'Tidak ada kategori' %></p>
-                            <p><strong>Kondisi:</strong>
-                                <% if (alat.kondisi === 'baik') { %>
-                                    <span class="badge bg-success">Baik</span>
-                                <% } else if (alat.kondisi === 'rusak_ringan') { %>
-                                    <span class="badge bg-warning">Rusak Ringan</span>
-                                <% } else if (alat.kondisi === 'rusak_berat') { %>
-                                    <span class="badge bg-danger">Rusak Berat</span>
-                                <% } %>
-                            </p>
-                            <p><strong>Status:</strong>
-                                <% if (alat.status === 'tersedia') { %>
-                                    <span class="badge bg-success">Tersedia</span>
-                                <% } else if (alat.status === 'dipinjam') { %>
-                                    <span class="badge bg-warning">Dipinjam</span>
-                                <% } else if (alat.status === 'maintenance') { %>
-                                    <span class="badge bg-secondary">Maintenance</span>
-                                <% } %>
-                            </p>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <% if (alat.foto) { %>
+                                        <img src="<%= alat.foto %>" alt="Foto Alat" class="img-fluid rounded mb-3" style="max-height: 200px; object-fit: cover;">
+                                    <% } else { %>
+                                        <div class="bg-secondary rounded mb-3" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-camera text-white fa-3x"></i>
+                                        </div>
+                                    <% } %>
+                                    
+                                    <p><strong>Nama Alat:</strong> <%= alat.nama_alat %></p>
+                                    <p><strong>Kategori:</strong> 
+                                        <span class="badge bg-primary"><%= alat.kategori ? alat.kategori.nama_kategori : 'Tidak ada kategori' %></span>
+                                    </p>
+                                    <p><strong>Kondisi:</strong>
+                                        <% if (alat.kondisi === 'baik') { %>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Baik
+                                            </span>
+                                        <% } else if (alat.kondisi === 'rusak_ringan') { %>
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Rusak Ringan
+                                            </span>
+                                        <% } else if (alat.kondisi === 'rusak_berat') { %>
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle"></i> Rusak Berat
+                                            </span>
+                                        <% } %>
+                                    </p>
+                                    <p><strong>Status:</strong>
+                                        <% if (alat.status === 'tersedia') { %>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Tersedia
+                                            </span>
+                                        <% } else if (alat.status === 'dipinjam') { %>
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-handshake"></i> Dipinjam
+                                            </span>
+                                        <% } else if (alat.status === 'maintenance') { %>
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-wrench"></i> Maintenance
+                                            </span>
+                                        <% } %>
+                                    </p>
+                                    <p><strong>Stok:</strong> 
+                                        <span class="badge <%= alat.stok > 0 ? 'bg-success' : 'bg-danger' %>">
+                                            <%= alat.stok %>
+                                        </span>
+                                    </p>
+                                    <% if (alat.deskripsi) { %>
+                                        <p><strong>Deskripsi:</strong> <%= alat.deskripsi %></p>
+                                    <% } %>
+                                </div>
+                            </div>
                         <% } %>
                     </div>
                     <div class="col-md-6">
-                        <h5>Form Pengajuan Peminjaman</h5>
-                        <form action="/peminjaman/ajukan" method="POST">
+                        <h5><i class="fas fa-edit"></i> Form Pengajuan Peminjaman</h5>
+                        <form action="/peminjaman/ajukan" method="POST" id="peminjamanForm">
                             <% if (typeof alat !== 'undefined' && alat) { %>
                                 <input type="hidden" name="alat_id" value="<%= alat.id %>">
                             <% } %>
 
                             <div class="mb-3">
-                                <label for="tanggal_pinjam" class="form-label">Tanggal Pinjam</label>
+                                <label for="tanggal_pinjam" class="form-label">Tanggal Pinjam <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="tanggal_pinjam" name="tanggal_pinjam" required>
+                                <div class="form-text text-muted">
+                                    Pilih tanggal mulai peminjaman
+                                </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="tanggal_kembali" class="form-label">Tanggal Kembali</label>
+                                <label for="tanggal_kembali" class="form-label">Tanggal Kembali <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="tanggal_kembali" name="tanggal_kembali" required>
+                                <div class="form-text text-muted">
+                                    Pilih tanggal pengembalian (maksimal 7 hari)
+                                </div>
                             </div>
 
-                            <div class="d-grid">
+                            <div class="mb-3">
+                                <label for="catatan" class="form-label">Catatan (Opsional)</label>
+                                <textarea class="form-control" id="catatan" name="catatan" rows="3" placeholder="Catatan atau keperluan peminjaman"></textarea>
+                                <div class="form-text text-muted">
+                                    Masukkan catatan atau alasan peminjaman jika diperlukan
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Peraturan Peminjaman:</strong>
+                                <ul class="mt-2 mb-0">
+                                    <li>Maksimal peminjaman 7 hari</li>
+                                    <li>Alat harus dikembalikan dalam kondisi baik</li>
+                                    <li>Denda keterlambatan: Rp 5.000/hari</li>
+                                    <li>Harap periksa kondisi alat sebelum meminjam</li>
+                                </ul>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="/alat" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Kembali
+                                </a>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-paper-plane"></i> Ajukan Peminjaman
                                 </button>
@@ -69,13 +131,143 @@
 </div>
 
 <script>
-document.getElementById('tanggal_pinjam').addEventListener('change', function() {
-    const tanggalPinjam = new Date(this.value);
-    const tanggalKembali = new Date(tanggalPinjam);
-    tanggalKembali.setDate(tanggalKembali.getDate() + 1); // Default 1 hari
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('peminjamanForm');
+        const tanggalPinjam = document.getElementById('tanggal_pinjam');
+        const tanggalKembali = document.getElementById('tanggal_kembali');
+        const catatan = document.getElementById('catatan');
 
-    const formattedDate = tanggalKembali.toISOString().split('T')[0];
-    document.getElementById('tanggal_kembali').value = formattedDate;
-    document.getElementById('tanggal_kembali').min = this.value;
-});
+        // Set minimum date to today
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+        tanggalPinjam.min = todayString;
+        tanggalKembali.min = todayString;
+
+        // Set maximum date to 7 days from today
+        const maxDate = new Date();
+        maxDate.setDate(today.getDate() + 7);
+        const maxDateString = maxDate.toISOString().split('T')[0];
+        tanggalPinjam.max = maxDateString;
+        tanggalKembali.max = maxDateString;
+
+        // Date validation
+        tanggalPinjam.addEventListener('change', function() {
+            const tanggalPinjamValue = new Date(this.value);
+            const tanggalKembaliValue = new Date(tanggalKembali.value);
+
+            // Set default return date to next day
+            const defaultReturnDate = new Date(tanggalPinjamValue);
+            defaultReturnDate.setDate(defaultReturnDate.getDate() + 1);
+            const formattedDate = defaultReturnDate.toISOString().split('T')[0];
+            
+            if (!tanggalKembali.value || tanggalKembaliValue < tanggalPinjamValue) {
+                tanggalKembali.value = formattedDate;
+            }
+
+            // Update minimum for return date
+            tanggalKembali.min = this.value;
+
+            // Validate maximum 7 days
+            const diffTime = tanggalKembaliValue - tanggalPinjamValue;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 7) {
+                tanggalKembali.value = formattedDate;
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning alert-dismissible fade show';
+                alert.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Maksimal peminjaman 7 hari. Tanggal kembali telah disesuaikan. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                form.insertBefore(alert, form.firstChild);
+            }
+        });
+
+        tanggalKembali.addEventListener('change', function() {
+            const tanggalPinjamValue = new Date(tanggalPinjam.value);
+            const tanggalKembaliValue = new Date(this.value);
+
+            if (tanggalKembaliValue <= tanggalPinjamValue) {
+                this.value = '';
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning alert-dismissible fade show';
+                alert.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tanggal kembali harus lebih dari tanggal pinjam. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                form.insertBefore(alert, form.firstChild);
+            }
+        });
+
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const errors = [];
+
+            // Validate tanggal pinjam
+            if (!tanggalPinjam.value) {
+                errors.push('Pilih tanggal pinjam');
+                isValid = false;
+            }
+
+            // Validate tanggal kembali
+            if (!tanggalKembali.value) {
+                errors.push('Pilih tanggal kembali');
+                isValid = false;
+            } else {
+                const tanggalPinjamValue = new Date(tanggalPinjam.value);
+                const tanggalKembaliValue = new Date(tanggalKembali.value);
+                
+                if (tanggalKembaliValue <= tanggalPinjamValue) {
+                    errors.push('Tanggal kembali harus lebih dari tanggal pinjam');
+                    isValid = false;
+                }
+            }
+
+            // Show errors if any
+            if (!isValid) {
+                e.preventDefault();
+                const errorHtml = errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                
+                // Remove existing error messages
+                const existingErrors = document.querySelectorAll('.alert-danger');
+                existingErrors.forEach(err => err.remove());
+                
+                form.insertBefore(errorDiv, form.firstChild);
+            }
+        });
+
+        // Real-time validation for tanggal pinjam
+        tanggalPinjam.addEventListener('input', function() {
+            if (this.value && new Date(this.value) < new Date(todayString)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Real-time validation for tanggal kembali
+        tanggalKembali.addEventListener('input', function() {
+            if (this.value && tanggalPinjam.value) {
+                const tanggalPinjamValue = new Date(tanggalPinjam.value);
+                const tanggalKembaliValue = new Date(this.value);
+                
+                if (tanggalKembaliValue <= tanggalPinjamValue) {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            }
+        });
+
+        // Add loading state for submit button
+        form.addEventListener('submit', function() {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            submitButton.disabled = true;
+            
+            setTimeout(() => {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }, 2000);
+        });
+    });
 </script>

@@ -7,46 +7,169 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>User</th>
-                        <th>Aktivitas</th>
-                        <th>Waktu</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (typeof logs !== 'undefined' && logs && logs.length > 0) { %>
-                        <% logs.forEach(function(log, index) { %>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex gap-2">
+                <a href="/admin/catak" class="btn btn-outline-secondary" title="Refresh">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 300px;">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Cari aktivitas...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="logTable">
+                        <thead class="table-dark">
                             <tr>
-                                <td><%= index + 1 %></td>
-                                <td>
-                                    <%= log.user.nama %><br>
-                                    <small class="text-muted">
-                                        @<%= log.user.username %> | <%= log.user.email %><br>
-                                        <span class="badge bg-secondary"><%= log.user.role %></span>
-                                    </small>
-                                </td>
-                                <td><%= log.aktivitas %></td>
-                                <td>
-                                    <%= new Date(log.waktu).toLocaleDateString('id-ID') %><br>
-                                    <small class="text-muted"><%= new Date(log.waktu).toLocaleTimeString('id-ID') %></small>
-                                </td>
+                                <th>No</th>
+                                <th>User</th>
+                                <th>Aktivitas</th>
+                                <th>Waktu</th>
+                                <th>Detail</th>
                             </tr>
-                        <% }); %>
-                    <% } else { %>
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle"></i> Belum ada log aktivitas.
-                                </div>
-                            </td>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            <% if (typeof logs !== 'undefined' && logs && logs.length > 0) { %>
+                                <% logs.forEach(function(log, index) { %>
+                                    <tr data-id="<%= log.id %>" data-user="<%= log.user.nama %>" data-aktivitas="<%= log.aktivitas %>" data-waktu="<%= new Date(log.waktu).toLocaleDateString('id-ID') %>">
+                                        <td><%= index + 1 %></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-<%= log.user.role === 'admin' ? 'danger' : log.user.role === 'petugas' ? 'warning' : 'info' %> rounded-circle me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold"><%= log.user.nama %></div>
+                                                    <small class="text-muted">
+                                                        @<%= log.user.username %> | <%= log.user.email %>
+                                                    </small>
+                                                    <br>
+                                                    <span class="badge bg-<%= log.user.role === 'admin' ? 'danger' : log.user.role === 'petugas' ? 'warning' : 'info' %>">
+                                                        <i class="fas fa-crown"></i> <%= log.user.role %>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 400px;">
+                                                <%= log.aktivitas %>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-nowrap">
+                                                <%= new Date(log.waktu).toLocaleDateString('id-ID') %>
+                                                <br>
+                                                <small class="text-muted"><%= new Date(log.waktu).toLocaleTimeString('id-ID') %></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#detail-<%= log.id %>" aria-expanded="false" aria-controls="detail-<%= log.id %>">
+                                                    <i class="fas fa-info-circle"></i> Detail
+                                                </button>
+                                            </div>
+                                            <div class="collapse mt-2" id="detail-<%= log.id %>">
+                                                <div class="card card-body">
+                                                    <small class="text-muted">
+                                                        <strong>IP Address:</strong> <%= log.ip_address || '-' %><br>
+                                                        <strong>User Agent:</strong> <%= log.user_agent ? log.user_agent.substring(0, 100) + '...' : '-' %><br>
+                                                        <strong>Session ID:</strong> <%= log.session_id || '-' %><br>
+                                                        <strong>Waktu:</strong> <%= new Date(log.waktu).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) %>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle"></i> Belum ada log aktivitas.
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const table = document.getElementById('logTable');
+        const rows = table.querySelectorAll('tbody tr');
+
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                rows.forEach(row => {
+                    const user = row.getAttribute('data-user').toLowerCase();
+                    const aktivitas = row.getAttribute('data-aktivitas').toLowerCase();
+                    const waktu = row.getAttribute('data-waktu').toLowerCase();
+                    
+                    const matches = user.includes(searchTerm) || 
+                                   aktivitas.includes(searchTerm) || 
+                                   waktu.includes(searchTerm);
+                    
+                    row.style.display = matches ? '' : 'none';
+                });
+            });
+        }
+
+        // Clear search functionality
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            });
+        }
+
+        // Add hover effects for better UX
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchInput.value) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Add loading state for actions
+        const detailButtons = document.querySelectorAll('.btn-outline-primary');
+        detailButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 500);
+            });
+        });
+    });
+</script>

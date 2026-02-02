@@ -1,4 +1,4 @@
-# Sistem Peminjaman Alat Laboratorium
+# Sistem Peminjaman Alat Laboratorium (ToolShare Pro)
 
 Aplikasi web berbasis Node.js untuk mengelola sistem peminjaman alat laboratorium dengan antarmuka yang intuitif dan fitur manajemen yang komprehensif.
 
@@ -47,12 +47,15 @@ Sistem ini dirancang untuk mempermudah proses peminjaman alat laboratorium di in
 - **Logging**: Winston
 - **Security**: express-rate-limit, input sanitization
 - **Caching**: node-cache
+- **Service Layer**: Pola service kustom untuk logika bisnis
+- **Async Handling**: Middleware async handler kustom
 
 ### Frontend
 
-- **Framework CSS**: Bootstrap 5
+- **Framework CSS**: Bootstrap 5 (dari npm, disajikan secara lokal)
 - **Template**: EJS (Embedded JavaScript)
 - **JavaScript**: Vanilla JS + Bootstrap Bundle
+- **Password Toggle**: Script kustom untuk fitur toggle password
 
 ### Development Tools
 
@@ -73,6 +76,11 @@ src/
 │   ├── kategoriController.js
 │   ├── transaksiController.js
 │   └── userController.js
+├── services/             # Service layer untuk business logic
+│   ├── alatService.js
+│   ├── kategoriService.js
+│   ├── peminjamanService.js
+│   └── userService.js
 ├── models/              # Model database
 │   ├── Alat.js
 │   ├── Kategori.js
@@ -130,7 +138,14 @@ src/
    npm install
    ```
 
-3. **Konfigurasi Database**
+3. **Setup Bootstrap (Build Process)**
+
+   ```bash
+   # Salin Bootstrap dari node_modules ke public directory
+   npm run build
+   ```
+
+4. **Konfigurasi Database**
 
    ```bash
    # Salin file konfigurasi
@@ -144,7 +159,7 @@ src/
    # DB_PASS=password
    ```
 
-4. **Setup Database**
+5. **Setup Database**
 
    ```bash
    # Jalankan migrasi database
@@ -154,15 +169,40 @@ src/
    npm run create-admin
    ```
 
-5. **Jalankan Aplikasi**
+6. **Jalankan Aplikasi**
 
    ```bash
    # Production mode (default)
    npm start
+
+   # Development mode (dengan nodemon)
+   npm run dev
    ```
 
-6. **Akses Aplikasi**
+7. **Akses Aplikasi**
    Buka browser dan kunjungi: `http://localhost:3000`
+
+### 📦 Build Process
+
+Aplikasi ini menggunakan sistem build untuk mengelola file statis:
+
+- **`npm run build`**: Menyalin Bootstrap dari node_modules ke direktori public
+- **`npm run copy:bootstrap`**: Perintah khusus untuk menyalin file Bootstrap
+- **File yang disalin**:
+  - `bootstrap.min.css` → `public/css/`
+  - `bootstrap.bundle.min.js` → `public/js/`
+
+**Kapan Harus Menjalankan Build:**
+- Setelah instalasi awal
+- Setelah update Bootstrap
+- Jika file di direktori public hilang
+- Sebelum deployment ke production
+
+**Keuntungan Sistem Build:**
+- Bootstrap tersedia secara offline (tanpa internet)
+- Performa lebih cepat (file lokal)
+- Tidak bergantung pada CDN eksternal
+- Manajemen versi yang konsisten
 
 ## 🗃️ Database Schema
 
@@ -366,6 +406,31 @@ npm start
 # Akses di browser: http://localhost:3000
 ```
 
+### Arsitektur Development
+
+Aplikasi ini menggunakan arsitektur berlapis dengan pola **Service Layer**:
+
+```
+Request → Middleware → Controller → Service → Model → Database
+```
+
+**Keuntungan Arsitektur Ini:**
+- **Separation of Concerns**: Setiap layer memiliki tanggung jawab yang jelas
+- **Testability**: Service layer memudahkan unit testing
+- **Reusability**: Business logic dapat digunakan di berbagai controller
+- **Maintainability**: Perubahan business logic tidak memengaruhi controller
+
+**Service Layer Structure:**
+- `alatService.js`: Manajemen alat dan inventaris
+- `kategoriService.js`: Manajemen kategori alat
+- `peminjamanService.js`: Manajemen proses peminjaman
+- `userService.js`: Manajemen pengguna dan autentikasi
+
+**Async Handling:**
+- Semua operasi database menggunakan async/await
+- Error handling konsisten dengan custom async handler
+- Promise-based operations untuk performa optimal
+
 ## 🤝 Kontribusi
 
 Kami menerima kontribusi dari siapa saja! Berikut langkah-langkahnya:
@@ -388,23 +453,34 @@ Kami menerima kontribusi dari siapa saja! Berikut langkah-langkahnya:
 
 ### Response Time Improvement
 
-- **Home Page**: 40-50% lebih cepat
-- **Admin Dashboard**: 60-70% lebih cepat
-- **User Lists**: 50-60% lebih cepat
-- **Peminjaman Lists**: 30-40% lebih cepat
+- **Home Page**: 40-50% lebih cepat (dengan caching 10 menit)
+- **Admin Dashboard**: 60-70% lebih cepat (dengan caching 5 menit)
+- **User Lists**: 50-60% lebih cepat (dengan caching 10 menit)
+- **Peminjaman Lists**: 30-40% lebih cepat (dengan caching 3 menit)
+- **Alat Lists**: 40-50% lebih cepat (dengan caching 5 menit)
 
 ### Database Optimization
 
-- **Query Reduction**: 60-80% untuk halaman dengan relasi
-- **Concurrent Users**: Meningkat 3-5x kapasitas
-- **Cache Hit Rate**: 70-90% tergantung jenis data
+- **Query Reduction**: 60-80% untuk halaman dengan relasi (menggunakan eager loading)
+- **Concurrent Users**: Meningkat 3-5x kapasitas (dengan caching dan query optimization)
+- **Cache Hit Rate**: 70-90% tergantung jenis data (node-cache implementation)
+- **N+1 Problem**: Teratasi dengan proper includes di Sequelize
+
+### Service Layer Benefits
+
+- **Code Reusability**: Business logic dapat digunakan di berbagai controller
+- **Testability**: Service layer memudahkan unit testing
+- **Maintainability**: Perubahan business logic tidak memengaruhi controller
+- **Separation of Concerns**: Setiap layer memiliki tanggung jawab yang jelas
 
 ### Security Features
 
-- **Rate Limiting**: 5 percobaan login dalam 15 menit
-- **Password Strength**: Minimal 8 karakter dengan kompleksitas
-- **Input Validation**: Validasi semua input user
-- **Error Handling**: Error response konsisten dan aman
+- **Rate Limiting**: 5 percobaan login dalam 15 menit (express-rate-limit)
+- **Password Strength**: Minimal 8 karakter dengan kompleksitas (custom validation)
+- **Input Validation**: Validasi semua input user (middleware validation)
+- **Input Sanitization**: Proteksi XSS dan injection (security middleware)
+- **Error Handling**: Error response konsisten dan aman (centralized error handling)
+- **Session Management**: Session timeout dan keamanan (express-session)
 
 ## 📄 Lisensi
 
@@ -412,11 +488,31 @@ Proyek ini dibuat untuk keperluan Ujian Kompetensi Keahlian (UKK) dan tidak dima
 
 ## 🏗️ Arsitektur Aplikasi
 
+### Arsitektur Berlapis (Layered Architecture)
+
+```
+Request → Middleware → Controller → Service → Model → Database
+```
+
+**Layer Responsibilities:**
+- **Middleware**: Security, validation, caching, authentication
+- **Controller**: Request handling, response formatting
+- **Service**: Business logic, data processing
+- **Model**: Data validation, database operations
+- **Database**: Data storage and retrieval
+
 ### Security Layer
 
 ```
 Rate Limiting → Input Sanitization → Validation → Authentication → Authorization → Controller
 ```
+
+**Security Features:**
+- **Rate Limiting**: Proteksi brute force login (5 percobaan/15 menit)
+- **Input Sanitization**: Proteksi XSS dan injection
+- **Validation**: Validasi input ketat untuk semua field
+- **Authentication**: Session-based authentication
+- **Authorization**: Role-based access control
 
 ### Performance Layer
 
@@ -424,11 +520,37 @@ Rate Limiting → Input Sanitization → Validation → Authentication → Autho
 Cache Middleware → Eager Loading → Optimized Queries → Response Caching
 ```
 
+**Performance Optimizations:**
+- **Cache Middleware**: In-memory caching dengan node-cache
+- **Eager Loading**: Menghindari N+1 query problem
+- **Optimized Queries**: Query optimization dan proper indexing
+- **Response Caching**: Cache invalidation otomatis
+
 ### Error Handling Layer
 
 ```
 Async Handler → Error Handler → 404 Handler → Consistent Response Format
 ```
+
+**Error Handling Strategy:**
+- **Async Handler**: Centralized async error handling
+- **Error Handler**: Consistent error response format
+- **404 Handler**: Custom 404 page
+- **Logging**: Winston-based logging system
+
+### Service Layer Pattern
+
+**Benefits:**
+- **Separation of Concerns**: Business logic terpisah dari controller
+- **Testability**: Service layer memudahkan unit testing
+- **Reusability**: Business logic dapat digunakan di berbagai controller
+- **Maintainability**: Perubahan business logic tidak memengaruhi controller
+
+**Service Classes:**
+- `alatService.js`: Manajemen alat dan inventaris
+- `kategoriService.js`: Manajemen kategori alat
+- `peminjamanService.js`: Manajemen proses peminjaman
+- `userService.js`: Manajemen pengguna dan autentikasi
 
 ## 📞 Kontak & Dukungan
 

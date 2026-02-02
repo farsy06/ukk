@@ -12,20 +12,95 @@
                     </div>
                 <% } %>
 
-                <form action="/admin/kategori/edit/<%= kategori.id %>" method="POST">
+                <form action="/admin/kategori/edit/<%= kategori.id %>" method="POST" id="kategoriEditForm">
                     <div class="mb-3">
-                        <label for="nama_kategori" class="form-label">Nama Kategori</label>
+                        <label for="nama_kategori" class="form-label">Nama Kategori <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="nama_kategori" name="nama_kategori" value="<%= kategori.nama_kategori %>" required>
                         <div class="form-text">Masukkan nama kategori alat yang unik</div>
                     </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Update Kategori
-                        </button>
+                    <div class="mb-3">
+                        <label for="deskripsi" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="deskripsi" name="deskripsi" rows="3" placeholder="Deskripsi kategori (opsional)"><%= kategori.deskripsi || '' %></textarea>
+                        <div class="form-text">Masukkan deskripsi kategori jika diperlukan</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/kategori" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Kategori
+                            </button>
+                            <a href="/admin/kategori/hapus/<%= kategori.id %>" class="btn btn-danger ms-2" onclick="return confirm('Yakin ingin menghapus kategori ini?')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('kategoriEditForm');
+        const namaKategori = document.getElementById('nama_kategori');
+
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const errors = [];
+
+            // Validate nama kategori
+            if (namaKategori.value.trim().length < 3) {
+                errors.push('Nama kategori minimal 3 karakter');
+                isValid = false;
+            }
+
+            // Validate nama kategori format (no special characters except spaces and hyphens)
+            const validNameRegex = /^[a-zA-Z0-9\s\-']+$/;
+            if (!validNameRegex.test(namaKategori.value.trim())) {
+                errors.push('Nama kategori hanya boleh mengandung huruf, angka, spasi, tanda petik, dan tanda hubung');
+                isValid = false;
+            }
+
+            // Show errors if any
+            if (!isValid) {
+                e.preventDefault();
+                const errorHtml = errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                
+                // Remove existing error messages
+                const existingErrors = document.querySelectorAll('.alert-danger');
+                existingErrors.forEach(err => err.remove());
+                
+                form.insertBefore(errorDiv, form.firstChild);
+            }
+        });
+
+        // Real-time validation for nama kategori
+        namaKategori.addEventListener('input', function() {
+            const value = this.value.trim();
+            
+            if (value.length < 3 && value.length > 0) {
+                this.classList.add('is-invalid');
+            } else if (!/^[a-zA-Z0-9\s\-']+$/.test(value) && value.length > 0) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Auto-capitalize first letter
+        namaKategori.addEventListener('blur', function() {
+            if (this.value.trim().length > 0) {
+                this.value = this.value.trim().replace(/\b\w/g, l => l.toUpperCase());
+            }
+        });
+    });
+</script>

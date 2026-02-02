@@ -7,48 +7,169 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between mb-3">
-            <a href="/admin/kategori/tambah" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Tambah Kategori
-            </a>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex gap-2">
+                <a href="/admin/kategori/tambah" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Tambah Kategori
+                </a>
+                <a href="/admin/kategori" class="btn btn-outline-secondary" title="Refresh">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 300px;">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Cari kategori...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama Kategori</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (typeof kategori !== 'undefined' && kategori && kategori.length > 0) { %>
-                        <% kategori.forEach(function(item, index) { %>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="kategoriTable">
+                        <thead class="table-dark">
                             <tr>
-                                <td><%= index + 1 %></td>
-                                <td><%= item.nama_kategori %></td>
-                                <td>
-                                    <a href="/admin/kategori/edit/<%= item.id %>" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    <a href="/admin/kategori/hapus/<%= item.id %>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus kategori ini?')">
-                                        <i class="fas fa-trash"></i> Hapus
-                                    </a>
-                                </td>
+                                <th>No</th>
+                                <th>Nama Kategori</th>
+                                <th>Deskripsi</th>
+                                <th>Jumlah Alat</th>
+                                <th>Aksi</th>
                             </tr>
-                        <% }); %>
-                    <% } else { %>
-                        <tr>
-                            <td colspan="3" class="text-center">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle"></i> Belum ada kategori.
-                                </div>
-                            </td>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            <% if (typeof kategori !== 'undefined' && kategori && kategori.length > 0) { %>
+                                <% kategori.forEach(function(item, index) { %>
+                                    <tr data-id="<%= item.id %>" data-nama="<%= item.nama_kategori %>" data-deskripsi="<%= item.deskripsi || '' %>">
+                                        <td><%= index + 1 %></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-layer-group text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold"><%= item.nama_kategori %></div>
+                                                    <small class="text-muted">ID: <%= item.id %></small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <% if (item.deskripsi) { %>
+                                                <div class="text-truncate" style="max-width: 300px;">
+                                                    <%= item.deskripsi %>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <%= item.alat ? item.alat.length : 0 %> alat
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/admin/kategori/edit/<%= item.id %>" class="btn btn-sm btn-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="/admin/kategori/hapus/<%= item.id %>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus kategori ini?')" title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle"></i> Belum ada kategori.
+                                            <br>
+                                            <a href="/admin/kategori/tambah" class="btn btn-primary mt-2">
+                                                <i class="fas fa-plus"></i> Tambah Kategori Pertama
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const table = document.getElementById('kategoriTable');
+        const rows = table.querySelectorAll('tbody tr');
+
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                rows.forEach(row => {
+                    const nama = row.getAttribute('data-nama').toLowerCase();
+                    const deskripsi = row.getAttribute('data-deskripsi').toLowerCase();
+                    
+                    const matches = nama.includes(searchTerm) || deskripsi.includes(searchTerm);
+                    
+                    row.style.display = matches ? '' : 'none';
+                });
+            });
+        }
+
+        // Clear search functionality
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            });
+        }
+
+        // Add hover effects for better UX
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchInput.value) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Add loading state for actions
+        const actionButtons = document.querySelectorAll('.btn-danger, .btn-warning');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-danger')) {
+                    // Don't show loading for delete confirmation
+                    return;
+                }
+                
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 1000);
+            });
+        });
+    });
+</script>
