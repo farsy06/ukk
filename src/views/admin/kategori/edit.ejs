@@ -34,9 +34,18 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Update Kategori
                             </button>
-                            <a href="/admin/kategori/hapus/<%= kategori.id %>" class="btn btn-danger ms-2" onclick="return confirm('Yakin ingin menghapus kategori ini?')" title="Hapus">
+                            <button
+                                class="btn btn-danger ms-2"
+                                type="button"
+                                title="Hapus"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmDeleteModal"
+                                data-confirm-href="/admin/kategori/hapus/<%= kategori.id %>"
+                                data-confirm-title="Konfirmasi Hapus Kategori"
+                                data-confirm-message="Yakin ingin menghapus kategori <%= kategori.nama_kategori %>?"
+                            >
                                 <i class="fas fa-trash"></i>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </form>

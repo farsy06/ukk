@@ -22,14 +22,8 @@ const { loginLimiter } = require("../middleware/security");
 
 // Import validation middleware
 const {
-  validateRequired,
-  validateEmail,
-  validatePassword,
-  validatePasswordMatch,
-  validateRole,
-  validateAlatStatus,
-  validateAlatKondisi,
   validateTanggalPeminjaman,
+  validateRequired,
 } = require("../middleware/validation");
 
 // Import async handler
@@ -41,6 +35,10 @@ const { invalidateCache } = require("../middleware/caching");
 // Import route helper middleware
 const {
   validateUserRegistration,
+  validateUserCreation,
+  validateKategori,
+  validateAlatCreate,
+  validateAlatUpdate,
   standardCache,
   paginate,
 } = require("../middleware/routeHelpers");
@@ -160,7 +158,7 @@ router.post(
   "/admin/kategori/tambah",
   isAuthenticated,
   requireAdmin,
-  validateRequired(["nama_kategori"]),
+  validateKategori,
   invalidateCache(["kategori"]), // Invalidasi cache kategori
   asyncHandler(kategoriController.create),
 );
@@ -174,7 +172,7 @@ router.post(
   "/admin/kategori/edit/:id",
   isAuthenticated,
   requireAdmin,
-  validateRequired(["nama_kategori"]),
+  validateKategori,
   invalidateCache(["kategori"]), // Invalidasi cache kategori
   asyncHandler(kategoriController.update),
 );
@@ -205,8 +203,7 @@ router.post(
   "/admin/alat/tambah",
   isAuthenticated,
   requireAdmin,
-  validateRequired(["nama_alat", "kategori_id", "kondisi"]),
-  validateAlatKondisi(),
+  validateAlatCreate,
   invalidateCache(["alat", "kategori"]), // Invalidasi cache alat dan kategori
   asyncHandler(alatController.create),
 );
@@ -220,9 +217,7 @@ router.post(
   "/admin/alat/edit/:id",
   isAuthenticated,
   requireAdmin,
-  validateRequired(["nama_alat", "kategori_id", "kondisi", "status"]),
-  validateAlatStatus(),
-  validateAlatKondisi(),
+  validateAlatUpdate,
   invalidateCache(["alat", "kategori"]), // Invalidasi cache alat dan kategori
   asyncHandler(alatController.update),
 );
@@ -250,7 +245,6 @@ router.get(
   isAuthenticated,
   requireAdmin,
   paginate(10, 100),
-  standardCache.user,
   asyncHandler(adminController.userIndex),
 );
 router.get(
@@ -263,18 +257,7 @@ router.post(
   "/admin/user/tambah",
   isAuthenticated,
   requireAdmin,
-  validateRequired([
-    "nama",
-    "username",
-    "email",
-    "password",
-    "confirmPassword",
-    "role",
-  ]),
-  validateEmail("email"),
-  validatePassword("password"),
-  validatePasswordMatch("password", "confirmPassword"),
-  validateRole(["petugas", "peminjam"]),
+  validateUserCreation,
   invalidateCache(["user"]), // Invalidasi cache user
   asyncHandler(adminController.createUser),
 );
@@ -295,102 +278,40 @@ router.get(
   asyncHandler(adminController.logIndex),
 );
 
-// Laporan sistem untuk petugas
-router.get(
-  "/laporan",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.petugasReportIndex),
-);
+// Laporan sistem (petugas dan admin)
+const reportRoutes = [
+  { path: "", handler: "index" },
+  { path: "/user", handler: "generateUserReport" },
+  { path: "/alat", handler: "generateInventoryReport" },
+  { path: "/peminjaman", handler: "generatePeminjamanReport" },
+  { path: "/aktivitas", handler: "generateActivityReport" },
+  { path: "/statistik", handler: "generateStatistics" },
+];
 
-router.get(
-  "/laporan/user",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.generateUserReport),
-);
+const registerReportRoutes = ({ basePath, auth, indexHandler }) => {
+  reportRoutes.forEach(({ path, handler }) => {
+    const resolvedHandler =
+      handler === "index" ? indexHandler : adminController[handler];
+    router.get(
+      `${basePath}${path}`,
+      isAuthenticated,
+      auth,
+      standardCache.log,
+      asyncHandler(resolvedHandler),
+    );
+  });
+};
 
-router.get(
-  "/laporan/alat",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.generateInventoryReport),
-);
+registerReportRoutes({
+  basePath: "/laporan",
+  auth: requirePetugas,
+  indexHandler: adminController.petugasReportIndex,
+});
 
-router.get(
-  "/laporan/peminjaman",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.generatePeminjamanReport),
-);
-
-router.get(
-  "/laporan/aktivitas",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.generateActivityReport),
-);
-
-router.get(
-  "/laporan/statistik",
-  isAuthenticated,
-  requirePetugas,
-  standardCache.log,
-  asyncHandler(adminController.generateStatistics),
-);
-
-// Laporan sistem untuk admin
-router.get(
-  "/admin/laporan",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.reportIndex),
-);
-
-router.get(
-  "/admin/laporan/user",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.generateUserReport),
-);
-
-router.get(
-  "/admin/laporan/alat",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.generateInventoryReport),
-);
-
-router.get(
-  "/admin/laporan/peminjaman",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.generatePeminjamanReport),
-);
-
-router.get(
-  "/admin/laporan/aktivitas",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.generateActivityReport),
-);
-
-router.get(
-  "/admin/laporan/statistik",
-  isAuthenticated,
-  requireAdmin,
-  standardCache.log,
-  asyncHandler(adminController.generateStatistics),
-);
+registerReportRoutes({
+  basePath: "/admin/laporan",
+  auth: requireAdmin,
+  indexHandler: adminController.reportIndex,
+});
 
 module.exports = router;

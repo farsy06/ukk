@@ -173,9 +173,12 @@ const login = async (req, res) => {
   req.session.userRole = user.role;
   logger.info(`User logged in successfully: ${user.id} (${user.role})`);
 
+  // Update last login time
+  user.last_login = new Date();
+
   // Handle remember me functionality
   if (rememberMe) {
-    const token = await user.generateRememberToken();
+    const token = user.generateRememberToken();
     res.cookie("remember_token", token, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
@@ -184,6 +187,8 @@ const login = async (req, res) => {
     });
     logger.info(`Remember token generated for user ${user.id}`);
   }
+
+  await user.save();
 
   // Redirect based on role
   if (user.role === ROLES.ADMIN) {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %> - ToolShare Pro</title>
     <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/fontawesome.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css" rel="stylesheet">
     <style>
         html, body {
             height: 100%;
@@ -182,6 +182,27 @@
             </div>
     </footer>
 
+    <!-- Global delete confirmation modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" id="confirmDeleteMessage">Yakin ingin menghapus item ini?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <a href="#" class="btn btn-danger" id="confirmDeleteLink">
+                        <i class="fas fa-trash"></i> Hapus
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/js/all.min.js"></script>
     <script src="/js/password-toggle.js"></script>
@@ -211,6 +232,40 @@
                     link.classList.add('active');
                 }
             });
+
+            // Global delete confirmation modal setup
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
+            const confirmDeleteLink = document.getElementById('confirmDeleteLink');
+
+            if (confirmDeleteModal && confirmDeleteLink) {
+                const deleteTriggers = document.querySelectorAll('[data-confirm-href]');
+                deleteTriggers.forEach(trigger => {
+                    trigger.addEventListener('click', function() {
+                        const href = this.getAttribute('data-confirm-href') || '#';
+                        const title = this.getAttribute('data-confirm-title') || 'Konfirmasi Hapus';
+                        const message = this.getAttribute('data-confirm-message') || 'Yakin ingin menghapus item ini?';
+
+                        const titleEl = document.getElementById('confirmDeleteLabel');
+                        if (titleEl) titleEl.textContent = title;
+                        if (confirmDeleteMessage) confirmDeleteMessage.textContent = message;
+
+                        confirmDeleteLink.setAttribute('href', href);
+                        confirmDeleteLink.classList.remove('disabled');
+                        confirmDeleteLink.innerHTML = '<i class="fas fa-trash"></i> Hapus';
+                    });
+                });
+
+                confirmDeleteLink.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+                    this.classList.add('disabled');
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('disabled');
+                    }, 2000);
+                });
+            }
         });
     </script>
 </body>

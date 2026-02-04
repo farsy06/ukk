@@ -111,9 +111,18 @@
                                                 <a href="/admin/alat/edit/<%= item.id %>" class="btn btn-sm btn-warning" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a href="/admin/alat/hapus/<%= item.id %>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus alat ini?')" title="Hapus">
+                                                <button
+                                                    class="btn btn-sm btn-danger"
+                                                    type="button"
+                                                    title="Hapus"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#confirmDeleteModal"
+                                                    data-confirm-href="/admin/alat/hapus/<%= item.id %>"
+                                                    data-confirm-title="Konfirmasi Hapus Alat"
+                                                    data-confirm-message="Yakin ingin menghapus alat <%= item.nama_alat %>?"
+                                                >
                                                     <i class="fas fa-trash"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

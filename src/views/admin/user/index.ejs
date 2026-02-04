@@ -94,9 +94,18 @@
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <% if (user.role !== 'admin') { %>
-                                                    <a href="/admin/user/hapus/<%= user.id %>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus user ini?')" title="Hapus">
+                                                    <button
+                                                        class="btn btn-sm btn-danger"
+                                                        type="button"
+                                                        title="Hapus"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmDeleteModal"
+                                                        data-confirm-href="/admin/user/hapus/<%= user.id %>"
+                                                        data-confirm-title="Konfirmasi Hapus User"
+                                                        data-confirm-message="Yakin ingin menghapus user <%= user.nama %> (@<%= user.username %>)?"
+                                                    >
                                                         <i class="fas fa-trash"></i>
-                                                    </a>
+                                                    </button>
                                                 <% } else { %>
                                                     <button class="btn btn-sm btn-secondary" disabled title="Admin tidak dapat dihapus">
                                                         <i class="fas fa-ban"></i>
@@ -207,19 +216,5 @@
             }
         });
 
-        // Add loading state for actions
-        const actionButtons = document.querySelectorAll('.btn-danger');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1000);
-            });
-        });
     });
 </script>

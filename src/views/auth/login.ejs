@@ -100,6 +100,7 @@
         const form = document.getElementById('loginForm');
         const password = document.getElementById('password');
         const username = document.getElementById('username');
+        const submitButton = form.querySelector('button[type="submit"]');
 
         // Form validation
         form.addEventListener('submit', function(e) {
@@ -160,7 +161,6 @@
 
         // Add loading state for submit button
         form.addEventListener('submit', function() {
-            const submitButton = form.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
             submitButton.disabled = true;

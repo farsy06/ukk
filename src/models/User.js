@@ -1,4 +1,4 @@
-const { DataTypes } = require("sequelize");
+const { DataTypes, Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { sequelize } = require("../config/database");
@@ -263,80 +263,9 @@ User.findByRememberToken = function (token) {
     where: {
       remember_token: token,
       remember_expires: {
-        [sequelize.Op.gt]: new Date(),
+        [Op.gt]: new Date(),
       },
     },
-  });
-};
-
-// Class methods
-User.findByUsername = function (username) {
-  return this.findOne({
-    where: { username },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
-  });
-};
-
-User.findByEmail = function (email) {
-  return this.findOne({
-    where: { email },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
-  });
-};
-
-User.getActiveUsers = function () {
-  return this.findAll({
-    where: { is_active: true },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
-  });
-};
-
-User.getUsersByRole = function (role) {
-  return this.findAll({
-    where: { role, is_active: true },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
-  });
-};
-
-User.findByRememberToken = function (token) {
-  return this.findOne({
-    where: {
-      remember_token: token,
-      remember_expires: {
-        [sequelize.Op.gt]: new Date(),
-      },
-    },
-  });
-};
-
-module.exports = User;
-
-// Class methods
-User.findByUsername = function (username) {
-  return this.findOne({
-    where: { username },
-    attributes: { exclude: ["password"] },
-  });
-};
-
-User.findByEmail = function (email) {
-  return this.findOne({
-    where: { email },
-    attributes: { exclude: ["password"] },
-  });
-};
-
-User.getActiveUsers = function () {
-  return this.findAll({
-    where: { is_active: true },
-    attributes: { exclude: ["password"] },
-  });
-};
-
-User.getUsersByRole = function (role) {
-  return this.findAll({
-    where: { role, is_active: true },
-    attributes: { exclude: ["password"] },
   });
 };
 

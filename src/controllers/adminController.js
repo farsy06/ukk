@@ -3,6 +3,39 @@ const reportService = require("../services/reportService");
 const logger = require("../config/logging");
 const { getPagination } = require("../utils/helpers");
 
+const getReportFilters = (req) => ({
+  startDate: req.query.start_date,
+  endDate: req.query.end_date,
+});
+
+const renderReport = async ({
+  req,
+  res,
+  logLabel,
+  generator,
+  view,
+  mapResult = (data) => ({ reportData: data }),
+  includeFilters = true,
+}) => {
+  try {
+    logger.info(`${logLabel} by user: ${req.user.id}`);
+
+    const filters = includeFilters ? getReportFilters(req) : undefined;
+    const result = await (includeFilters
+      ? generator.call(reportService, filters)
+      : generator.call(reportService));
+
+    res.render(view, {
+      user: req.user,
+      filters,
+      ...mapResult(result),
+    });
+  } catch (error) {
+    logger.error(`Error in ${logLabel}:`, error);
+    res.status(500).send("Terjadi kesalahan");
+  }
+};
+
 /**
  * Display admin dashboard
  * @param {Object} req - Express request object
@@ -168,20 +201,18 @@ const logIndex = async (req, res) => {
  * @returns {Object} - Rendered report dashboard view
  */
 const reportIndex = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} accessing report dashboard`);
-
-    const dashboardData = await reportService.generateReportDashboard();
-
-    res.render("admin/laporan/index", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Admin report dashboard",
+    generator: reportService.generateReportDashboard,
+    view: "admin/laporan/index",
+    includeFilters: false,
+    mapResult: (dashboardData) => ({
       title: dashboardData.title,
       dashboardData,
-      user: req.user,
-    });
-  } catch (error) {
-    logger.error("Error in report index:", error);
-    res.status(500).send("Terjadi kesalahan");
-  }
+    }),
+  });
 };
 
 /**
@@ -191,20 +222,18 @@ const reportIndex = async (req, res) => {
  * @returns {Object} - Rendered petugas report dashboard view
  */
 const petugasReportIndex = async (req, res) => {
-  try {
-    logger.info(`Petugas ${req.user.id} accessing report dashboard`);
-
-    const dashboardData = await reportService.generatePetugasReportDashboard();
-
-    res.render("petugas/laporan/index", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Petugas report dashboard",
+    generator: reportService.generatePetugasReportDashboard,
+    view: "petugas/laporan/index",
+    includeFilters: false,
+    mapResult: (dashboardData) => ({
       title: dashboardData.title,
       dashboardData,
-      user: req.user,
-    });
-  } catch (error) {
-    logger.error("Error in petugas report index:", error);
-    res.status(500).send("Terjadi kesalahan");
-  }
+    }),
+  });
 };
 
 /**
@@ -214,26 +243,17 @@ const petugasReportIndex = async (req, res) => {
  * @returns {Object} - Rendered user report view
  */
 const generateUserReport = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} generating user report`);
-
-    const filters = {
-      startDate: req.query.start_date,
-      endDate: req.query.end_date,
-    };
-
-    const reportData = await reportService.generateUserReport(filters);
-
-    res.render("admin/laporan/user", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Generating user report",
+    generator: reportService.generateUserReport,
+    view: "admin/laporan/user",
+    mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
-      user: req.user,
-      filters,
-    });
-  } catch (error) {
-    logger.error("Error generating user report:", error);
-    res.status(500).send("Terjadi kesalahan saat membuat laporan user");
-  }
+    }),
+  });
 };
 
 /**
@@ -243,26 +263,17 @@ const generateUserReport = async (req, res) => {
  * @returns {Object} - Rendered inventory report view
  */
 const generateInventoryReport = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} generating inventory report`);
-
-    const filters = {
-      startDate: req.query.start_date,
-      endDate: req.query.end_date,
-    };
-
-    const reportData = await reportService.generateInventoryReport(filters);
-
-    res.render("admin/laporan/inventory", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Generating inventory report",
+    generator: reportService.generateInventoryReport,
+    view: "admin/laporan/inventory",
+    mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
-      user: req.user,
-      filters,
-    });
-  } catch (error) {
-    logger.error("Error generating inventory report:", error);
-    res.status(500).send("Terjadi kesalahan saat membuat laporan inventori");
-  }
+    }),
+  });
 };
 
 /**
@@ -272,26 +283,17 @@ const generateInventoryReport = async (req, res) => {
  * @returns {Object} - Rendered peminjaman report view
  */
 const generatePeminjamanReport = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} generating peminjaman report`);
-
-    const filters = {
-      startDate: req.query.start_date,
-      endDate: req.query.end_date,
-    };
-
-    const reportData = await reportService.generatePeminjamanReport(filters);
-
-    res.render("admin/laporan/peminjaman", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Generating peminjaman report",
+    generator: reportService.generatePeminjamanReport,
+    view: "admin/laporan/peminjaman",
+    mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
-      user: req.user,
-      filters,
-    });
-  } catch (error) {
-    logger.error("Error generating peminjaman report:", error);
-    res.status(500).send("Terjadi kesalahan saat membuat laporan peminjaman");
-  }
+    }),
+  });
 };
 
 /**
@@ -301,26 +303,17 @@ const generatePeminjamanReport = async (req, res) => {
  * @returns {Object} - Rendered activity report view
  */
 const generateActivityReport = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} generating activity report`);
-
-    const filters = {
-      startDate: req.query.start_date,
-      endDate: req.query.end_date,
-    };
-
-    const reportData = await reportService.generateActivityReport(filters);
-
-    res.render("admin/laporan/activity", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Generating activity report",
+    generator: reportService.generateActivityReport,
+    view: "admin/laporan/activity",
+    mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
-      user: req.user,
-      filters,
-    });
-  } catch (error) {
-    logger.error("Error generating activity report:", error);
-    res.status(500).send("Terjadi kesalahan saat membuat laporan aktivitas");
-  }
+    }),
+  });
 };
 
 /**
@@ -330,20 +323,18 @@ const generateActivityReport = async (req, res) => {
  * @returns {Object} - Rendered statistics view
  */
 const generateStatistics = async (req, res) => {
-  try {
-    logger.info(`Admin ${req.user.id} generating statistics`);
-
-    const stats = await reportService.generateStatistics();
-
-    res.render("admin/laporan/statistics", {
+  return renderReport({
+    req,
+    res,
+    logLabel: "Generating statistics",
+    generator: reportService.generateStatistics,
+    view: "admin/laporan/statistics",
+    includeFilters: false,
+    mapResult: (stats) => ({
       title: "Statistik Sistem",
       stats,
-      user: req.user,
-    });
-  } catch (error) {
-    logger.error("Error generating statistics:", error);
-    res.status(500).send("Terjadi kesalahan saat membuat statistik");
-  }
+    }),
+  });
 };
 
 module.exports = {

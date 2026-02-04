@@ -102,9 +102,17 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Update Alat
                             </button>
-                            <a href="/admin/alat/hapus/<%= alat.id %>" class="btn btn-danger ms-2" onclick="return confirm('Yakin ingin menghapus alat ini?')">
+                            <button
+                                class="btn btn-danger ms-2"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmDeleteModal"
+                                data-confirm-href="/admin/alat/hapus/<%= alat.id %>"
+                                data-confirm-title="Konfirmasi Hapus Alat"
+                                data-confirm-message="Yakin ingin menghapus alat <%= alat.nama_alat %>?"
+                            >
                                 <i class="fas fa-trash"></i> Hapus
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </form>

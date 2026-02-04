@@ -51,14 +51,27 @@ const validateUserCreation = [
 ];
 
 /**
+ * Middleware untuk validasi kategori
+ * Menggabungkan validasi yang dibutuhkan untuk kategori
+ */
+const validateKategori = [validateRequired(["nama_kategori"])];
+
+/**
  * Middleware untuk validasi CRUD alat
  * Menggabungkan validasi yang dibutuhkan untuk operasi alat
  */
-const validateAlatManagement = [
+const validateAlatCreate = [
+  validateRequired(["nama_alat", "kategori_id", "kondisi"]),
+  validateAlatKondisi(),
+];
+
+const validateAlatUpdate = [
   validateRequired(["nama_alat", "kategori_id", "kondisi", "status"]),
   validateAlatStatus(),
   validateAlatKondisi(),
 ];
+
+const validateAlatManagement = validateAlatUpdate;
 
 /**
  * Middleware untuk validasi peminjaman
@@ -216,6 +229,9 @@ const rateLimitEndpoint = (options = {}) => {
 module.exports = {
   validateUserRegistration,
   validateUserCreation,
+  validateKategori,
+  validateAlatCreate,
+  validateAlatUpdate,
   validateAlatManagement,
   validatePeminjaman,
   standardCache,

@@ -143,23 +143,45 @@ const cacheHelper = {
  */
 const invalidateCache = (patterns) => {
   return (req, res, next) => {
+    const invalidateMatchingKeys = () => {
+      patterns.forEach((pattern) => {
+        const keys = cache.keys().filter((key) => key.includes(pattern));
+        keys.forEach((key) => cache.del(key));
+        if (keys.length > 0) {
+          logger.info(
+            `Invalidated cache keys matching pattern "${pattern}": ${keys.length} keys`,
+          );
+        }
+      });
+    };
+
     // Override res.json untuk invalidasi cache setelah operasi sukses
     const originalJson = res.json;
     res.json = function (data) {
       if (this.statusCode >= 200 && this.statusCode < 300) {
-        // Invalidasi cache yang relevan
-        patterns.forEach((pattern) => {
-          const keys = cache.keys().filter((key) => key.includes(pattern));
-          keys.forEach((key) => cache.del(key));
-          if (keys.length > 0) {
-            logger.info(
-              `Invalidated cache keys matching pattern "${pattern}": ${keys.length} keys`,
-            );
-          }
-        });
+        invalidateMatchingKeys();
       }
       return originalJson.call(this, data);
     };
+
+    // Override res.render untuk invalidasi cache setelah operasi sukses
+    const originalRender = res.render;
+    res.render = function (view, options, callback) {
+      if (this.statusCode >= 200 && this.statusCode < 300) {
+        invalidateMatchingKeys();
+      }
+      return originalRender.call(this, view, options, callback);
+    };
+
+    // Override res.redirect untuk invalidasi cache setelah operasi sukses
+    const originalRedirect = res.redirect;
+    res.redirect = function (...args) {
+      if (this.statusCode >= 200 && this.statusCode < 400) {
+        invalidateMatchingKeys();
+      }
+      return originalRedirect.apply(this, args);
+    };
+
     next();
   };
 };

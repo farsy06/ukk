@@ -151,6 +151,7 @@ class KategoriService {
    */
   invalidateCache() {
     cacheHelper.del("kategori_index");
+    cacheHelper.del("admin_dashboard_stats");
   }
 
   /**

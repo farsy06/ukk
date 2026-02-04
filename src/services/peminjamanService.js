@@ -366,6 +366,7 @@ class PeminjamanService {
     cacheHelper.del("peminjaman_petugas");
     cacheHelper.del("alat_user_index");
     cacheHelper.del("alat_admin_index");
+    cacheHelper.del("admin_dashboard_stats");
   }
 
   /**

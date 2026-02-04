@@ -15,10 +15,15 @@ const isAuthenticated = async (req, res, next) => {
     // Cek apakah session userId ada
     if (!req.session.userId) {
       // Check for remember me token
-      const token = req.cookies.remember_token;
+      const token =
+        (req.cookies && req.cookies.remember_token) ||
+        (req.signedCookies && req.signedCookies.remember_token);
       if (token) {
         const user = await User.findByRememberToken(token);
         if (user) {
+          user.last_login = new Date();
+          await user.save();
+
           // Restore session
           req.session.userId = user.id;
           req.session.userRole = user.role;
