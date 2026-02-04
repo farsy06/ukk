@@ -14,6 +14,22 @@ const isAuthenticated = async (req, res, next) => {
   try {
     // Cek apakah session userId ada
     if (!req.session.userId) {
+      // Check for remember me token
+      const token = req.cookies.remember_token;
+      if (token) {
+        const user = await User.findByRememberToken(token);
+        if (user) {
+          // Restore session
+          req.session.userId = user.id;
+          req.session.userRole = user.role;
+          logger.info(
+            `User authenticated via remember token: ${user.id} (${user.role})`,
+          );
+          req.user = user;
+          return next();
+        }
+      }
+
       logger.warn(`Unauthenticated access attempt to ${req.originalUrl}`);
       return res.redirect("/login");
     }

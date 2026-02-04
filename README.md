@@ -325,7 +325,7 @@ CREATE TABLE log_aktivitas (
   - `POST /admin/user` → Tambah user
   - `GET /admin/user/hapus/:id` → Hapus user
 - **Log Sistem**:
-  - `GET /admin/catak` → Log aktivitas sistem
+  - `GET /admin/catatan` → Log aktivitas sistem
 
 ## 🚀 Fitur Keamanan & Performance
 

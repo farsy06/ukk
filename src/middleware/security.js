@@ -1,5 +1,7 @@
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
+const csurf = require("@dr.pogodin/csurf");
+const xss = require("xss");
 const logger = require("../config/logging");
 const appConfig = require("../config/appConfig");
 
@@ -73,52 +75,41 @@ const generalLimiter =
 const sanitizeInput = (req, res, next) => {
   const sanitizeString = (str) => {
     if (typeof str !== "string") return str;
+    return xss(str);
+  };
 
-    return str
-      .replace(/&/g, "&")
-      .replace(/</g, "<")
-      .replace(/>/g, ">")
-      .replace(/"/g, '"')
-      .replace(/'/g, "&#39;");
+  const skipKeys = new Set([
+    "_csrf",
+    "password",
+    "confirmPassword",
+    "currentPassword",
+    "newPassword",
+  ]);
+
+  const sanitizeObject = (obj) => {
+    Object.keys(obj).forEach((k) => {
+      if (skipKeys.has(k)) return;
+      if (typeof obj[k] === "string") {
+        obj[k] = sanitizeString(obj[k]);
+      } else if (typeof obj[k] === "object" && obj[k] !== null) {
+        sanitizeObject(obj[k]);
+      }
+    });
   };
 
   // Sanitize query parameters
   if (req.query) {
-    Object.keys(req.query).forEach((key) => {
-      if (typeof req.query[key] === "string") {
-        req.query[key] = sanitizeString(req.query[key]);
-      }
-    });
+    sanitizeObject(req.query);
   }
 
   // Sanitize body parameters
   if (req.body) {
-    Object.keys(req.body).forEach((key) => {
-      if (typeof req.body[key] === "string") {
-        req.body[key] = sanitizeString(req.body[key]);
-      } else if (typeof req.body[key] === "object" && req.body[key] !== null) {
-        // Handle nested objects
-        const sanitizeObject = (obj) => {
-          Object.keys(obj).forEach((k) => {
-            if (typeof obj[k] === "string") {
-              obj[k] = sanitizeString(obj[k]);
-            } else if (typeof obj[k] === "object" && obj[k] !== null) {
-              sanitizeObject(obj[k]);
-            }
-          });
-        };
-        sanitizeObject(req.body[key]);
-      }
-    });
+    sanitizeObject(req.body);
   }
 
   // Sanitize params
   if (req.params) {
-    Object.keys(req.params).forEach((key) => {
-      if (typeof req.params[key] === "string") {
-        req.params[key] = sanitizeString(req.params[key]);
-      }
-    });
+    sanitizeObject(req.params);
   }
 
   next();
@@ -166,29 +157,36 @@ const securityHeaders = helmet({
 
 // CSRF Protection middleware
 const csrfToken = (req, res, next) => {
-  if (appConfig.security.csrf && req.method === "POST") {
-    const token = req.headers["x-csrf-token"] || req.body._csrf;
-    const sessionToken = req.session.csrfToken;
+  // Disable CSRF protection in test environment
+  if (process.env.NODE_ENV === "test") {
+    res.locals.csrfToken = "test-csrf-token";
+    return next();
+  }
 
-    if (!token || token !== sessionToken) {
+  if (!appConfig.security.csrf) {
+    return next();
+  }
+
+  return csurf({ cookie: false })(req, res, (err) => {
+    if (err) {
       logger.warn(
-        `CSRF token mismatch for IP: ${req.ip} path: ${req.originalUrl}`,
+        `CSRF token validation failed for IP: ${req.ip} path: ${req.originalUrl}`,
       );
       return res.status(403).json({
         error: "CSRF token validation failed",
         message: "Invalid CSRF token",
       });
     }
-  }
 
-  // Generate new CSRF token for GET requests
-  if (req.method === "GET") {
-    req.session.csrfToken =
-      Math.random().toString(36).substring(2) + Date.now().toString(36);
-  }
+    try {
+      res.locals.csrfToken = req.csrfToken();
+    } catch (e) {
+      logger.warn(`Failed to generate CSRF token: ${e.message}`);
+      res.locals.csrfToken = "";
+    }
 
-  res.locals.csrfToken = req.session.csrfToken;
-  next();
+    return next();
+  });
 };
 
 module.exports = {

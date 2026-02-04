@@ -1,5 +1,6 @@
 const alatService = require("../services/alatService");
 const logger = require("../config/logging");
+const { getPagination } = require("../utils/helpers");
 
 // Menampilkan daftar alat (untuk peminjam)
 const index = async (req, res) => {
@@ -111,12 +112,28 @@ const destroy = async (req, res) => {
 // Menampilkan daftar alat untuk admin (semua status)
 const adminIndex = async (req, res) => {
   try {
-    const alat = await alatService.getAllForAdmin();
+    const { page, limit, offset } = req.pagination || {
+      page: 1,
+      limit: 10,
+      offset: 0,
+    };
+
+    const { rows: alat, count } = await alatService.getAllForAdminPaginated({
+      limit,
+      offset,
+    });
+
+    const pagination = getPagination(page, limit, count);
+    pagination.offset = offset;
+    const start = count > 0 ? offset + 1 : 0;
+    const end = Math.min(offset + limit, count);
 
     res.render("admin/alat/index", {
       title: "Kelola Alat",
       alat,
       user: req.user,
+      pagination,
+      range: { start, end, total: count },
     });
   } catch (error) {
     logger.error("Error in admin alat index:", error);

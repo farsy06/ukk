@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const { sequelize } = require("../config/database");
 
 /**
@@ -105,6 +106,14 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    remember_token: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    remember_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -192,6 +201,115 @@ User.prototype.toJSON = function () {
   delete values.password;
   return values;
 };
+
+// Generate remember me token
+User.prototype.generateRememberToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 30); // 30 days
+  this.remember_token = token;
+  this.remember_expires = expires;
+  return token;
+};
+
+// Validate remember me token
+User.prototype.validateRememberToken = function (token) {
+  if (!this.remember_token || !this.remember_expires) {
+    return false;
+  }
+  if (new Date() > this.remember_expires) {
+    return false;
+  }
+  return this.remember_token === token;
+};
+
+// Clear remember me token
+User.prototype.clearRememberToken = function () {
+  this.remember_token = null;
+  this.remember_expires = null;
+};
+
+// Class methods
+User.findByUsername = function (username) {
+  return this.findOne({
+    where: { username },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.findByEmail = function (email) {
+  return this.findOne({
+    where: { email },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.getActiveUsers = function () {
+  return this.findAll({
+    where: { is_active: true },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.getUsersByRole = function (role) {
+  return this.findAll({
+    where: { role, is_active: true },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.findByRememberToken = function (token) {
+  return this.findOne({
+    where: {
+      remember_token: token,
+      remember_expires: {
+        [sequelize.Op.gt]: new Date(),
+      },
+    },
+  });
+};
+
+// Class methods
+User.findByUsername = function (username) {
+  return this.findOne({
+    where: { username },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.findByEmail = function (email) {
+  return this.findOne({
+    where: { email },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.getActiveUsers = function () {
+  return this.findAll({
+    where: { is_active: true },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.getUsersByRole = function (role) {
+  return this.findAll({
+    where: { role, is_active: true },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+  });
+};
+
+User.findByRememberToken = function (token) {
+  return this.findOne({
+    where: {
+      remember_token: token,
+      remember_expires: {
+        [sequelize.Op.gt]: new Date(),
+      },
+    },
+  });
+};
+
+module.exports = User;
 
 // Class methods
 User.findByUsername = function (username) {

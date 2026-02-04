@@ -6,7 +6,7 @@ require("dotenv").config({
 
 const request = require("supertest");
 const testConfig = require("./testConfig");
-const { sequelize } = require("../src/config/database");
+const { sequelize, initializeDatabase } = require("../src/config/database");
 const logger = require("../src/config/logging");
 const { defineAssociations } = require("../src/models/associations");
 const User = require("../src/models/User");
@@ -23,6 +23,7 @@ const {
   generalLimiter,
   sanitizeInput,
   securityHeaders,
+  csrfToken,
 } = require("../src/middleware/security");
 
 // Import error handler
@@ -59,6 +60,9 @@ app.use(express.json());
 // Session configuration
 app.use(session(testConfig.session));
 
+// CSRF Protection
+app.use(csrfToken);
+
 // Flash messages
 app.use(flash());
 
@@ -80,6 +84,9 @@ app.use(notFoundHandler);
 
 describe("Controller Tests", () => {
   beforeAll(async () => {
+    // Initialize database
+    await initializeDatabase();
+
     // Create test database
     await sequelize.sync({ force: true });
 
@@ -95,7 +102,7 @@ describe("Controller Tests", () => {
     await User.create({
       username: "admintest",
       email: "admin@test.com",
-      password: "testpassword",
+      password: "TestPassword123!",
       role: "admin",
       nama: "Admin Test",
     });
@@ -103,7 +110,7 @@ describe("Controller Tests", () => {
     await User.create({
       username: "petugastest",
       email: "petugas@test.com",
-      password: "testpassword",
+      password: "TestPassword123!",
       role: "petugas",
       nama: "Petugas Test",
     });
@@ -111,7 +118,7 @@ describe("Controller Tests", () => {
     await User.create({
       username: "peminjamtest",
       email: "peminjam@test.com",
-      password: "testpassword",
+      password: "TestPassword123!",
       role: "peminjam",
       nama: "Peminjam Test",
     });
@@ -162,7 +169,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
@@ -177,7 +184,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
@@ -197,7 +204,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
@@ -212,7 +219,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
@@ -225,7 +232,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
@@ -234,15 +241,15 @@ describe("Controller Tests", () => {
       expect(response.status).toBe(200);
     });
 
-    test("GET /admin/catak should return 200 status with valid admin session", async () => {
+    test("GET /admin/catatan should return 200 status with valid admin session", async () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "admintest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)
-        .get("/admin/catak")
+        .get("/admin/catatan")
         .set("Cookie", sessionCookie);
       expect(response.status).toBe(200);
     });
@@ -253,7 +260,7 @@ describe("Controller Tests", () => {
       // Login first and get session
       const sessionCookie = await loginAndGetSession(
         "petugastest",
-        "testpassword",
+        "TestPassword123!",
       );
 
       const response = await request(app)

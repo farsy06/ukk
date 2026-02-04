@@ -68,6 +68,28 @@ class AlatService {
   }
 
   /**
+   * Get paginated alat for admin (all statuses)
+   * @param {Object} options - Pagination options
+   * @param {number} options.limit - Items per page
+   * @param {number} options.offset - Offset
+   * @returns {Promise<{rows: Array, count: number}>}
+   */
+  async getAllForAdminPaginated({ limit, offset }) {
+    return Alat.findAndCountAll({
+      include: [
+        {
+          model: Kategori,
+          as: "kategori",
+        },
+      ],
+      order: [["nama_alat", "ASC"]],
+      limit,
+      offset,
+      distinct: true,
+    });
+  }
+
+  /**
    * Get alat by ID
    * @param {number} id - Alat ID
    * @returns {Promise<Object>} - Alat object

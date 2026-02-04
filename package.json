@@ -32,6 +32,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@dr.pogodin/csurf": "^1.16.8",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.8",
     "connect-flash": "^0.1.1",
@@ -46,7 +47,8 @@
     "node-cache": "^5.1.2",
     "prompt-sync": "^4.2.0",
     "sequelize": "^6.37.7",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

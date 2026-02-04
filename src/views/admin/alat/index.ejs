@@ -45,7 +45,7 @@
                             <% if (typeof alat !== 'undefined' && alat && alat.length > 0) { %>
                                 <% alat.forEach(function(item, index) { %>
                                     <tr data-id="<%= item.id %>" data-nama="<%= item.nama_alat %>" data-kategori="<%= item.kategori ? item.kategori.nama_kategori : 'Tidak ada kategori' %>" data-kondisi="<%= item.kondisi %>" data-status="<%= item.status %>">
-                                        <td><%= index + 1 %></td>
+                                        <td><%= (pagination && pagination.offset ? pagination.offset : 0) + index + 1 %></td>
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <% if (item.foto) { %>
@@ -135,7 +135,32 @@
                     </table>
                 </div>
             </div>
+                <% if (range) { %>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted">
+                            Menampilkan <%= range.start %>–<%= range.end %> dari <%= range.total %> alat
+                        </small>
+                    </div>
+                <% } %>
         </div>
+
+        <% if (pagination && pagination.totalPages > 1) { %>
+            <nav class="mt-3" aria-label="Alat pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <%= pagination.hasPrevious ? '' : 'disabled' %>">
+                        <a class="page-link" href="?page=<%= pagination.previousPage %>&limit=<%= pagination.perPage %>">Sebelumnya</a>
+                    </li>
+                    <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+                        <li class="page-item <%= p === pagination.currentPage ? 'active' : '' %>">
+                            <a class="page-link" href="?page=<%= p %>&limit=<%= pagination.perPage %>"><%= p %></a>
+                        </li>
+                    <% } %>
+                    <li class="page-item <%= pagination.hasNext ? '' : 'disabled' %>">
+                        <a class="page-link" href="?page=<%= pagination.nextPage %>&limit=<%= pagination.perPage %>">Berikutnya</a>
+                    </li>
+                </ul>
+            </nav>
+        <% } %>
     </div>
 </div>
 

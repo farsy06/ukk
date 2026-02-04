@@ -5,6 +5,7 @@
 
 const logger = require("../config/logging");
 const appConfig = require("../config/appConfig");
+const xss = require("xss");
 
 /**
  * Custom Error Classes
@@ -217,12 +218,7 @@ function sanitizeInput(input) {
     return input;
   }
 
-  return input
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, '"')
-    .replace(/'/g, "&#39;");
+  return xss(input);
 }
 
 module.exports = {

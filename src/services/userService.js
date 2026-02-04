@@ -22,11 +22,18 @@ class UserService {
       return cachedData;
     }
 
+    const [kategori, alat, peminjaman, user] = await Promise.all([
+      this.getKategoriCount(),
+      this.getAlatCount(),
+      this.getPeminjamanCount(),
+      this.getUserCount(),
+    ]);
+
     const stats = {
-      kategori: await this.getKategoriCount(),
-      alat: await this.getAlatCount(),
-      peminjaman: await this.getPeminjamanCount(),
-      user: await this.getUserCount(),
+      kategori,
+      alat,
+      peminjaman,
+      user,
     };
 
     // Cache for 5 minutes
@@ -58,6 +65,26 @@ class UserService {
     // Cache for 10 minutes
     cacheHelper.set(cacheKey, users, 600);
     return users;
+  }
+
+  /**
+   * Get paginated users except admins
+   * @param {Object} options - Pagination options
+   * @param {number} options.limit - Items per page
+   * @param {number} options.offset - Offset
+   * @returns {Promise<{rows: Array, count: number}>}
+   */
+  async getAllUsersPaginated({ limit, offset }) {
+    return User.findAndCountAll({
+      where: {
+        role: {
+          [require("sequelize").Op.ne]: ROLES.ADMIN,
+        },
+      },
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+    });
   }
 
   /**

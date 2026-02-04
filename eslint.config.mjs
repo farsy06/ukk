@@ -15,11 +15,14 @@ export default defineConfig([
     files: ["tests/**/*.js"],
     languageOptions: {
       globals: {
-        describe: "readonly",
-        test: "readonly",
-        expect: "readonly",
-        beforeAll: "readonly",
         afterAll: "readonly",
+        beforeAll: "readonly",
+        beforeEach: "readonly",
+        describe: "readonly",
+        expect: "readonly",
+        it: "readonly",
+        jest: "readonly",
+        test: "readonly",
       },
     },
   },

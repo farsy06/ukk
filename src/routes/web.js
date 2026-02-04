@@ -36,19 +36,18 @@ const {
 const { asyncHandler } = require("../middleware/asyncHandler");
 
 // Import caching middleware
-const { cacheMiddleware, invalidateCache } = require("../middleware/caching");
+const { invalidateCache } = require("../middleware/caching");
+
+// Import route helper middleware
+const {
+  validateUserRegistration,
+  standardCache,
+  paginate,
+} = require("../middleware/routeHelpers");
 
 // Rute public (tidak perlu login)
-router.get(
-  "/",
-  cacheMiddleware("home", 600), // Cache 10 menit
-  asyncHandler(homeController.index),
-); // Halaman home public
-router.get(
-  "/home",
-  cacheMiddleware("home", 600), // Cache 10 menit
-  asyncHandler(homeController.index),
-); // Route alternatif
+router.get("/", standardCache.home, asyncHandler(homeController.index)); // Halaman home public
+router.get("/home", standardCache.home, asyncHandler(homeController.index)); // Route alternatif
 
 router.get("/login", asyncHandler(userController.showLogin));
 router.post("/login", loginLimiter, asyncHandler(userController.login));
@@ -56,16 +55,7 @@ router.post("/login", loginLimiter, asyncHandler(userController.login));
 router.get("/register", asyncHandler(userController.showRegister));
 router.post(
   "/register",
-  validateRequired([
-    "nama",
-    "username",
-    "email",
-    "password",
-    "confirmPassword",
-  ]),
-  validateEmail("email"),
-  validatePassword("password"),
-  validatePasswordMatch("password", "confirmPassword"),
+  validateUserRegistration,
   asyncHandler(userController.register),
 );
 
@@ -85,7 +75,7 @@ router.get(
   "/alat",
   isAuthenticated,
   requirePeminjam,
-  cacheMiddleware("alat_user", 300), // Cache 5 menit
+  standardCache.alat,
   asyncHandler(alatController.index),
 );
 
@@ -93,7 +83,7 @@ router.get(
   "/peminjaman",
   isAuthenticated,
   requirePeminjam,
-  cacheMiddleware("peminjaman_user", 180), // Cache 3 menit
+  standardCache.peminjaman,
   asyncHandler(peminjamanController.userIndex),
 );
 
@@ -117,7 +107,7 @@ router.get(
   "/petugas",
   isAuthenticated,
   requirePetugas,
-  cacheMiddleware("petugas_dashboard", 120), // Cache 2 menit
+  standardCache.peminjaman,
   asyncHandler(peminjamanController.petugasIndex),
 );
 
@@ -148,7 +138,7 @@ router.get(
   "/admin",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("admin_dashboard", 300), // Cache 5 menit
+  standardCache.peminjaman,
   asyncHandler(adminController.dashboard),
 );
 
@@ -157,7 +147,7 @@ router.get(
   "/admin/kategori",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("kategori", 600), // Cache 10 menit
+  standardCache.kategori,
   asyncHandler(kategoriController.index),
 );
 router.get(
@@ -201,7 +191,8 @@ router.get(
   "/admin/alat",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("alat_admin", 300), // Cache 5 menit
+  paginate(10, 100),
+  standardCache.alat,
   asyncHandler(alatController.adminIndex),
 );
 router.get(
@@ -248,7 +239,8 @@ router.get(
   "/admin/peminjaman",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("peminjaman_admin", 180), // Cache 3 menit
+  paginate(10, 100),
+  standardCache.peminjaman,
   asyncHandler(peminjamanController.adminIndex),
 );
 
@@ -257,7 +249,8 @@ router.get(
   "/admin/user",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("user", 600), // Cache 10 menit
+  paginate(10, 100),
+  standardCache.user,
   asyncHandler(adminController.userIndex),
 );
 router.get(
@@ -295,11 +288,109 @@ router.get(
 
 // Catatan aktivitas
 router.get(
-  "/admin/catak",
+  "/admin/catatan",
   isAuthenticated,
   requireAdmin,
-  cacheMiddleware("log", 300), // Cache 5 menit
+  standardCache.log,
   asyncHandler(adminController.logIndex),
+);
+
+// Laporan sistem untuk petugas
+router.get(
+  "/laporan",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.petugasReportIndex),
+);
+
+router.get(
+  "/laporan/user",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.generateUserReport),
+);
+
+router.get(
+  "/laporan/alat",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.generateInventoryReport),
+);
+
+router.get(
+  "/laporan/peminjaman",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.generatePeminjamanReport),
+);
+
+router.get(
+  "/laporan/aktivitas",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.generateActivityReport),
+);
+
+router.get(
+  "/laporan/statistik",
+  isAuthenticated,
+  requirePetugas,
+  standardCache.log,
+  asyncHandler(adminController.generateStatistics),
+);
+
+// Laporan sistem untuk admin
+router.get(
+  "/admin/laporan",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.reportIndex),
+);
+
+router.get(
+  "/admin/laporan/user",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.generateUserReport),
+);
+
+router.get(
+  "/admin/laporan/alat",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.generateInventoryReport),
+);
+
+router.get(
+  "/admin/laporan/peminjaman",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.generatePeminjamanReport),
+);
+
+router.get(
+  "/admin/laporan/aktivitas",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.generateActivityReport),
+);
+
+router.get(
+  "/admin/laporan/statistik",
+  isAuthenticated,
+  requireAdmin,
+  standardCache.log,
+  asyncHandler(adminController.generateStatistics),
 );
 
 module.exports = router;

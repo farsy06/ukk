@@ -1,6 +1,7 @@
 const peminjamanService = require("../services/peminjamanService");
 const alatService = require("../services/alatService");
 const logger = require("../config/logging");
+const { getPagination } = require("../utils/helpers");
 
 // Menampilkan form pengajuan peminjaman
 const showCreate = async (req, res) => {
@@ -63,12 +64,29 @@ const userIndex = async (req, res) => {
 // Menampilkan daftar peminjaman untuk admin
 const adminIndex = async (req, res) => {
   try {
-    const peminjaman = await peminjamanService.getAllForAdmin();
+    const { page, limit, offset } = req.pagination || {
+      page: 1,
+      limit: 10,
+      offset: 0,
+    };
+
+    const { rows: peminjaman, count } =
+      await peminjamanService.getAllForAdminPaginated({
+        limit,
+        offset,
+      });
+
+    const pagination = getPagination(page, limit, count);
+    pagination.offset = offset;
+    const start = count > 0 ? offset + 1 : 0;
+    const end = Math.min(offset + limit, count);
 
     res.render("admin/peminjaman/index", {
       title: "Kelola Peminjaman",
       peminjaman,
       user: req.user,
+      pagination,
+      range: { start, end, total: count },
     });
   } catch (error) {
     logger.error("Error in admin peminjaman index:", error);

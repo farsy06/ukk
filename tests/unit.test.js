@@ -27,7 +27,7 @@ describe("Unit Tests", () => {
 
   describe("Password Hashing", () => {
     test("bcrypt should hash password correctly", async () => {
-      const password = "testpassword";
+      const password = "TestPassword123!";
       const hashedPassword = await bcrypt.hash(password, 10);
 
       expect(hashedPassword).not.toBe(password);
@@ -36,7 +36,7 @@ describe("Unit Tests", () => {
     });
 
     test("bcrypt should compare password correctly", async () => {
-      const password = "testpassword";
+      const password = "TestPassword123!";
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const isMatch = await bcrypt.compare(password, hashedPassword);

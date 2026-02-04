@@ -58,6 +58,15 @@ const appConfig = {
       message: "Too many requests from this IP, please try again later.",
     },
     csrf: true,
+    rememberMe: {
+      enabled: true,
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      },
+    },
   },
 };
 

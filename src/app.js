@@ -3,7 +3,7 @@ const session = require("express-session");
 const path = require("path");
 const flash = require("connect-flash");
 const expressLayouts = require("express-ejs-layouts");
-const { sequelize, testConnection } = require("./config/database");
+const { sequelize, initializeDatabase } = require("./config/database");
 const logger = require("./config/logging");
 const { appConfig } = require("./utils/helpers");
 
@@ -12,6 +12,7 @@ const {
   generalLimiter,
   sanitizeInput,
   securityHeaders,
+  csrfToken,
 } = require("./middleware/security");
 
 // Import error handler
@@ -39,95 +40,13 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-// Test koneksi database
-testConnection().catch((error) => {
-  logger.error("Database connection test failed:", error);
-  process.exit(1);
-});
-
-// Konfigurasi view engine
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
-// Gunakan express-ejs-layouts
-app.use(expressLayouts);
-
-// Security middleware (harus dijalankan pertama)
-app.use(generalLimiter);
-app.use(sanitizeInput);
-app.use(securityHeaders);
-
-// Middleware
-app.use(express.static(path.join(__dirname, "../public")));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-// Session configuration
-app.use(session(appConfig.session));
-
-// Set user from session for all routes (if logged in)
-app.use(async (req, res, next) => {
-  try {
-    if (req.session.userId) {
-      const user = await User.findByPk(req.session.userId);
-      if (user) {
-        req.user = user;
-        res.locals.user = user;
-      } else {
-        // User not found, destroy session
-        req.session.destroy();
-      }
-    }
-    next();
-  } catch (error) {
-    logger.error("Error setting user from session:", error);
-    next();
-  }
-});
-
-// Flash messages
-app.use(flash());
-
-// Global variables untuk flash messages
-app.use((req, res, next) => {
-  res.locals.success = req.flash("success");
-  res.locals.error = req.flash("error");
-  next();
-});
-
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: appConfig.app.environment,
-    version: process.env.npm_package_version || "1.0.0",
-  });
-});
-
-// API health check
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    database: "connected",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Routes
-app.use("/", webRoutes);
-
-// Error handling
-app.use(errorHandler);
-
-// 404 handler
-app.use(notFoundHandler);
-
 // Sync database dan start server
 async function startServer() {
   try {
     logger.info("Starting application...");
+
+    // Initialize database
+    await initializeDatabase();
 
     // Sync database
     await sequelize.sync({ alter: true });
@@ -136,6 +55,90 @@ async function startServer() {
     // Define model associations after database sync
     defineAssociations();
     logger.info("Model associations defined");
+
+    // Konfigurasi view engine
+    app.set("view engine", "ejs");
+    app.set("views", path.join(__dirname, "views"));
+
+    // Gunakan express-ejs-layouts
+    app.use(expressLayouts);
+
+    // Security middleware (harus dijalankan pertama)
+    app.use(generalLimiter);
+    app.use(securityHeaders);
+
+    // Middleware
+    app.use(express.static(path.join(__dirname, "../public")));
+    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json());
+
+    // Session configuration
+    app.use(session(appConfig.session));
+
+    // CSRF Protection
+    app.use(csrfToken);
+
+    // Input sanitization (after body parsing & CSRF)
+    app.use(sanitizeInput);
+
+    // Set user from session for all routes (if logged in)
+    app.use(async (req, res, next) => {
+      try {
+        if (req.session.userId) {
+          const user = await User.findByPk(req.session.userId);
+          if (user) {
+            req.user = user;
+            res.locals.user = user;
+          } else {
+            // User not found, destroy session
+            req.session.destroy();
+          }
+        }
+        next();
+      } catch (error) {
+        logger.error("Error setting user from session:", error);
+        next();
+      }
+    });
+
+    // Flash messages
+    app.use(flash());
+
+    // Global variables untuk flash messages
+    app.use((req, res, next) => {
+      res.locals.success = req.flash("success");
+      res.locals.error = req.flash("error");
+      next();
+    });
+
+    // Health check endpoint
+    app.get("/health", (req, res) => {
+      res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: appConfig.app.environment,
+        version: process.env.npm_package_version || "1.0.0",
+      });
+    });
+
+    // API health check
+    app.get("/api/health", (req, res) => {
+      res.status(200).json({
+        status: "ok",
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // Routes
+    app.use("/", webRoutes);
+
+    // Error handling
+    app.use(errorHandler);
+
+    // 404 handler
+    app.use(notFoundHandler);
 
     // Start server
     const server = app.listen(PORT, () => {

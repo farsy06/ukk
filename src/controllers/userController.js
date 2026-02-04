@@ -149,7 +149,7 @@ const showLogin = (req, res) => {
  * @returns {Object} - Redirect or rendered view with errors
  */
 const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, rememberMe } = req.body;
   logger.info(`Login attempt for username: ${username}`);
 
   // Find user by username
@@ -172,6 +172,18 @@ const login = async (req, res) => {
   req.session.userId = user.id;
   req.session.userRole = user.role;
   logger.info(`User logged in successfully: ${user.id} (${user.role})`);
+
+  // Handle remember me functionality
+  if (rememberMe) {
+    const token = await user.generateRememberToken();
+    res.cookie("remember_token", token, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+    logger.info(`Remember token generated for user ${user.id}`);
+  }
 
   // Redirect based on role
   if (user.role === ROLES.ADMIN) {

@@ -50,7 +50,7 @@ class KategoriService {
    * @returns {Promise<Object>} - Created kategori
    */
   async create(data, user) {
-    const { nama_kategori } = data;
+    const { nama_kategori, deskripsi } = data;
 
     // Cek apakah nama kategori sudah ada
     const existingKategori = await Kategori.findOne({
@@ -63,6 +63,7 @@ class KategoriService {
 
     const kategori = await Kategori.create({
       nama_kategori: nama_kategori.trim(),
+      deskripsi: deskripsi || null,
     });
 
     // Log aktivitas - handle system user (id 0) specially
@@ -92,7 +93,7 @@ class KategoriService {
    * @returns {Promise<Object>} - Updated kategori
    */
   async update(id, data, user) {
-    const { nama_kategori } = data;
+    const { nama_kategori, deskripsi } = data;
     const kategori = await this.getById(id);
 
     // Cek apakah nama kategori sudah digunakan kategori lain
@@ -109,6 +110,7 @@ class KategoriService {
 
     await kategori.update({
       nama_kategori: nama_kategori.trim(),
+      deskripsi: deskripsi || kategori.deskripsi,
     });
 
     // Log aktivitas

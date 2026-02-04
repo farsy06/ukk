@@ -33,6 +33,7 @@
                 <% } %>
                 
                 <form action="/register" method="POST" id="registerForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="mb-3">
                         <label for="nama" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                         <div class="input-group">

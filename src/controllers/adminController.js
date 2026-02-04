@@ -1,5 +1,7 @@
 const userService = require("../services/userService");
+const reportService = require("../services/reportService");
 const logger = require("../config/logging");
+const { getPagination } = require("../utils/helpers");
 
 /**
  * Display admin dashboard
@@ -34,12 +36,28 @@ const userIndex = async (req, res) => {
   try {
     logger.info(`User list accessed by admin: ${req.user.id}`);
 
-    const users = await userService.getAllUsers();
+    const { page, limit, offset } = req.pagination || {
+      page: 1,
+      limit: 10,
+      offset: 0,
+    };
+
+    const { rows: users, count } = await userService.getAllUsersPaginated({
+      limit,
+      offset,
+    });
+
+    const pagination = getPagination(page, limit, count);
+    pagination.offset = offset;
+    const start = count > 0 ? offset + 1 : 0;
+    const end = Math.min(offset + limit, count);
 
     res.render("admin/user/index", {
       title: "Kelola User",
       users,
       user: req.user,
+      pagination,
+      range: { start, end, total: count },
     });
   } catch (error) {
     logger.error("Error in admin user index:", error);
@@ -143,6 +161,191 @@ const logIndex = async (req, res) => {
   }
 };
 
+/**
+ * Display report dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered report dashboard view
+ */
+const reportIndex = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} accessing report dashboard`);
+
+    const dashboardData = await reportService.generateReportDashboard();
+
+    res.render("admin/laporan/index", {
+      title: dashboardData.title,
+      dashboardData,
+      user: req.user,
+    });
+  } catch (error) {
+    logger.error("Error in report index:", error);
+    res.status(500).send("Terjadi kesalahan");
+  }
+};
+
+/**
+ * Display petugas report dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered petugas report dashboard view
+ */
+const petugasReportIndex = async (req, res) => {
+  try {
+    logger.info(`Petugas ${req.user.id} accessing report dashboard`);
+
+    const dashboardData = await reportService.generatePetugasReportDashboard();
+
+    res.render("petugas/laporan/index", {
+      title: dashboardData.title,
+      dashboardData,
+      user: req.user,
+    });
+  } catch (error) {
+    logger.error("Error in petugas report index:", error);
+    res.status(500).send("Terjadi kesalahan");
+  }
+};
+
+/**
+ * Generate user report
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered user report view
+ */
+const generateUserReport = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} generating user report`);
+
+    const filters = {
+      startDate: req.query.start_date,
+      endDate: req.query.end_date,
+    };
+
+    const reportData = await reportService.generateUserReport(filters);
+
+    res.render("admin/laporan/user", {
+      title: reportData.title,
+      reportData,
+      user: req.user,
+      filters,
+    });
+  } catch (error) {
+    logger.error("Error generating user report:", error);
+    res.status(500).send("Terjadi kesalahan saat membuat laporan user");
+  }
+};
+
+/**
+ * Generate inventory report
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered inventory report view
+ */
+const generateInventoryReport = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} generating inventory report`);
+
+    const filters = {
+      startDate: req.query.start_date,
+      endDate: req.query.end_date,
+    };
+
+    const reportData = await reportService.generateInventoryReport(filters);
+
+    res.render("admin/laporan/inventory", {
+      title: reportData.title,
+      reportData,
+      user: req.user,
+      filters,
+    });
+  } catch (error) {
+    logger.error("Error generating inventory report:", error);
+    res.status(500).send("Terjadi kesalahan saat membuat laporan inventori");
+  }
+};
+
+/**
+ * Generate peminjaman report
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered peminjaman report view
+ */
+const generatePeminjamanReport = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} generating peminjaman report`);
+
+    const filters = {
+      startDate: req.query.start_date,
+      endDate: req.query.end_date,
+    };
+
+    const reportData = await reportService.generatePeminjamanReport(filters);
+
+    res.render("admin/laporan/peminjaman", {
+      title: reportData.title,
+      reportData,
+      user: req.user,
+      filters,
+    });
+  } catch (error) {
+    logger.error("Error generating peminjaman report:", error);
+    res.status(500).send("Terjadi kesalahan saat membuat laporan peminjaman");
+  }
+};
+
+/**
+ * Generate activity report
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered activity report view
+ */
+const generateActivityReport = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} generating activity report`);
+
+    const filters = {
+      startDate: req.query.start_date,
+      endDate: req.query.end_date,
+    };
+
+    const reportData = await reportService.generateActivityReport(filters);
+
+    res.render("admin/laporan/activity", {
+      title: reportData.title,
+      reportData,
+      user: req.user,
+      filters,
+    });
+  } catch (error) {
+    logger.error("Error generating activity report:", error);
+    res.status(500).send("Terjadi kesalahan saat membuat laporan aktivitas");
+  }
+};
+
+/**
+ * Generate statistics dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered statistics view
+ */
+const generateStatistics = async (req, res) => {
+  try {
+    logger.info(`Admin ${req.user.id} generating statistics`);
+
+    const stats = await reportService.generateStatistics();
+
+    res.render("admin/laporan/statistics", {
+      title: "Statistik Sistem",
+      stats,
+      user: req.user,
+    });
+  } catch (error) {
+    logger.error("Error generating statistics:", error);
+    res.status(500).send("Terjadi kesalahan saat membuat statistik");
+  }
+};
+
 module.exports = {
   dashboard,
   userIndex,
@@ -150,4 +353,11 @@ module.exports = {
   createUser,
   destroyUser,
   logIndex,
+  reportIndex,
+  petugasReportIndex,
+  generateUserReport,
+  generateInventoryReport,
+  generatePeminjamanReport,
+  generateActivityReport,
+  generateStatistics,
 };

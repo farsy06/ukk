@@ -18,15 +18,22 @@ const cacheMiddleware = (key, ttl = 300) => {
   return async (req, res, next) => {
     try {
       // Generate cache key yang unik
+      const userKey =
+        req.user && req.user.id ? `user:${req.user.id}` : "user:anon";
       const cacheKey =
         typeof key === "function"
           ? key(req)
-          : `${key}:${req.originalUrl}:${JSON.stringify(req.query)}`;
+          : `${key}:${userKey}:${req.originalUrl}:${JSON.stringify(req.query)}`;
 
       // Cek cache terlebih dahulu
       const cachedData = cache.get(cacheKey);
       if (cachedData) {
         logger.info(`Cache hit for key: ${cacheKey}`);
+        if (cachedData.__type === "html") {
+          res.setHeader("X-Cache", "HIT");
+          return res.send(cachedData.html);
+        }
+
         return res.json({
           ...cachedData,
           cached: true,
@@ -43,6 +50,37 @@ const cacheMiddleware = (key, ttl = 300) => {
           logger.info(`Cache set for key: ${cacheKey} (TTL: ${ttl}s)`);
         }
         return originalJson.call(this, data);
+      };
+
+      // Override res.render untuk menyimpan HTML ke cache
+      const originalRender = res.render;
+      res.render = function (view, options, callback) {
+        const renderCallback =
+          typeof options === "function"
+            ? options
+            : typeof callback === "function"
+              ? callback
+              : null;
+        const renderOptions = typeof options === "object" ? options : undefined;
+
+        const done = (err, html) => {
+          if (!err && this.statusCode >= 200 && this.statusCode < 300) {
+            cache.set(cacheKey, { __type: "html", html }, ttl);
+            logger.info(`Cache set for key: ${cacheKey} (TTL: ${ttl}s)`);
+          }
+
+          if (renderCallback) {
+            return renderCallback(err, html);
+          }
+
+          if (err) {
+            return this.status(500).send(err.message || "Render error");
+          }
+
+          return this.send(html);
+        };
+
+        return originalRender.call(this, view, renderOptions, done);
       };
 
       next();

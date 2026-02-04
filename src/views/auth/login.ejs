@@ -61,13 +61,15 @@
                         </label>
                     </div>
                     
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-sign-in-alt"></i> Login
                         </button>
                     </div>
                 </form>
-                
+
                 <hr class="my-4">
                 
                 <div class="text-center">
@@ -82,7 +84,7 @@
                         <i class="fas fa-key"></i> Lupa password?
                     </a>
                 </div>
-            </div>
+            </hr>
         </div>
 
         <div class="text-center mt-3">

@@ -13,6 +13,7 @@
                 <% } %>
 
                 <form action="/admin/kategori/tambah" method="POST" id="kategoriForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="mb-3">
                         <label for="nama_kategori" class="form-label">Nama Kategori <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="nama_kategori" name="nama_kategori" required>

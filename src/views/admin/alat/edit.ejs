@@ -13,6 +13,7 @@
                 <% } %>
 
                 <form action="/admin/alat/edit/<%= alat.id %>" method="POST" id="alatEditForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

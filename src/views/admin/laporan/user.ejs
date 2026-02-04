@@ -1,0 +1,209 @@
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-users"></i> Laporan User Sistem</h2>
+                <p class="text-muted mb-0">Generated: <%= reportData.generatedAt.toLocaleString('id-ID') %></p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-primary">
+                    <i class="fas fa-chart-bar"></i> Laporan
+                </div>
+                <% if (filters.startDate && filters.endDate) { %>
+                <div class="badge bg-info ms-2">
+                    Periode: <%= new Date(filters.startDate).toLocaleDateString('id-ID') %> - <%= new Date(filters.endDate).toLocaleDateString('id-ID') %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Total User</h6>
+                        <h3 class="mb-0"><%= reportData.stats.total %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Petugas</h6>
+                        <h3 class="mb-0"><%= reportData.stats.petugas %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-shield fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Peminjam</h6>
+                        <h3 class="mb-0"><%= reportData.stats.peminjam %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Periode</h6>
+                        <h3 class="mb-0"><%= reportData.stats.period.start ? 'Custom' : 'Semua' %></h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-list"></i> Daftar User</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Tanggal Dibuat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% reportData.users.forEach((user, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= user.nama %></td>
+                                <td><%= user.username %></td>
+                                <td><%= user.email %></td>
+                                <td>
+                                    <span class="badge <%= user.role === 'petugas' ? 'bg-warning' : 'bg-success' %>">
+                                        <%= user.role === 'petugas' ? 'Petugas' : 'Peminjam' %>
+                                    </span>
+                                </td>
+                                <td><%= user.created_at ? user.created_at.toLocaleString('id-ID') : '-' %></td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Distribusi Role</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
+                            <h5 class="text-warning">Petugas</h5>
+                            <h3 class="text-warning"><%= reportData.stats.petugas %></h3>
+                            <small class="text-muted">(<%= ((reportData.stats.petugas / reportData.stats.total) * 100).toFixed(1) %>% dari total)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <i class="fas fa-user fa-3x text-success mb-3"></i>
+                            <h5 class="text-success">Peminjam</h5>
+                            <h3 class="text-success"><%= reportData.stats.peminjam %></h3>
+                            <small class="text-muted">(<%= ((reportData.stats.peminjam / reportData.stats.total) * 100).toFixed(1) %>% dari total)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-download"></i> Aksi Laporan</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="/laporan/user?format=pdf&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
+                           class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/laporan/user?format=excel&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
+                           class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/laporan" class="btn btn-secondary w-100 mb-2">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <button onclick="window.print()" class="btn btn-info w-100 mb-2">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>

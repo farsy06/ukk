@@ -1,0 +1,189 @@
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>Laporan Sistem</h2>
+                <p class="text-muted mb-0">Generate laporan untuk analisis dan monitoring</p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-danger">
+                    <i class="fas fa-chart-bar"></i> Laporan
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Laporan User</h5>
+                <p class="card-text text-muted">Statistik dan daftar user sistem</p>
+                <a href="/admin/laporan/user" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Generate PDF
+                </a>
+                <a href="/laporan/user/excel" class="btn btn-outline-primary ms-2">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-tools fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Laporan Inventori</h5>
+                <p class="card-text text-muted">Status dan kondisi seluruh alat</p>
+                <a href="/admin/laporan/alat" class="btn btn-success">
+                    <i class="fas fa-download"></i> Generate PDF
+                </a>
+                <a href="/admin/laporan/alat/excel" class="btn btn-outline-success ms-2">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="fas fa-hand-holding fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Laporan Peminjaman</h5>
+                <p class="card-text text-muted">Riwayat dan statistik peminjaman</p>
+                <a href="/admin/laporan/peminjaman" class="btn btn-info">
+                    <i class="fas fa-download"></i> Generate PDF
+                </a>
+                <a href="/admin/laporan/peminjaman/excel" class="btn btn-outline-info ms-2">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Laporan Statistik</h5>
+                <p class="card-text text-muted">Grafik dan analisis data sistem</p>
+                <a href="/admin/laporan/statistik" class="btn btn-warning">
+                    <i class="fas fa-chart-bar"></i> Lihat Statistik
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <i class="fas fa-history fa-3x text-secondary mb-3"></i>
+                <h5 class="card-title">Laporan Aktivitas</h5>
+                <p class="card-text text-muted">Log aktivitas sistem terkini</p>
+                <a href="/admin/laporan/aktivitas" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Generate PDF
+                </a>
+                <a href="/admin/laporan/aktivitas/excel" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-filter"></i> Filter Laporan</h6>
+            </div>
+            <div class="card-body">
+                <form action="/admin/laporan/filter" method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Tanggal Selesai</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="report_type" class="form-label">Jenis Laporan</label>
+                        <select class="form-select" id="report_type" name="type">
+                            <option value="">Semua Jenis</option>
+                            <option value="user">User</option>
+                            <option value="inventori">Inventori</option>
+                            <option value="peminjaman">Peminjaman</option>
+                            <option value="aktivitas">Aktivitas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-clock"></i> Riwayat Laporan</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Fitur riwayat laporan akan segera hadir. Saat ini laporan di-generate secara real-time.
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-calendar"></i> 
+                    Terakhir di-generate: <%= new Date().toLocaleString('id-ID') %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default date range to last 30 days
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+
+        document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+        document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+
+        // Add loading animation to buttons
+        const reportButtons = document.querySelectorAll('.btn');
+        reportButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-outline-primary') || 
+                    this.classList.contains('btn-outline-success') || 
+                    this.classList.contains('btn-outline-info') || 
+                    this.classList.contains('btn-outline-warning') || 
+                    this.classList.contains('btn-outline-secondary')) {
+                    return; // Don't add loading to outline buttons
+                }
+                
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 2000);
+            });
+        });
+    });
+</script>

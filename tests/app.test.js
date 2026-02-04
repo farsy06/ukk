@@ -6,7 +6,7 @@ require("dotenv").config({
 
 const request = require("supertest");
 const testConfig = require("./testConfig");
-const { sequelize } = require("../src/config/database");
+const { sequelize, initializeDatabase } = require("../src/config/database");
 const logger = require("../src/config/logging");
 
 // Create a test app instance
@@ -22,6 +22,7 @@ const createTestApp = () => {
     generalLimiter,
     sanitizeInput,
     securityHeaders,
+    csrfToken,
   } = require("../src/middleware/security");
 
   // Import error handler
@@ -55,6 +56,9 @@ const createTestApp = () => {
   // Session configuration
   app.use(session(testConfig.session));
 
+  // CSRF Protection
+  app.use(csrfToken);
+
   // Flash messages
   app.use(flash());
 
@@ -84,6 +88,9 @@ describe("Basic App Tests", () => {
     // Skip database synchronization for basic app tests
     // This avoids synchronization issues
     logger.info("Skipping database synchronization for basic app tests");
+
+    // Initialize database
+    await initializeDatabase();
 
     // Define model associations before creating the app
     // This ensures models are properly associated for the tests
@@ -120,7 +127,7 @@ describe("Basic App Tests", () => {
   test("GET /login should handle POST request", async () => {
     const response = await request(app).post("/login").send({
       username: "testuser",
-      password: "testpassword",
+      password: "TestPassword123!",
     });
     expect(response.status).toBe(302); // Redirect after failed login
   });

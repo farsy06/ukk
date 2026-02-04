@@ -122,6 +122,38 @@ class PeminjamanService {
   }
 
   /**
+   * Get paginated peminjaman for admin
+   * @param {Object} options - Pagination options
+   * @param {number} options.limit - Items per page
+   * @param {number} options.offset - Offset
+   * @returns {Promise<{rows: Array, count: number}>}
+   */
+  async getAllForAdminPaginated({ limit, offset }) {
+    return Peminjaman.findAndCountAll({
+      include: [
+        {
+          model: User,
+          as: "user",
+        },
+        {
+          model: Alat,
+          as: "alat",
+          include: [
+            {
+              model: Kategori,
+              as: "kategori",
+            },
+          ],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+      distinct: true,
+    });
+  }
+
+  /**
    * Get peminjaman for petugas (pending, disetujui, dipinjam)
    * @returns {Promise<Array>} - Array of peminjaman
    */
