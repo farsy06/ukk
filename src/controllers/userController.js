@@ -98,6 +98,7 @@ const showLogin = (req, res) => {
     title: "Login",
     error: res.locals.error,
     success: res.locals.success,
+    message: req.query.message,
   });
 };
 
@@ -188,20 +189,21 @@ const logout = async (req, res) => {
     sameSite: "strict",
   });
 
-  // Set flash message before destroying session
-  req.flash("success", "Berhasil logout");
+  const logoutMessage = "Berhasil logout";
 
   req.session.destroy((err) => {
     if (err) {
       logger.error("Session destruction error:", err);
       // Handle the error gracefully without throwing
-      return res.redirect("/login");
+      return res.redirect(
+        `/login?message=${encodeURIComponent(logoutMessage)}`,
+      );
     }
 
     // Invalidate cache
     cacheHelper.del("alat_user_index");
 
-    res.redirect("/login");
+    res.redirect(`/login?message=${encodeURIComponent(logoutMessage)}`);
   });
 };
 

@@ -114,10 +114,12 @@ const petugasIndex = async (req, res) => {
 const approve = async (req, res) => {
   try {
     await peminjamanService.approve(req.params.id, req.user);
+    req.flash("success", "Peminjaman berhasil disetujui.");
     res.redirect("/petugas");
   } catch (error) {
     logger.error("Error in peminjaman approve:", error);
-    res.status(500).send("Terjadi kesalahan");
+    req.flash("error", error.message || "Terjadi kesalahan saat menyetujui.");
+    res.redirect("/petugas");
   }
 };
 
@@ -125,10 +127,12 @@ const approve = async (req, res) => {
 const reject = async (req, res) => {
   try {
     await peminjamanService.reject(req.params.id, req.user);
+    req.flash("success", "Peminjaman berhasil ditolak.");
     res.redirect("/petugas");
   } catch (error) {
     logger.error("Error in peminjaman reject:", error);
-    res.status(500).send("Terjadi kesalahan");
+    req.flash("error", error.message || "Terjadi kesalahan saat menolak.");
+    res.redirect("/petugas");
   }
 };
 
@@ -136,10 +140,12 @@ const reject = async (req, res) => {
 const returnItem = async (req, res) => {
   try {
     await peminjamanService.returnItem(req.params.id, req.user);
+    req.flash("success", "Pengembalian alat berhasil dikonfirmasi.");
     res.redirect("/petugas");
   } catch (error) {
     logger.error("Error in peminjaman return:", error);
-    res.status(500).send("Terjadi kesalahan");
+    req.flash("error", error.message || "Terjadi kesalahan saat mengembalikan.");
+    res.redirect("/petugas");
   }
 };
 

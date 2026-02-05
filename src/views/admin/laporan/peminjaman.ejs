@@ -83,6 +83,14 @@
                 <h6 class="mb-0"><i class="fas fa-list"></i> Daftar Peminjaman</h6>
             </div>
             <div class="card-body">
+                <%
+                    const formatDate = (value) => {
+                        if (!value) return "-";
+                        const date = value instanceof Date ? value : new Date(value);
+                        if (Number.isNaN(date.getTime())) return "-";
+                        return date.toLocaleDateString("id-ID");
+                    };
+                %>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
@@ -101,8 +109,8 @@
                                 <td><%= index + 1 %></td>
                                 <td><%= peminjaman.user?.nama || 'Tidak Diketahui' %></td>
                                 <td><%= peminjaman.alat?.nama_alat || 'Tidak Diketahui' %></td>
-                                <td><%= peminjaman.tanggal_pinjam.toLocaleDateString('id-ID') %></td>
-                                <td><%= peminjaman.tanggal_kembali.toLocaleDateString('id-ID') %></td>
+                                <td><%= formatDate(peminjaman.tanggal_pinjam) %></td>
+                                <td><%= formatDate(peminjaman.tanggal_kembali) %></td>
                                 <td>
                                     <span class="badge <%= peminjaman.status === 'diproses' ? 'bg-warning' : peminjaman.status === 'dipinjam' ? 'bg-success' : peminjaman.status === 'selesai' ? 'bg-info' : 'bg-danger' %>">
                                         <%= peminjaman.status %>

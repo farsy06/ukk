@@ -5,15 +5,21 @@ const logger = require("../config/logging");
 const cache = new NodeCache({
   stdTTL: 300,
   checkperiod: 60,
-  useClones: false,
+  useClones: false, // Keep false: rely on immutable cached data; cloning can fail on complex objects
   maxKeys: 10000, // Prevent unbounded memory growth
 });
+
+// Simple single-flight to prevent thundering herd on cache miss
+const inFlightRequests = new Map();
 
 /**
  * Cache middleware untuk menyimpan hasil query
  * @param {string|Function} key - Cache key (string) or function that returns key
  * @param {number} ttl - Time to live in seconds (opsional)
  * @returns {Function} - Express middleware function
+ *
+ * IMPORTANT: Load order matters. Place this middleware AFTER any other middleware
+ * that may override res.json/res.render/res.redirect to avoid conflicts.
  */
 const cacheMiddleware = (key, ttl = 300) => {
   return (req, res, next) => {
@@ -27,11 +33,17 @@ const cacheMiddleware = (key, ttl = 300) => {
         // For function keys, use the result directly (dynamic key generation)
         queryPart = key(req);
       } else {
-        // Normalize query parameters: sort keys for consistent hashing
+        // Normalize query parameters: sort keys and normalize arrays
         const normalizedQuery = Object.keys(req.query)
           .sort()
           .reduce((obj, k) => {
-            obj[k] = req.query[k];
+            const value = req.query[k];
+            // Normalize arrays: sort array values for consistent keys
+            if (Array.isArray(value)) {
+              obj[k] = [...value].sort();
+            } else {
+              obj[k] = value;
+            }
             return obj;
           }, {});
         // Build query string with version prefix
@@ -57,52 +69,101 @@ const cacheMiddleware = (key, ttl = 300) => {
         });
       }
 
-      // Override res.json untuk menyimpan ke cache
-      const originalJson = res.json;
-      res.json = function (data) {
-        // Simpan ke cache jika response sukses
-        if (this.statusCode >= 200 && this.statusCode < 300) {
-          cache.set(cacheKey, data, ttl);
-          logger.info(
-            `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
-          );
-        }
-        return originalJson.call(this, data);
-      };
+      // Single-flight: if a request is already in progress for this key, wait for it
+      const existingPromise = inFlightRequests.get(cacheKey);
+      if (existingPromise) {
+        logger.debug(
+          `Single-flight: waiting for in-flight request: ${cacheKey.substring(0, 40)}...`,
+        );
+        return existingPromise
+          .then((data) => {
+            if (data.__type === "html") {
+              res.setHeader("X-Cache", "HIT");
+              return res.send(data.html);
+            }
+            return res.json({
+              ...data,
+              cached: true,
+              timestamp: new Date().toISOString(),
+            });
+          })
+          .catch((err) => {
+            logger.error("Single-flight promise rejected:", err);
+            next(err);
+          });
+      }
 
-      // Override res.render untuk menyimpan HTML ke cache
-      const originalRender = res.render;
-      res.render = function (view, options, callback) {
-        const renderCallback =
-          typeof options === "function"
-            ? options
-            : typeof callback === "function"
-              ? callback
-              : null;
-        const renderOptions = typeof options === "object" ? options : undefined;
+      // Create a promise that will be resolved when the cache is populated
+      const promise = new Promise((resolve, reject) => {
+        // Store the promise to prevent duplicate fetches
+        inFlightRequests.set(cacheKey, promise);
 
-        const done = (err, html) => {
-          if (!err && this.statusCode >= 200 && this.statusCode < 300) {
-            cache.set(cacheKey, { __type: "html", html }, ttl);
+        // Override res.json untuk menyimpan ke cache
+        const originalJson = res.json;
+        res.json = function (data) {
+          // Simpan ke cache jika response sukses
+          if (this.statusCode >= 200 && this.statusCode < 300) {
+            cache.set(cacheKey, data, ttl);
             logger.info(
               `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
             );
+            resolve(data);
+          } else {
+            reject(new Error(`Request failed with status ${this.statusCode}`));
           }
-
-          if (renderCallback) {
-            return renderCallback(err, html);
-          }
-
-          if (err) {
-            return this.status(500).send(err.message || "Render error");
-          }
-
-          return this.send(html);
+          return originalJson.call(this, data);
         };
 
-        return originalRender.call(this, view, renderOptions, done);
-      };
+        // Override res.render untuk menyimpan HTML ke cache
+        const originalRender = res.render;
+        res.render = function (view, options, callback) {
+          const renderCallback =
+            typeof options === "function"
+              ? options
+              : typeof callback === "function"
+                ? callback
+                : null;
+          const renderOptions =
+            typeof options === "object" ? options : undefined;
 
+          const done = (err, html) => {
+            if (!err && this.statusCode >= 200 && this.statusCode < 300) {
+              cache.set(cacheKey, { __type: "html", html }, ttl);
+              logger.info(
+                `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
+              );
+              resolve({ __type: "html", html });
+            } else {
+              const error =
+                err ||
+                new Error(`Render failed with status ${this.statusCode}`);
+              reject(error);
+            }
+
+            if (renderCallback) {
+              return renderCallback(err, html);
+            }
+
+            if (err) {
+              return this.status(500).send(err.message || "Render error");
+            }
+
+            return this.send(html);
+          };
+
+          return originalRender.call(this, view, renderOptions, done);
+        };
+
+        // Also clean up the in-flight map when response finishes (in case middleware chain breaks)
+        res.on("finish", () => {
+          inFlightRequests.delete(cacheKey);
+        });
+        res.on("close", () => {
+          inFlightRequests.delete(cacheKey);
+        });
+      });
+
+      promise.catch(() => {});
       next();
     } catch (error) {
       logger.error("Cache middleware error:", error);
@@ -127,7 +188,7 @@ const cacheHelper = {
   /**
    * Set data to cache
    * @param {string} key - Cache key
-   * @param {any} data - Data to cache
+   * @param {any} data - Data to cache (should be plain JSON-serializable)
    * @param {number} ttl - Time to live in seconds
    */
   set: (key, data, ttl = 300) => {

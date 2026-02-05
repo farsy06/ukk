@@ -244,19 +244,22 @@
                                         <td>
                                             <div class="btn-group-vertical" role="group">
                                                 <% if (item.status === 'pending') { %>
-                                                    <form action="/petugas/setujui/<%= item.id %>" method="post" class="d-inline">
-                                                        <button type="submit" class="btn btn-sm btn-success" title="Setujui" onclick="return confirm('Setujui peminjaman alat ini?')">
+                                                    <form action="/petugas/setujui/<%= item.id %>" method="post" class="d-inline" data-confirm="Setujui peminjaman alat ini?">
+                                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                        <button type="submit" class="btn btn-sm btn-success" title="Setujui">
                                                             <i class="fas fa-check"></i> Setujui
                                                         </button>
                                                     </form>
-                                                    <form action="/petugas/tolak/<%= item.id %>" method="post" class="d-inline">
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Tolak" onclick="return confirm('Tolak peminjaman alat ini?')">
+                                                    <form action="/petugas/tolak/<%= item.id %>" method="post" class="d-inline" data-confirm="Tolak peminjaman alat ini?">
+                                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Tolak">
                                                             <i class="fas fa-times"></i> Tolak
                                                         </button>
                                                     </form>
                                                 <% } else if (item.status === 'dipinjam') { %>
-                                                    <form action="/petugas/kembali/<%= item.id %>" method="post" class="d-inline">
-                                                        <button type="submit" class="btn btn-sm btn-info" title="Kembalikan" onclick="return confirm('Konfirmasi pengembalian alat ini?')">
+                                                    <form action="/petugas/kembali/<%= item.id %>" method="post" class="d-inline" data-confirm="Konfirmasi pengembalian alat ini?">
+                                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                        <button type="submit" class="btn btn-sm btn-info" title="Kembalikan">
                                                             <i class="fas fa-undo"></i> Kembalikan
                                                         </button>
                                                     </form>
@@ -438,18 +441,21 @@
             }
         });
 
-        // Add loading state for actions
-        const actionButtons = document.querySelectorAll('.btn-success, .btn-danger, .btn-info');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1000);
+        // Add confirm + loading state for actions on submit
+        const actionForms = document.querySelectorAll('.btn-group-vertical form');
+        actionForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const message = this.getAttribute('data-confirm');
+                if (message && !confirm(message)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                const submitButton = this.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                    submitButton.disabled = true;
+                }
             });
         });
     });

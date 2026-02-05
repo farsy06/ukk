@@ -172,6 +172,13 @@ const csrfToken = (req, res, next) => {
       logger.warn(
         `CSRF token validation failed for IP: ${req.ip} path: ${req.originalUrl}`,
       );
+      if (req.accepts("html")) {
+        if (typeof req.flash === "function") {
+          req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
+        }
+        return res.redirect(req.get("Referrer") || "/");
+      }
+
       return res.status(403).json({
         error: "CSRF token validation failed",
         message: "Invalid CSRF token",

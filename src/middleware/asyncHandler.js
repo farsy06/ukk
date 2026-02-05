@@ -51,6 +51,23 @@ const errorHandler = (err, req, res, next) => {
   // Set default status code if not provided
   const statusCode = err.statusCode || 500;
 
+  // Handle CSRF errors for web requests
+  if (err.code === "EBADCSRFTOKEN") {
+    logger.warn(`CSRF token validation failed for ${req.originalUrl}`);
+    if (req.accepts("html")) {
+      req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
+      return res.redirect(req.get("Referrer") || "/");
+    }
+
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: "Invalid CSRF token",
+        code: "CSRF_ERROR",
+      },
+    });
+  }
+
   // Log the error details
   logger.error(`Error Handler: ${err.message}`, {
     statusCode,

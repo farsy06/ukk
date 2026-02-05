@@ -75,6 +75,16 @@ async function startServer() {
     // Session configuration
     app.use(session(appConfig.session));
 
+    // Flash messages (after session)
+    app.use(flash());
+
+    // Global variables untuk flash messages
+    app.use((req, res, next) => {
+      res.locals.success = req.flash("success");
+      res.locals.error = req.flash("error");
+      next();
+    });
+
     // CSRF Protection
     app.use(csrfToken);
 
@@ -99,16 +109,6 @@ async function startServer() {
         logger.error("Error setting user from session:", error);
         next();
       }
-    });
-
-    // Flash messages
-    app.use(flash());
-
-    // Global variables untuk flash messages
-    app.use((req, res, next) => {
-      res.locals.success = req.flash("success");
-      res.locals.error = req.flash("error");
-      next();
     });
 
     // Health check endpoint
