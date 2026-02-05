@@ -134,6 +134,11 @@ const Alat = sequelize.define(
       {
         fields: ["nama_alat"],
       },
+      // Compound index for queries filtering by kategori and status
+      {
+        fields: ["kategori_id", "status"],
+        name: "idx_kategori_status",
+      },
     ],
     validate: {
       stokStatusConsistency() {

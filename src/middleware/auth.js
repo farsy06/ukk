@@ -22,6 +22,9 @@ const isAuthenticated = async (req, res, next) => {
         const user = await User.findByRememberToken(token);
         if (user) {
           user.last_login = new Date();
+
+          // Token rotation: generate new token and invalidate old one
+          const newToken = user.generateRememberToken();
           await user.save();
 
           // Restore session
@@ -31,6 +34,15 @@ const isAuthenticated = async (req, res, next) => {
             `User authenticated via remember token: ${user.id} (${user.role})`,
           );
           req.user = user;
+
+          // Set new cookie with rotated token
+          res.cookie("remember_token", newToken, {
+            httpOnly: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+          });
+
           return next();
         }
       }
@@ -96,7 +108,7 @@ const checkRole = (roles) => {
       }
 
       if (error instanceof AuthorizationError) {
-        return res.status(403).render("errors/403", {
+        return res.status(403).render("error", {
           title: "Akses Ditolak",
           message: error.message,
         });

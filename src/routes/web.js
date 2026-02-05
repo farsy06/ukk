@@ -57,226 +57,177 @@ router.post(
   asyncHandler(userController.register),
 );
 
-router.get("/logout", asyncHandler(userController.logout));
+router.post("/logout", asyncHandler(userController.logout));
 
 // Rute peminjam (harus login dan role peminjam)
-router.get(
+const peminjamRouter = express.Router();
+peminjamRouter.use(isAuthenticated, requirePeminjam);
+
+peminjamRouter.get(
   "/dasbor",
-  isAuthenticated,
-  requirePeminjam,
   asyncHandler((req, res) => {
     res.redirect("/alat"); // Redirect ke daftar alat
   }),
 );
 
-router.get(
+peminjamRouter.get(
   "/alat",
-  isAuthenticated,
-  requirePeminjam,
   standardCache.alat,
   asyncHandler(alatController.index),
 );
 
-router.get(
+peminjamRouter.get(
   "/peminjaman",
-  isAuthenticated,
-  requirePeminjam,
   standardCache.peminjaman,
   asyncHandler(peminjamanController.userIndex),
 );
 
-router.get(
+peminjamRouter.get(
   "/peminjaman/ajukan/:id",
-  isAuthenticated,
-  requirePeminjam,
   asyncHandler(peminjamanController.showCreate),
 );
-router.post(
+peminjamRouter.post(
   "/peminjaman/ajukan",
-  isAuthenticated,
-  requirePeminjam,
   validateRequired(["alat_id", "tanggal_pinjam", "tanggal_kembali"]),
   validateTanggalPeminjaman(),
+  invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat, dan home
   asyncHandler(peminjamanController.create),
 );
 
+router.use("/", peminjamRouter);
+
 // Rute petugas (harus login dan role petugas)
-router.get(
+const petugasRouter = express.Router();
+petugasRouter.use(isAuthenticated, requirePetugas);
+
+petugasRouter.get(
   "/petugas",
-  isAuthenticated,
-  requirePetugas,
   standardCache.peminjaman,
   asyncHandler(peminjamanController.petugasIndex),
 );
 
-router.get(
+petugasRouter.post(
   "/petugas/setujui/:id",
-  isAuthenticated,
-  requirePetugas,
-  invalidateCache(["peminjaman", "alat"]), // Invalidasi cache peminjaman dan alat
+  invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat dan home
   asyncHandler(peminjamanController.approve),
 );
-router.get(
+petugasRouter.post(
   "/petugas/tolak/:id",
-  isAuthenticated,
-  requirePetugas,
-  invalidateCache(["peminjaman"]), // Invalidasi cache peminjaman
+  invalidateCache(["peminjaman", "home"]), // Invalidasi cache peminjaman dan home
   asyncHandler(peminjamanController.reject),
 );
-router.get(
+petugasRouter.post(
   "/petugas/kembali/:id",
-  isAuthenticated,
-  requirePetugas,
-  invalidateCache(["peminjaman", "alat"]), // Invalidasi cache peminjaman dan alat
+  invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat dan home
   asyncHandler(peminjamanController.returnItem),
 );
 
+router.use("/", petugasRouter);
+
 // Rute admin (harus login dan role admin)
-router.get(
-  "/admin",
-  isAuthenticated,
-  requireAdmin,
+const adminRouter = express.Router();
+adminRouter.use(isAuthenticated, requireAdmin);
+
+adminRouter.get(
+  "/",
   standardCache.peminjaman,
   asyncHandler(adminController.dashboard),
 );
 
 // Kelola kategori
-router.get(
-  "/admin/kategori",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/kategori",
   standardCache.kategori,
   asyncHandler(kategoriController.index),
 );
-router.get(
-  "/admin/kategori/tambah",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/kategori/tambah",
   asyncHandler(kategoriController.showCreate),
 );
-router.post(
-  "/admin/kategori/tambah",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.post(
+  "/kategori/tambah",
   validateKategori,
-  invalidateCache(["kategori"]), // Invalidasi cache kategori
+  invalidateCache(["kategori", "home"]), // Invalidasi cache kategori dan home
   asyncHandler(kategoriController.create),
 );
-router.get(
-  "/admin/kategori/edit/:id",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/kategori/edit/:id",
   asyncHandler(kategoriController.showEdit),
 );
-router.post(
-  "/admin/kategori/edit/:id",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.post(
+  "/kategori/edit/:id",
   validateKategori,
-  invalidateCache(["kategori"]), // Invalidasi cache kategori
+  invalidateCache(["kategori", "home"]), // Invalidasi cache kategori dan home
   asyncHandler(kategoriController.update),
 );
-router.get(
-  "/admin/kategori/hapus/:id",
-  isAuthenticated,
-  requireAdmin,
-  invalidateCache(["kategori"]), // Invalidasi cache kategori
+adminRouter.post(
+  "/kategori/hapus/:id",
+  invalidateCache(["kategori", "home"]), // Invalidasi cache kategori dan home
   asyncHandler(kategoriController.destroy),
 );
 
 // Kelola alat
-router.get(
-  "/admin/alat",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/alat",
   paginate(10, 100),
   standardCache.alat,
   asyncHandler(alatController.adminIndex),
 );
-router.get(
-  "/admin/alat/tambah",
-  isAuthenticated,
-  requireAdmin,
-  asyncHandler(alatController.showCreate),
-);
-router.post(
-  "/admin/alat/tambah",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get("/alat/tambah", asyncHandler(alatController.showCreate));
+adminRouter.post(
+  "/alat/tambah",
   validateAlatCreate,
-  invalidateCache(["alat", "kategori"]), // Invalidasi cache alat dan kategori
+  invalidateCache(["alat", "kategori", "home"]), // Invalidasi cache alat, kategori dan home
   asyncHandler(alatController.create),
 );
-router.get(
-  "/admin/alat/edit/:id",
-  isAuthenticated,
-  requireAdmin,
-  asyncHandler(alatController.showEdit),
-);
-router.post(
-  "/admin/alat/edit/:id",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get("/alat/edit/:id", asyncHandler(alatController.showEdit));
+adminRouter.post(
+  "/alat/edit/:id",
   validateAlatUpdate,
-  invalidateCache(["alat", "kategori"]), // Invalidasi cache alat dan kategori
+  invalidateCache(["alat", "kategori", "home"]), // Invalidasi cache alat, kategori dan home
   asyncHandler(alatController.update),
 );
-router.get(
-  "/admin/alat/hapus/:id",
-  isAuthenticated,
-  requireAdmin,
-  invalidateCache(["alat", "kategori"]), // Invalidasi cache alat dan kategori
+adminRouter.post(
+  "/alat/hapus/:id",
+  invalidateCache(["alat", "kategori", "home"]), // Invalidasi cache alat, kategori dan home
   asyncHandler(alatController.destroy),
 );
 
 // Kelola peminjaman
-router.get(
-  "/admin/peminjaman",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/peminjaman",
   paginate(10, 100),
   standardCache.peminjaman,
   asyncHandler(peminjamanController.adminIndex),
 );
 
 // Kelola user
-router.get(
-  "/admin/user",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/user",
   paginate(10, 100),
   asyncHandler(adminController.userIndex),
 );
-router.get(
-  "/admin/user/tambah",
-  isAuthenticated,
-  requireAdmin,
-  asyncHandler(adminController.showCreateUser),
-);
-router.post(
-  "/admin/user/tambah",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get("/user/tambah", asyncHandler(adminController.showCreateUser));
+adminRouter.post(
+  "/user/tambah",
   validateUserCreation,
   invalidateCache(["user"]), // Invalidasi cache user
   asyncHandler(adminController.createUser),
 );
-router.get(
-  "/admin/user/hapus/:id",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.post(
+  "/user/hapus/:id",
   invalidateCache(["user"]), // Invalidasi cache user
   asyncHandler(adminController.destroyUser),
 );
 
 // Catatan aktivitas
-router.get(
-  "/admin/catatan",
-  isAuthenticated,
-  requireAdmin,
+adminRouter.get(
+  "/catatan",
   standardCache.log,
   asyncHandler(adminController.logIndex),
 );
+
+router.use("/admin", adminRouter);
 
 // Laporan sistem (petugas dan admin)
 const reportRoutes = [

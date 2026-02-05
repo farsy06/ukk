@@ -202,17 +202,20 @@ User.prototype.toJSON = function () {
   return values;
 };
 
-// Generate remember me token
+// Generate remember me token (returns plain token, stores hashed version)
 User.prototype.generateRememberToken = function () {
   const token = crypto.randomBytes(32).toString("hex");
+  // Hash the token before storing (defense in depth)
+  const hashedToken = bcrypt.hashSync(token, 12);
   const expires = new Date();
   expires.setDate(expires.getDate() + 30); // 30 days
-  this.remember_token = token;
+
+  this.remember_token = hashedToken;
   this.remember_expires = expires;
-  return token;
+  return token; // Return the plain token for the cookie
 };
 
-// Validate remember me token
+// Validate remember me token using bcrypt comparison
 User.prototype.validateRememberToken = function (token) {
   if (!this.remember_token || !this.remember_expires) {
     return false;
@@ -220,7 +223,8 @@ User.prototype.validateRememberToken = function (token) {
   if (new Date() > this.remember_expires) {
     return false;
   }
-  return this.remember_token === token;
+  // Use constant-time comparison via bcrypt
+  return bcrypt.compareSync(token, this.remember_token);
 };
 
 // Clear remember me token
@@ -258,15 +262,29 @@ User.getUsersByRole = function (role) {
   });
 };
 
-User.findByRememberToken = function (token) {
-  return this.findOne({
+// Updated: Finds user by token by fetching candidates with non-expired tokens
+// and validating each with bcrypt (since we can't query by hashed token)
+User.findByRememberToken = async function (token) {
+  // Find all users with non-expired remember tokens
+  const candidates = await this.findAll({
     where: {
-      remember_token: token,
       remember_expires: {
         [Op.gt]: new Date(),
       },
     },
+    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
   });
+
+  // Validate each candidate's token using bcrypt
+  for (const user of candidates) {
+    // Need to fetch the full user with hashed token to validate
+    const fullUser = await this.findByPk(user.id);
+    if (fullUser && fullUser.validateRememberToken(token)) {
+      return fullUser;
+    }
+  }
+
+  return null;
 };
 
 module.exports = User;

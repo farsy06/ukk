@@ -244,16 +244,22 @@
                                         <td>
                                             <div class="btn-group-vertical" role="group">
                                                 <% if (item.status === 'pending') { %>
-                                                    <a href="/petugas/setujui/<%= item.id %>" class="btn btn-sm btn-success" title="Setujui" onclick="return confirm('Setujui peminjaman alat ini?')">
-                                                        <i class="fas fa-check"></i> Setujui
-                                                    </a>
-                                                    <a href="/petugas/tolak/<%= item.id %>" class="btn btn-sm btn-danger" title="Tolak" onclick="return confirm('Tolak peminjaman alat ini?')">
-                                                        <i class="fas fa-times"></i> Tolak
-                                                    </a>
+                                                    <form action="/petugas/setujui/<%= item.id %>" method="post" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-success" title="Setujui" onclick="return confirm('Setujui peminjaman alat ini?')">
+                                                            <i class="fas fa-check"></i> Setujui
+                                                        </button>
+                                                    </form>
+                                                    <form action="/petugas/tolak/<%= item.id %>" method="post" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Tolak" onclick="return confirm('Tolak peminjaman alat ini?')">
+                                                            <i class="fas fa-times"></i> Tolak
+                                                        </button>
+                                                    </form>
                                                 <% } else if (item.status === 'dipinjam') { %>
-                                                    <a href="/petugas/kembali/<%= item.id %>" class="btn btn-sm btn-info" title="Kembalikan" onclick="return confirm('Konfirmasi pengembalian alat ini?')">
-                                                        <i class="fas fa-undo"></i> Kembalikan
-                                                    </a>
+                                                    <form action="/petugas/kembali/<%= item.id %>" method="post" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-info" title="Kembalikan" onclick="return confirm('Konfirmasi pengembalian alat ini?')">
+                                                            <i class="fas fa-undo"></i> Kembalikan
+                                                        </button>
+                                                    </form>
                                                 <% } else { %>
                                                     <button class="btn btn-sm btn-secondary" disabled title="Tidak ada aksi">
                                                         <i class="fas fa-ban"></i> Selesai

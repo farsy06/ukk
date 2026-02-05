@@ -171,6 +171,15 @@ const Peminjaman = sequelize.define(
       {
         fields: ["status", "tanggal_kembali"],
       },
+      // Compound indexes for better query performance
+      {
+        fields: ["user_id", "created_at"],
+        name: "idx_user_created",
+      },
+      {
+        fields: ["status", "created_at"],
+        name: "idx_status_created",
+      },
     ],
     validate: {
       tanggalLogic() {

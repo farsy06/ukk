@@ -73,6 +73,11 @@ const Kategori = sequelize.define(
       {
         fields: ["is_active"],
       },
+      // Compound index for queries filtering by is_active and ordering by nama_kategori
+      {
+        fields: ["is_active", "nama_kategori"],
+        name: "idx_active_nama_kategori",
+      },
     ],
   },
 );

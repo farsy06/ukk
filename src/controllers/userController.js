@@ -30,76 +30,11 @@ const showRegister = (req, res) => {
  * @returns {Object} - Redirect or rendered view with errors
  */
 const register = async (req, res) => {
-  const { nama, username, email, password, confirmPassword } = req.body;
+  const { nama, username, email, password } = req.body;
   logger.info(`Registration attempt for username: ${username}`);
 
-  // Validate password strength
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  const errors = [];
-
-  if (password.length < minLength) {
-    errors.push(`Password minimal ${minLength} karakter`);
-  }
-
-  if (!hasUpperCase) {
-    errors.push("Password harus mengandung huruf besar (A-Z)");
-  }
-
-  if (!hasLowerCase) {
-    errors.push("Password harus mengandung huruf kecil (a-z)");
-  }
-
-  if (!hasNumbers) {
-    errors.push("Password harus mengandung angka (0-9)");
-  }
-
-  if (!hasSpecialChar) {
-    errors.push("Password harus mengandung karakter spesial (!@#$%^&*)");
-  }
-
-  // Validate password confirmation
-  if (password !== confirmPassword) {
-    errors.push("Password dan konfirmasi password tidak sesuai");
-  }
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    errors.push("Format email tidak valid");
-  }
-
-  if (errors.length > 0) {
-    logger.warn(`Registration failed: validation errors for user ${username}`);
-    req.flash("error", errors);
-    req.flash("data", { nama, username, email }); // Preserve form data
-    return res.redirect("/register");
-  }
-
   try {
-    // Check if username already exists
-    const isUsernameUnique = await userService.isUsernameUnique(username);
-    if (!isUsernameUnique) {
-      logger.warn(`Registration failed: username ${username} already exists`);
-      req.flash("error", "Username sudah digunakan");
-      req.flash("data", { nama, username, email }); // Preserve form data
-      return res.redirect("/register");
-    }
-
-    // Check if email already exists
-    const isEmailUnique = await userService.isEmailUnique(email);
-    if (!isEmailUnique) {
-      logger.warn(`Registration failed: email ${email} already exists`);
-      req.flash("error", "Email sudah digunakan");
-      req.flash("data", { nama, username, email }); // Preserve form data
-      return res.redirect("/register");
-    }
-
-    // Create new user
+    // Create new user - validation handled by middleware
     const newUser = await userService.create(
       {
         nama,
@@ -120,8 +55,32 @@ const register = async (req, res) => {
     res.redirect("/login");
   } catch (error) {
     logger.error("Registration failed:", error);
-    req.flash("error", "Terjadi kesalahan saat pendaftaran");
-    req.flash("data", { nama, username, email }); // Preserve form data
+
+    // Preserve form data for re-population (except password fields)
+    const formData = { nama, username, email };
+
+    if (error.name === "SequelizeValidationError") {
+      // Handle Sequelize validation errors
+      const messages = error.errors.map((e) => e.message);
+      req.flash("error", messages);
+      req.flash("data", formData);
+    } else if (error.name === "SequelizeUniqueConstraintError") {
+      // Handle unique constraint violations
+      const fields = error.fields || [];
+      if (fields.includes("username")) {
+        req.flash("error", "Username sudah digunakan");
+      } else if (fields.includes("email")) {
+        req.flash("error", "Email sudah digunakan");
+      } else {
+        req.flash("error", "Data sudah ada");
+      }
+      req.flash("data", formData);
+    } else {
+      // Generic error
+      req.flash("error", "Terjadi kesalahan saat pendaftaran");
+      req.flash("data", formData);
+    }
+
     res.redirect("/register");
   }
 };
@@ -206,9 +165,28 @@ const login = async (req, res) => {
  * @param {Object} res - Express response object
  * @returns {Object} - Redirect to login page
  */
-const logout = (req, res) => {
+const logout = async (req, res) => {
   const userId = req.user ? req.user.id : "anonymous";
   logger.info(`User logged out: ${userId}`);
+
+  // Clear remember token if exists
+  if (req.user && req.user.remember_token) {
+    try {
+      req.user.remember_token = null;
+      req.user.remember_expires = null;
+      await req.user.save();
+      logger.info(`Remember token cleared for user ${userId}`);
+    } catch (error) {
+      logger.error(`Failed to clear remember token for user ${userId}:`, error);
+    }
+  }
+
+  // Clear remember token cookie
+  res.clearCookie("remember_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
 
   // Set flash message before destroying session
   req.flash("success", "Berhasil logout");

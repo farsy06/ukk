@@ -1,34 +1,50 @@
 const NodeCache = require("node-cache");
 const logger = require("../config/logging");
 
-// In-memory cache dengan TTL 5 menit (300 detik)
+// In-memory cache dengan TTL default 5 menit (300 detik)
 const cache = new NodeCache({
   stdTTL: 300,
   checkperiod: 60,
   useClones: false,
+  maxKeys: 10000, // Prevent unbounded memory growth
 });
 
 /**
  * Cache middleware untuk menyimpan hasil query
- * @param {string} key - Cache key
+ * @param {string|Function} key - Cache key (string) or function that returns key
  * @param {number} ttl - Time to live in seconds (opsional)
  * @returns {Function} - Express middleware function
  */
 const cacheMiddleware = (key, ttl = 300) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     try {
       // Generate cache key yang unik
       const userKey =
         req.user && req.user.id ? `user:${req.user.id}` : "user:anon";
-      const cacheKey =
-        typeof key === "function"
-          ? key(req)
-          : `${key}:${userKey}:${req.originalUrl}:${JSON.stringify(req.query)}`;
+
+      let queryPart;
+      if (typeof key === "function") {
+        // For function keys, use the result directly (dynamic key generation)
+        queryPart = key(req);
+      } else {
+        // Normalize query parameters: sort keys for consistent hashing
+        const normalizedQuery = Object.keys(req.query)
+          .sort()
+          .reduce((obj, k) => {
+            obj[k] = req.query[k];
+            return obj;
+          }, {});
+        // Build query string with version prefix
+        queryPart = `${req.originalUrl}:${JSON.stringify(normalizedQuery)}`;
+      }
+
+      // Version prefix allows bulk invalidation on structural changes
+      const cacheKey = `v1:${key}:${userKey}:${queryPart}`;
 
       // Cek cache terlebih dahulu
       const cachedData = cache.get(cacheKey);
       if (cachedData) {
-        logger.info(`Cache hit for key: ${cacheKey}`);
+        logger.info(`Cache hit: ${cacheKey.substring(0, 60)}...`);
         if (cachedData.__type === "html") {
           res.setHeader("X-Cache", "HIT");
           return res.send(cachedData.html);
@@ -47,7 +63,9 @@ const cacheMiddleware = (key, ttl = 300) => {
         // Simpan ke cache jika response sukses
         if (this.statusCode >= 200 && this.statusCode < 300) {
           cache.set(cacheKey, data, ttl);
-          logger.info(`Cache set for key: ${cacheKey} (TTL: ${ttl}s)`);
+          logger.info(
+            `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
+          );
         }
         return originalJson.call(this, data);
       };
@@ -66,7 +84,9 @@ const cacheMiddleware = (key, ttl = 300) => {
         const done = (err, html) => {
           if (!err && this.statusCode >= 200 && this.statusCode < 300) {
             cache.set(cacheKey, { __type: "html", html }, ttl);
-            logger.info(`Cache set for key: ${cacheKey} (TTL: ${ttl}s)`);
+            logger.info(
+              `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
+            );
           }
 
           if (renderCallback) {
@@ -135,6 +155,14 @@ const cacheHelper = {
   getStats: () => {
     return cache.getStats();
   },
+
+  /**
+   * Get all cache keys
+   * @returns {Array<string>} - Array of all cache keys
+   */
+  keys: () => {
+    return cache.keys();
+  },
 };
 
 /**
@@ -149,7 +177,7 @@ const invalidateCache = (patterns) => {
         keys.forEach((key) => cache.del(key));
         if (keys.length > 0) {
           logger.info(
-            `Invalidated cache keys matching pattern "${pattern}": ${keys.length} keys`,
+            `Cache invalidation: pattern "${pattern}" cleared ${keys.length} keys`,
           );
         }
       });
@@ -190,4 +218,6 @@ module.exports = {
   cacheMiddleware,
   cacheHelper,
   invalidateCache,
+  // Export cache instance for advanced use (optional)
+  _cache: cache,
 };

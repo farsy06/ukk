@@ -9,6 +9,11 @@ const {
   validateTanggalPeminjaman,
 } = require("./validation");
 
+const { cacheMiddleware: cachingCacheMiddleware } = require("./caching");
+const { requireAnyRole } = require("./auth");
+const { AuthorizationError } = require("../utils/helpers");
+const { CACHE_TTL } = require("../utils/constants");
+
 /**
  * Route Helper Middleware
  * Helper functions untuk mengurangi duplikasi middleware di routes
@@ -86,57 +91,18 @@ const validatePeminjaman = [
  * Middleware untuk cache dengan TTL standar berdasarkan jenis data
  */
 const standardCache = {
-  user: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("user", 600)(req, res, next); // 10 menit
-  },
-
-  alat: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("alat", 300)(req, res, next); // 5 menit
-  },
-
-  peminjaman: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("peminjaman", 180)(req, res, next); // 3 menit
-  },
-
-  kategori: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("kategori", 600)(req, res, next); // 10 menit
-  },
-
-  log: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("log", 300)(req, res, next); // 5 menit
-  },
-
-  home: (req, res, next) => {
-    const { cacheMiddleware } = require("./caching");
-    return cacheMiddleware("home", 600)(req, res, next); // 10 menit
-  },
-};
-
-/**
- * Middleware untuk invalidasi cache yang lebih komprehensif
- */
-const invalidateCache = (patterns) => {
-  const { invalidateCache: originalInvalidate } = require("./caching");
-
-  // Tambahkan pattern default yang sering diinvalidasi
-  const extendedPatterns = [...patterns];
-
-  // Jika invalidasi alat, tambahkan juga peminjaman karena terkait
-  if (patterns.includes("alat")) {
-    extendedPatterns.push("peminjaman");
-  }
-
-  // Jika invalidasi peminjaman, tambahkan juga alat karena status bisa berubah
-  if (patterns.includes("peminjaman")) {
-    extendedPatterns.push("alat");
-  }
-
-  return originalInvalidate(extendedPatterns);
+  user: (req, res, next) =>
+    cachingCacheMiddleware("user", CACHE_TTL.USER)(req, res, next),
+  alat: (req, res, next) =>
+    cachingCacheMiddleware("alat", CACHE_TTL.ALAT)(req, res, next),
+  peminjaman: (req, res, next) =>
+    cachingCacheMiddleware("peminjaman", CACHE_TTL.PEMINJAMAN)(req, res, next),
+  kategori: (req, res, next) =>
+    cachingCacheMiddleware("kategori", CACHE_TTL.KATEGORI)(req, res, next),
+  log: (req, res, next) =>
+    cachingCacheMiddleware("log", CACHE_TTL.LOG)(req, res, next),
+  home: (req, res, next) =>
+    cachingCacheMiddleware("home", CACHE_TTL.HOME)(req, res, next),
 };
 
 /**
@@ -144,9 +110,6 @@ const invalidateCache = (patterns) => {
  * Mendukung multiple roles dan custom error message
  */
 const requireRoles = (roles, options = {}) => {
-  const { requireAnyRole } = require("./auth");
-  const { AuthorizationError } = require("../utils/helpers");
-
   return async (req, res, next) => {
     try {
       // Gunakan middleware auth yang sudah ada
@@ -198,12 +161,12 @@ const paginate = (defaultLimit = 10, maxLimit = 50) => {
   };
 };
 
+const rateLimit = require("express-rate-limit");
+
 /**
  * Middleware untuk rate limiting endpoint tertentu
  */
 const rateLimitEndpoint = (options = {}) => {
-  const rateLimit = require("express-rate-limit");
-
   const defaultOptions = {
     windowMs: 15 * 60 * 1000, // 15 menit
     max: 100, // limit each IP to 100 requests per windowMs
@@ -235,7 +198,6 @@ module.exports = {
   validateAlatManagement,
   validatePeminjaman,
   standardCache,
-  invalidateCache,
   requireRoles,
   paginate,
   rateLimitEndpoint,

@@ -1,25 +1,9 @@
 const Alat = require("../models/Alat");
 const Kategori = require("../models/Kategori");
-const logger = require("../config/logging");
-const { cacheHelper } = require("../middleware/caching");
 
 // Halaman home/landing page (public access)
+// Note: Caching is handled by standardCache.home middleware in routes/web.js
 const index = async (req, res) => {
-  // Coba dapatkan dari cache terlebih dahulu
-  const cacheKey = "home_alat_terbaru";
-  const cachedData = cacheHelper.get(cacheKey);
-
-  if (cachedData) {
-    logger.info("Home index: Cache hit");
-    return res.render("home/index", {
-      title: "Selamat Datang di ToolShare Pro",
-      alat: cachedData.alat,
-      totalAlatTersedia: cachedData.totalAlatTersedia,
-      totalKategori: cachedData.totalKategori,
-      user: res.locals.user,
-    });
-  }
-
   // Ambil beberapa alat yang tersedia untuk ditampilkan di home
   const alat = await Alat.findAll({
     where: {
@@ -43,16 +27,8 @@ const index = async (req, res) => {
   // Hitung total kategori
   const totalKategori = await Kategori.count();
 
-  // Simpan ke cache
-  const cacheData = {
-    alat,
-    totalAlatTersedia,
-    totalKategori,
-  };
-  cacheHelper.set(cacheKey, cacheData, 600); // Cache 10 menit
-
   res.render("home/index", {
-    title: "Selamat Datang di ToolShare Pro",
+    title: "Selamat Datang di eSarpra",
     alat,
     totalAlatTersedia,
     totalKategori,

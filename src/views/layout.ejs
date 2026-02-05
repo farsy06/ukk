@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - ToolShare Pro</title>
+    <title><%= title %> - eSarpra</title>
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -91,7 +91,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-tools"></i> ToolShare Pro
+                <i class="fas fa-tools"></i> eSarpra
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -147,7 +147,12 @@
                     <small class="text-muted"><%= user.email %></small>
                 </li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                <li>
+                    <form action="/logout" method="post" class="m-0">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="dropdown-item">Logout</button>
+                    </form>
+                </li>
             </ul>
         </li>
     <% } else { %>
@@ -178,7 +183,7 @@
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5">
             <div class="container text-center">
-                <p>&copy; 2026 ToolShare Pro.</p>
+                <p>&copy; 2026 eSarpra.</p>
             </div>
     </footer>
 
@@ -186,26 +191,29 @@
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0" id="confirmDeleteMessage">Yakin ingin menghapus item ini?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <a href="#" class="btn btn-danger" id="confirmDeleteLink">
-                        <i class="fas fa-trash"></i> Hapus
-                    </a>
-                </div>
+                <form id="confirmDeleteForm" method="post" action="#">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0" id="confirmDeleteMessage">Yakin ingin menghapus item ini?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger" id="confirmDeleteButton">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/js/all.min.js"></script>
-    <script src="/js/password-toggle.js"></script>
+    <script src="/js/password-utils.js"></script>
     <script>
         // Initialize Bootstrap tooltips
         document.addEventListener('DOMContentLoaded', function() {
@@ -236,9 +244,10 @@
             // Global delete confirmation modal setup
             const confirmDeleteModal = document.getElementById('confirmDeleteModal');
             const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
-            const confirmDeleteLink = document.getElementById('confirmDeleteLink');
+            const confirmDeleteForm = document.getElementById('confirmDeleteForm');
+            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
 
-            if (confirmDeleteModal && confirmDeleteLink) {
+            if (confirmDeleteModal && confirmDeleteForm && confirmDeleteButton) {
                 const deleteTriggers = document.querySelectorAll('[data-confirm-href]');
                 deleteTriggers.forEach(trigger => {
                     trigger.addEventListener('click', function() {
@@ -250,19 +259,19 @@
                         if (titleEl) titleEl.textContent = title;
                         if (confirmDeleteMessage) confirmDeleteMessage.textContent = message;
 
-                        confirmDeleteLink.setAttribute('href', href);
-                        confirmDeleteLink.classList.remove('disabled');
-                        confirmDeleteLink.innerHTML = '<i class="fas fa-trash"></i> Hapus';
+                        confirmDeleteForm.setAttribute('action', href);
+                        confirmDeleteButton.classList.remove('disabled');
+                        confirmDeleteButton.innerHTML = '<i class="fas fa-trash"></i> Hapus';
                     });
                 });
 
-                confirmDeleteLink.addEventListener('click', function() {
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
-                    this.classList.add('disabled');
+                confirmDeleteForm.addEventListener('submit', function() {
+                    const originalText = confirmDeleteButton.innerHTML;
+                    confirmDeleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+                    confirmDeleteButton.classList.add('disabled');
                     setTimeout(() => {
-                        this.innerHTML = originalText;
-                        this.classList.remove('disabled');
+                        confirmDeleteButton.innerHTML = originalText;
+                        confirmDeleteButton.classList.remove('disabled');
                     }, 2000);
                 });
             }

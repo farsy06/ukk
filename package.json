@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "ukk",
   "version": "1.0.0",
-  "description": "ToolShare Pro - Aplikasi web untuk mengelola sistem peminjaman alat laboratorium dengan Node.js, Express.js, dan MySQL",
+  "description": "eSarpra - Aplikasi web untuk mengelola sistem peminjaman alat laboratorium dengan Node.js, Express.js, dan MySQL",
   "main": "index.js",
   "scripts": {
     "start": "node src/app.js",

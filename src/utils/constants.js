@@ -123,7 +123,7 @@ const SUCCESS_MESSAGES = {
 
 // App Configuration
 const APP_CONFIG = {
-  NAME: "ToolShare Pro",
+  NAME: "eSarpra",
   VERSION: "1.0.0",
   AUTHOR: "Farisya Fatanansyah",
   DESCRIPTION:
