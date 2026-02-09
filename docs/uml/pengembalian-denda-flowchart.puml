@@ -1,0 +1,30 @@
+@startuml
+title Flowchart - Pengembalian Alat & Perhitungan Denda (eSarpra)
+
+start
+:Petugas membuka dashboard\n/ petugas;
+:Pilih transaksi peminjaman;
+:POST /petugas/kembali/:id;
+:Load data peminjaman\n(+ user & alat);
+
+if (Status disetujui/dipinjam?) then (Ya)
+  :Update peminjaman:\nstatus = dikembalikan;\ntanggal_pengembalian = hari ini;
+  :Update alat:\nstok += jumlah;
+
+  if (alat.status == dipinjam\nAND stok > 0) then (Ya)
+    :Set alat.status = tersedia;
+  else (Tidak)
+    :Pertahankan status alat;
+  endif
+
+  :Hitung keterlambatan:\ndaysOverdue = max(0, today - tanggal_kembali);
+  :Hitung denda:\nfine = daysOverdue * 5000;
+  :LogAktivitas\n"Konfirmasi pengembalian...";
+  :Redirect /petugas;
+else (Tidak)
+  :Tolak request\n"Status peminjaman tidak valid";
+endif
+
+stop
+@enduml
+

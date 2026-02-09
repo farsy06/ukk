@@ -1,0 +1,30 @@
+@startuml
+title Flowchart - Proses Login (eSarpra)
+
+start
+:User mengisi\nusername & password;
+:POST /login;
+
+if (User ditemukan?) then (Ya)
+  :Validasi password\n(bcrypt compare);
+  if (Password benar?) then (Ya)
+    :Set session\nuserId & userRole;
+    :Update last_login;
+    if (Remember me?) then (Ya)
+      :Generate remember token;\nSet cookie remember_token;
+    else (Tidak)
+      :Lewati remember token;
+    endif
+    :Redirect sesuai role\n(admin/petugas/peminjam);
+  else (Tidak)
+    :Flash error\n"Username atau password salah";
+    :Redirect /login;
+  endif
+else (Tidak)
+  :Flash error\n"Username atau password salah";
+  :Redirect /login;
+endif
+
+stop
+@enduml
+

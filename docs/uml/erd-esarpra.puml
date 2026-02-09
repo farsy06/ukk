@@ -1,0 +1,82 @@
+@startuml
+title ERD eSarpra
+
+' Layout / style
+left to right direction
+skinparam linetype ortho
+hide circle
+
+entity "users" as users {
+  * id : INT <<PK>>
+  --
+  nama : VARCHAR(100)
+  username : VARCHAR(50) <<UNIQUE>>
+  email : VARCHAR(100) <<UNIQUE>>
+  password : VARCHAR(255)
+  role : ENUM(admin, petugas, peminjam)
+  is_active : BOOLEAN
+  last_login : DATETIME
+  remember_token : VARCHAR(255)
+  remember_expires : DATETIME
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity "kategori" as kategori {
+  * id : INT <<PK>>
+  --
+  nama_kategori : VARCHAR(100) <<UNIQUE>>
+  deskripsi : TEXT
+  is_active : BOOLEAN
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity "alat" as alat {
+  * id : INT <<PK>>
+  --
+  kategori_id : INT <<FK>>
+  nama_alat : VARCHAR(100)
+  kondisi : ENUM(baik, rusak_ringan, rusak_berat)
+  status : ENUM(tersedia, dipinjam, maintenance)
+  stok : INT
+  deskripsi : TEXT
+  foto : VARCHAR(255)
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity "peminjaman" as peminjaman {
+  * id : INT <<PK>>
+  --
+  user_id : INT <<FK>>
+  alat_id : INT <<FK>>
+  jumlah : INT
+  tanggal_pinjam : DATE
+  tanggal_kembali : DATE
+  status : ENUM(pending, disetujui, dipinjam, dikembalikan, ditolak, dibatalkan)
+  tanggal_pengembalian : DATE
+  catatan : TEXT
+  denda : DECIMAL(10,2)
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity "log_aktivitas" as log_aktivitas {
+  * id : INT <<PK>>
+  --
+  user_id : INT <<FK>>
+  aktivitas : TEXT
+  waktu : DATETIME
+  ip_address : VARCHAR(45)
+  user_agent : TEXT
+  session_id : VARCHAR(255)
+}
+
+' Relasi (crow's foot / IE notation)
+kategori ||--o{ alat : kategori_id
+alat ||--o{ peminjaman : alat_id
+users ||--o{ peminjaman : user_id
+users ||--o{ log_aktivitas : user_id
+
+@enduml

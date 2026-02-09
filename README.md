@@ -49,3 +49,7 @@ eSarpra (Sarana dan Prasarana) adalah sistem serbaguna untuk mengelola peminjama
 ## Catatan
 
 Sesuaikan konfigurasi environment (misalnya database atau port) sesuai kebutuhan proyek UKK.
+
+## Dokumentasi UKK
+
+- [UKK_Dokumentasi.md](docs/UKK_Dokumentasi.md)

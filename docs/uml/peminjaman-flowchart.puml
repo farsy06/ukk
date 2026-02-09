@@ -1,0 +1,32 @@
+@startuml
+title Flowchart - Pengajuan Peminjaman Alat (eSarpra)
+
+start
+:Peminjam memilih alat\npada halaman /alat;
+:GET /peminjaman/ajukan/:id;
+:Service cek ketersediaan\n(status & stok);
+
+if (Alat tersedia?) then (Ya)
+  :Tampilkan form pengajuan\n(tanggal_pinjam, tanggal_kembali,\njumlah, catatan);
+  :POST /peminjaman/ajukan;
+  :Validasi required + tanggal + jumlah;
+
+  if (Input valid?) then (Ya)
+    :Cek stok mencukupi;
+    if (Stok mencukupi?) then (Ya)
+      :Create Peminjaman\nstatus = pending;
+      :LogAktivitas\n"Mengajukan peminjaman...";
+      :Redirect /peminjaman;
+    else (Tidak)
+      :Tolak request\n"Stok tidak mencukupi";
+    endif
+  else (Tidak)
+    :Tolak request\n"Validasi gagal";
+  endif
+else (Tidak)
+  :Tampilkan error\n"Alat tidak tersedia";
+endif
+
+stop
+@enduml
+
