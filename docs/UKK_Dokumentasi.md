@@ -484,9 +484,9 @@ flowchart TD
   R3 --> R4{Status disetujui/dipinjam?}
   R4 -- Tidak --> Rerr[Error: status tidak valid] --> Rend([Selesai])
   R4 -- Ya --> R5[Set status=dikembalikan, tanggal_pengembalian=hari ini]
-  R5 --> R6[Tambah stok alat + update status alat (tersedia/dipinjam)]
-  R6 --> R7[Hitung keterlambatan: daysOverdue = max(0, today - tanggal_kembali)]
-  R7 --> R8[Hitung denda: fine = daysOverdue * 5000]
+  R5 --> R6["Tambah stok alat + update status alat<br/>(tersedia atau dipinjam)"]
+  R6 --> R7["Hitung keterlambatan<br/>daysOverdue = max(0, today - tanggal_kembali)"]
+  R7 --> R8["Hitung denda<br/>fine = daysOverdue * 5000"]
   R8 --> R9[LogAktivitas: konfirmasi pengembalian]
   R9 --> R10[Redirect /petugas]
   R10 --> Rend
