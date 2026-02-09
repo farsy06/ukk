@@ -4,7 +4,9 @@ const logger = require("../config/logging");
 // Menampilkan daftar kategori (untuk admin)
 const index = async (req, res) => {
   try {
-    const kategori = await kategoriService.getAll();
+    const kategoriData = await kategoriService.getAll();
+    // Convert to plain objects so toJSON() is called and alat_count is computed
+    const kategori = kategoriData.map((item) => item.toJSON());
 
     res.render("admin/kategori/index", {
       title: "Kelola Kategori",

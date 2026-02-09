@@ -48,6 +48,20 @@ const Peminjaman = sequelize.define(
         },
       },
     },
+    jumlah: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        isInt: {
+          msg: "Jumlah harus berupa angka",
+        },
+        min: {
+          args: [1],
+          msg: "Jumlah minimal 1",
+        },
+      },
+    },
     tanggal_pinjam: {
       type: DataTypes.DATEONLY,
       allowNull: false,

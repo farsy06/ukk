@@ -21,9 +21,7 @@ class KategoriService {
       return cachedData;
     }
 
-    const kategori = await Kategori.findAll({
-      order: [["nama_kategori", "ASC"]],
-    });
+    const kategori = await Kategori.getKategoriStats();
 
     // Cache for 10 minutes
     cacheHelper.set(cacheKey, kategori, 600);

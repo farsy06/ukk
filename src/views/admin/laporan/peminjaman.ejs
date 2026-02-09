@@ -98,6 +98,7 @@
                                 <th>#</th>
                                 <th>User</th>
                                 <th>Alat</th>
+                                <th>Jumlah</th>
                                 <th>Tanggal Pinjam</th>
                                 <th>Tanggal Kembali</th>
                                 <th>Status</th>
@@ -109,6 +110,7 @@
                                 <td><%= index + 1 %></td>
                                 <td><%= peminjaman.user?.nama || 'Tidak Diketahui' %></td>
                                 <td><%= peminjaman.alat?.nama_alat || 'Tidak Diketahui' %></td>
+                                <td><%= peminjaman.jumlah || 1 %></td>
                                 <td><%= formatDate(peminjaman.tanggal_pinjam) %></td>
                                 <td><%= formatDate(peminjaman.tanggal_kembali) %></td>
                                 <td>

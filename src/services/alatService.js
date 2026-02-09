@@ -192,6 +192,8 @@ class AlatService {
 
     // Invalidasi cache
     this.invalidateCache();
+
+    return;
   }
 
   /**
@@ -211,6 +213,7 @@ class AlatService {
   invalidateCache() {
     cacheHelper.del("alat_user_index");
     cacheHelper.del("alat_admin_index");
+    cacheHelper.del("kategori_index");
     cacheHelper.del("admin_dashboard_stats");
   }
 
@@ -240,7 +243,7 @@ class AlatService {
 
     await alat.update({
       stok: newStock,
-      status: newStock > 0 ? "tersedia" : "maintenance",
+      status: newStock > 0 ? "tersedia" : "dipinjam",
     });
 
     // Invalidasi cache

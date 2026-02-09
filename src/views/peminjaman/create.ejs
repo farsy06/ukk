@@ -97,6 +97,23 @@
                             </div>
 
                             <div class="mb-3">
+                                <label for="jumlah" class="form-label">Jumlah <span class="text-danger">*</span></label>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="jumlah"
+                                    name="jumlah"
+                                    min="1"
+                                    max="<%= alat ? alat.stok : 1 %>"
+                                    value="1"
+                                    required
+                                >
+                                <div class="form-text text-muted">
+                                    Maksimal sesuai stok tersedia.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="catatan" class="form-label">Catatan (Opsional)</label>
                                 <textarea class="form-control" id="catatan" name="catatan" rows="3" placeholder="Catatan atau keperluan peminjaman"></textarea>
                                 <div class="form-text text-muted">
@@ -137,6 +154,7 @@
         const tanggalPinjam = document.getElementById('tanggal_pinjam');
         const tanggalKembali = document.getElementById('tanggal_kembali');
         const catatan = document.getElementById('catatan');
+        const jumlah = document.getElementById('jumlah');
 
         // Set minimum date to today
         const today = new Date();
@@ -150,6 +168,16 @@
         const maxDateString = maxDate.toISOString().split('T')[0];
         tanggalPinjam.max = maxDateString;
         tanggalKembali.max = maxDateString;
+
+        // Clamp jumlah to available stock
+        if (jumlah) {
+            const maxStok = parseInt(jumlah.getAttribute('max') || '1', 10);
+            jumlah.addEventListener('input', function() {
+                const value = parseInt(this.value || '1', 10);
+                if (Number.isNaN(value) || value < 1) this.value = 1;
+                if (!Number.isNaN(maxStok) && value > maxStok) this.value = maxStok;
+            });
+        }
 
         // Date validation
         tanggalPinjam.addEventListener('change', function() {
@@ -215,6 +243,19 @@
                 
                 if (tanggalKembaliValue <= tanggalPinjamValue) {
                     errors.push('Tanggal kembali harus lebih dari tanggal pinjam');
+                    isValid = false;
+                }
+            }
+
+            // Validate jumlah
+            if (jumlah) {
+                const maxStok = parseInt(jumlah.getAttribute('max') || '1', 10);
+                const jumlahValue = parseInt(jumlah.value || '1', 10);
+                if (Number.isNaN(jumlahValue) || jumlahValue < 1) {
+                    errors.push('Jumlah peminjaman minimal 1');
+                    isValid = false;
+                } else if (!Number.isNaN(maxStok) && jumlahValue > maxStok) {
+                    errors.push('Jumlah peminjaman melebihi stok tersedia');
                     isValid = false;
                 }
             }

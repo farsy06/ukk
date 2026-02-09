@@ -23,6 +23,7 @@ const { loginLimiter } = require("../middleware/security");
 // Import validation middleware
 const {
   validateTanggalPeminjaman,
+  validateJumlahPeminjaman,
   validateRequired,
 } = require("../middleware/validation");
 
@@ -88,10 +89,17 @@ peminjamRouter.get(
 );
 peminjamRouter.post(
   "/peminjaman/ajukan",
-  validateRequired(["alat_id", "tanggal_pinjam", "tanggal_kembali"]),
+  validateRequired(["alat_id", "tanggal_pinjam", "tanggal_kembali", "jumlah"]),
   validateTanggalPeminjaman(),
-  invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat, dan home
+  validateJumlahPeminjaman(),
+  invalidateCache(["peminjaman", "alat", "home"]),
   asyncHandler(peminjamanController.create),
+);
+
+peminjamRouter.post(
+  "/peminjaman/batal/:id",
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.cancel),
 );
 
 router.use("/", peminjamRouter);

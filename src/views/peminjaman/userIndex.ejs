@@ -25,10 +25,12 @@
                                 <tr>
                                     <th scope="col" class="text-center">#</th>
                                     <th scope="col">Alat</th>
+                                    <th scope="col">Jumlah</th>
                                     <th scope="col">Tanggal Pinjam</th>
                                     <th scope="col">Tanggal Kembali</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Tanggal Pengembalian</th>
+                                    <th scope="col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,13 +50,18 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark">
-                                                <%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') : 'Tidak tersedia' %>
+                                            <span class="badge bg-secondary">
+                                                <%= item.jumlah || 1 %>
                                             </span>
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark">
-                                                <%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID') : 'Tidak tersedia' %>
+                                                <%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                <%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
                                             </span>
                                         </td>
                                         <td>
@@ -78,6 +85,10 @@
                                                 <span class="badge bg-danger d-flex align-items-center" style="min-width: 140px;">
                                                     <i class="fas fa-times-circle me-2"></i> Ditolak
                                                 </span>
+                                            <% } else if (item.status === 'dibatalkan') { %>
+                                                <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
+                                                    <i class="fas fa-ban me-2"></i> Dibatalkan
+                                                </span>
                                             <% } else { %>
                                                 <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
                                                     <i class="fas fa-question-circle me-2"></i> Status Tidak Diketahui
@@ -87,8 +98,20 @@
                                         <td>
                                             <% if (item.tanggal_pengembalian) { %>
                                                 <span class="badge bg-light text-dark">
-                                                    <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
+                                                    <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
                                                 </span>
+                                            <% } else { %>
+                                                <span class="text-muted fst-italic">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (item.status === 'pending') { %>
+                                                <form action="/peminjaman/batal/<%= item.id %>" method="post" class="d-inline" onsubmit="return confirm('Yakin ingin membatalkan peminjaman ini?');">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Batalkan">
+                                                        <i class="fas fa-times"></i> Batal
+                                                    </button>
+                                                </form>
                                             <% } else { %>
                                                 <span class="text-muted fst-italic">-</span>
                                             <% } %>

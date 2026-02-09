@@ -5,6 +5,7 @@ const Kategori = require("../models/Kategori");
 const LogAktivitas = require("../models/LogAktivitas");
 const { cacheHelper } = require("../middleware/caching");
 const logger = require("../config/logging");
+const { Op } = require("sequelize");
 
 /**
  * Peminjaman Service
@@ -195,75 +196,123 @@ class PeminjamanService {
   }
 
   /**
-   * Create new peminjaman
+   * Check if alat is available for borrowing
+   * @param {number} alatId - Alat ID
+   * @param {number} jumlah - Amount requested
+   * @returns {Promise<{available: boolean, message: string}>}
+   */
+  async checkAlatAvailability(alatId, jumlah) {
+    const alat = await Alat.findByPk(alatId);
+
+    if (!alat) {
+      return { available: false, message: "Alat tidak ditemukan" };
+    }
+
+    if (alat.status !== "tersedia") {
+      return {
+        available: false,
+        message: `Alat tidak tersedia (status: ${alat.status})`,
+      };
+    }
+
+    if (alat.stok <= 0) {
+      return { available: false, message: "Stok alat habis" };
+    }
+
+    if (alat.stok < jumlah) {
+      return {
+        available: false,
+        message: `Stok tidak mencukupi. Tersedia: ${alat.stok}, Diminta: ${jumlah}`,
+      };
+    }
+
+    return { available: true, message: "Alat tersedia" };
+  }
+
+  /**
+   * Create new peminjaman (borrowing request)
    * @param {Object} data - Peminjaman data
    * @param {Object} user - User object
    * @returns {Promise<Object>} - Created peminjaman
    */
   async create(data, user) {
-    const { alat_id, tanggal_pinjam, tanggal_kembali } = data;
+    const { alat_id, tanggal_pinjam, tanggal_kembali, jumlah, catatan } = data;
+
+    // Validate input
+    if (!alat_id || !tanggal_pinjam || !tanggal_kembali) {
+      throw new Error("Data peminjaman tidak lengkap");
+    }
+
+    const jumlahPinjam = parseInt(jumlah, 10) || 1;
+
+    if (jumlahPinjam < 1) {
+      throw new Error("Jumlah peminjaman minimal 1");
+    }
+
+    // Check alat availability
+    const availability = await this.checkAlatAvailability(
+      alat_id,
+      jumlahPinjam,
+    );
+    if (!availability.available) {
+      throw new Error(availability.message);
+    }
 
     const alat = await Alat.findByPk(alat_id);
-    if (!alat) {
-      throw new Error("Alat tidak ditemukan");
-    }
 
-    if (alat.status !== "tersedia") {
-      throw new Error("Alat tidak tersedia untuk dipinjam");
-    }
-
+    // Validate dates
     const tanggalPinjam = new Date(tanggal_pinjam);
     const tanggalKembali = new Date(tanggal_kembali);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Cek apakah alat sudah dipinjam pada tanggal tersebut
-    const existingPeminjaman = await Peminjaman.findOne({
-      where: {
-        alat_id,
-        status: ["disetujui", "dipinjam"],
-        tanggal_pinjam: {
-          [require("sequelize").Op.lte]: tanggalKembali,
-        },
-        tanggal_kembali: {
-          [require("sequelize").Op.gte]: tanggalPinjam,
-        },
-      },
-    });
-
-    if (existingPeminjaman) {
-      throw new Error("Alat sudah dipinjam pada tanggal tersebut");
+    if (tanggalPinjam < today) {
+      throw new Error("Tanggal pinjam tidak boleh di masa lalu");
     }
 
+    if (tanggalKembali <= tanggalPinjam) {
+      throw new Error("Tanggal kembali harus lebih besar dari tanggal pinjam");
+    }
+
+    // Max borrowing 7 days
+    const diffDays = Math.ceil(
+      (tanggalKembali - tanggalPinjam) / (1000 * 60 * 60 * 24),
+    );
+    if (diffDays > 7) {
+      throw new Error("Maksimal peminjaman adalah 7 hari");
+    }
+
+    // Create peminjaman
     const peminjaman = await Peminjaman.create({
       user_id: user.id,
       alat_id,
       tanggal_pinjam: tanggalPinjam,
       tanggal_kembali: tanggalKembali,
+      jumlah: jumlahPinjam,
+      catatan: catatan || null,
+      status: "pending",
     });
 
-    // Update status alat
-    await alat.update({ status: "dipinjam" });
-
-    // Log aktivitas - handle system user (id 0) specially
+    // Log activity
     if (user.id > 0) {
       await LogAktivitas.create({
         user_id: user.id,
-        aktivitas: `Mengajukan peminjaman alat: ${alat.nama_alat}`,
+        aktivitas: `Mengajukan peminjaman alat: ${alat.nama_alat} (jumlah: ${jumlahPinjam})`,
       });
-    } else {
-      // For system activities, we can skip logging or use a different approach
-      logger.info(
-        `Peminjaman request completed: ${alat.nama_alat} - Skipping activity log for system action`,
-      );
     }
 
-    // Invalidasi cache
+    logger.info(
+      `Peminjaman created: ${alat.nama_alat} by user ${user.id}, quantity: ${jumlahPinjam}`,
+    );
+
+    // Invalidate cache
     this.invalidateCache();
 
     return peminjaman;
   }
 
   /**
-   * Approve peminjaman
+   * Approve peminjaman - deduct stock and update status
    * @param {number} id - Peminjaman ID
    * @param {Object} user - User object (petugas)
    * @returns {Promise<Object>} - Updated peminjaman
@@ -271,23 +320,56 @@ class PeminjamanService {
   async approve(id, user) {
     const peminjaman = await this.getById(id);
 
+    if (peminjaman.status !== "pending") {
+      throw new Error("Peminjaman sudah diproses sebelumnya");
+    }
+
+    const jumlah = peminjaman.jumlah || 1;
+    const alat = await Alat.findByPk(peminjaman.alat_id);
+
+    if (!alat) {
+      throw new Error("Alat tidak ditemukan");
+    }
+
+    // Double check stock availability
+    if (alat.stok < jumlah) {
+      // Reject if stock is insufficient
+      await peminjaman.update({ status: "ditolak" });
+      throw new Error(
+        `Stok tidak mencukupi. Tersedia: ${alat.stok}, Diminta: ${jumlah}`,
+      );
+    }
+
+    // Update peminjaman status
     await peminjaman.update({
       status: "disetujui",
     });
 
-    // Update status alat
-    await Alat.update(
-      { status: "dipinjam" },
-      { where: { id: peminjaman.alat_id } },
-    );
+    // Deduct stock
+    const newStock = alat.stok - jumlah;
+    let newStatus = alat.status;
 
-    // Log aktivitas
-    await LogAktivitas.create({
-      user_id: user.id,
-      aktivitas: `Menyetujui peminjaman alat ${peminjaman.alat.nama_alat} untuk ${peminjaman.user.nama}`,
+    // If stock runs out, change status to "dipinjam" (all borrowed out)
+    if (newStock === 0) {
+      newStatus = "dipinjam";
+    }
+
+    await alat.update({
+      stok: newStock,
+      status: newStatus,
     });
 
-    // Invalidasi cache
+    // Log activity
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Menyetujui peminjaman alat ${alat.nama_alat} untuk ${peminjaman.user.nama} (jumlah: ${jumlah})`,
+    });
+
+    logger.info(
+      `Peminjaman approved: ${alat.nama_alat}, stock reduced from ${alat.stok} to ${newStock}`,
+    );
+
+    // Invalidate cache
     this.invalidateCache();
 
     return peminjaman;
@@ -302,30 +384,28 @@ class PeminjamanService {
   async reject(id, user) {
     const peminjaman = await this.getById(id);
 
+    if (peminjaman.status !== "pending") {
+      throw new Error("Peminjaman sudah diproses sebelumnya");
+    }
+
     await peminjaman.update({
       status: "ditolak",
     });
 
-    // Update status alat kembali ke tersedia
-    await Alat.update(
-      { status: "tersedia" },
-      { where: { id: peminjaman.alat_id } },
-    );
-
-    // Log aktivitas
+    // Log activity
     await LogAktivitas.create({
       user_id: user.id,
-      aktivitas: `Menolak peminjaman alat ${peminjaman.alat.nama_alat} untuk ${peminjaman.user.nama}`,
+      aktivitas: `Menolak peminjaman alat ${peminjaman.alat.nama_alat} untuk ${peminjaman.user.nama} (jumlah: ${peminjaman.jumlah || 1})`,
     });
 
-    // Invalidasi cache
+    // Invalidate cache
     this.invalidateCache();
 
     return peminjaman;
   }
 
   /**
-   * Return item (konfirmasi pengembalian)
+   * Return item - add stock back and update status
    * @param {number} id - Peminjaman ID
    * @param {Object} user - User object (petugas)
    * @returns {Promise<Object>} - Updated peminjaman
@@ -333,25 +413,82 @@ class PeminjamanService {
   async returnItem(id, user) {
     const peminjaman = await this.getById(id);
 
+    if (peminjaman.status !== "disetujui" && peminjaman.status !== "dipinjam") {
+      throw new Error("Status peminjaman tidak valid untuk pengembalian");
+    }
+
+    const jumlah = peminjaman.jumlah || 1;
     const today = new Date();
+
+    // Update peminjaman status
     await peminjaman.update({
       status: "dikembalikan",
       tanggal_pengembalian: today,
     });
 
-    // Update status alat
-    await Alat.update(
-      { status: "tersedia" },
-      { where: { id: peminjaman.alat_id } },
-    );
+    // Add stock back
+    const alat = await Alat.findByPk(peminjaman.alat_id);
+    if (alat) {
+      const newStock = alat.stok + jumlah;
 
-    // Log aktivitas
+      // If stock was 0 and now available, change status back to "tersedia"
+      let newStatus = alat.status;
+      if (alat.status === "dipinjam" && newStock > 0) {
+        newStatus = "tersedia";
+      }
+
+      await alat.update({
+        stok: newStock,
+        status: newStatus,
+      });
+
+      logger.info(
+        `Item returned: ${alat.nama_alat}, stock increased from ${alat.stok} to ${newStock}`,
+      );
+    }
+
+    // Log activity
     await LogAktivitas.create({
       user_id: user.id,
-      aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama}`,
+      aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama} (jumlah: ${jumlah})`,
     });
 
-    // Invalidasi cache
+    // Invalidate cache
+    this.invalidateCache();
+
+    return peminjaman;
+  }
+
+  /**
+   * Cancel peminjaman (by user before approval)
+   * @param {number} id - Peminjaman ID
+   * @param {Object} user - User object
+   * @returns {Promise<Object>} - Updated peminjaman
+   */
+  async cancel(id, user) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.user_id !== user.id) {
+      throw new Error(
+        "Anda tidak memiliki akses untuk membatalkan peminjaman ini",
+      );
+    }
+
+    if (peminjaman.status !== "pending") {
+      throw new Error("Peminjaman yang sudah diproses tidak dapat dibatalkan");
+    }
+
+    await peminjaman.update({
+      status: "dibatalkan",
+    });
+
+    // Log activity
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Membatalkan peminjaman alat ${peminjaman.alat.nama_alat}`,
+    });
+
+    // Invalidate cache
     this.invalidateCache();
 
     return peminjaman;
@@ -387,15 +524,15 @@ class PeminjamanService {
       alat_id,
       status: ["disetujui", "dipinjam"],
       tanggal_pinjam: {
-        [require("sequelize").Op.lte]: tanggal_kembali,
+        [Op.lte]: tanggal_kembali,
       },
       tanggal_kembali: {
-        [require("sequelize").Op.gte]: tanggal_pinjam,
+        [Op.gte]: tanggal_pinjam,
       },
     };
 
     if (excludeId) {
-      where.id = { [require("sequelize").Op.ne]: excludeId };
+      where.id = { [Op.ne]: excludeId };
     }
 
     const existing = await Peminjaman.findOne({ where });

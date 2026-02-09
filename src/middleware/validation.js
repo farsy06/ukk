@@ -269,6 +269,25 @@ const validateTanggalPeminjaman = () => {
   };
 };
 
+/**
+ * Validation middleware untuk jumlah peminjaman
+ * @returns {Function} - Express middleware function
+ */
+const validateJumlahPeminjaman = () => {
+  return (req, res, next) => {
+    const jumlah = req.body.jumlah;
+    if (jumlah === undefined || jumlah === null || jumlah === "") return next();
+
+    const parsed = parseInt(jumlah, 10);
+    if (Number.isNaN(parsed) || parsed < 1) {
+      logger.warn(`Validation failed: invalid jumlah peminjaman`);
+      throw new ValidationError("Jumlah peminjaman harus minimal 1", "jumlah");
+    }
+
+    next();
+  };
+};
+
 module.exports = {
   validateRequired,
   validateEmail,
@@ -279,4 +298,5 @@ module.exports = {
   validateAlatKondisi,
   validatePeminjamanStatus,
   validateTanggalPeminjaman,
+  validateJumlahPeminjaman,
 };

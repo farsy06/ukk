@@ -8,8 +8,14 @@ const showCreate = async (req, res) => {
   try {
     const alat = await alatService.getById(req.params.id);
 
-    if (alat.status !== "tersedia") {
-      return res.status(400).send("Alat tidak tersedia untuk dipinjam");
+    // Check availability
+    const availability = await peminjamanService.checkAlatAvailability(
+      alat.id,
+      1,
+    );
+
+    if (!availability.available) {
+      return res.status(400).send(availability.message);
     }
 
     res.render("peminjaman/create", {
@@ -27,13 +33,16 @@ const showCreate = async (req, res) => {
 // Proses pengajuan peminjaman
 const create = async (req, res) => {
   try {
-    const { alat_id, tanggal_pinjam, tanggal_kembali } = req.body;
+    const { alat_id, tanggal_pinjam, tanggal_kembali, jumlah, catatan } =
+      req.body;
 
     await peminjamanService.create(
       {
         alat_id,
         tanggal_pinjam,
         tanggal_kembali,
+        jumlah,
+        catatan,
       },
       req.user,
     );
@@ -144,8 +153,24 @@ const returnItem = async (req, res) => {
     res.redirect("/petugas");
   } catch (error) {
     logger.error("Error in peminjaman return:", error);
-    req.flash("error", error.message || "Terjadi kesalahan saat mengembalikan.");
+    req.flash(
+      "error",
+      error.message || "Terjadi kesalahan saat mengembalikan.",
+    );
     res.redirect("/petugas");
+  }
+};
+
+// Batalkan peminjaman (peminjam)
+const cancel = async (req, res) => {
+  try {
+    await peminjamanService.cancel(req.params.id, req.user);
+    req.flash("success", "Peminjaman berhasil dibatalkan.");
+    res.redirect("/peminjaman");
+  } catch (error) {
+    logger.error("Error in peminjaman cancel:", error);
+    req.flash("error", error.message || "Terjadi kesalahan saat membatalkan.");
+    res.redirect("/peminjaman");
   }
 };
 
@@ -158,4 +183,5 @@ module.exports = {
   approve,
   reject,
   returnItem,
+  cancel,
 };

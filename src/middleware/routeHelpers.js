@@ -7,6 +7,7 @@ const {
   validateAlatStatus,
   validateAlatKondisi,
   validateTanggalPeminjaman,
+  validateJumlahPeminjaman,
 } = require("./validation");
 
 const { cacheMiddleware: cachingCacheMiddleware } = require("./caching");
@@ -83,8 +84,9 @@ const validateAlatManagement = validateAlatUpdate;
  * Menggabungkan validasi yang dibutuhkan untuk peminjaman
  */
 const validatePeminjaman = [
-  validateRequired(["alat_id", "tanggal_pinjam", "tanggal_kembali"]),
+  validateRequired(["alat_id", "tanggal_pinjam", "tanggal_kembali", "jumlah"]),
   validateTanggalPeminjaman(),
+  validateJumlahPeminjaman(),
 ];
 
 /**

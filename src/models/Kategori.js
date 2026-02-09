@@ -86,7 +86,15 @@ const Kategori = sequelize.define(
 Kategori.prototype.toJSON = function () {
   const values = { ...this.get() };
   // Add computed properties
-  values.alat_count = this.alat ? this.alat.length : 0;
+  // Priority: 1) literal SQL attribute, 2) loaded association, 3) default 0
+  const literalCount = this.get("alat_count");
+  if (literalCount !== null && literalCount !== undefined) {
+    values.alat_count = parseInt(literalCount, 10);
+  } else if (this.alat && Array.isArray(this.alat)) {
+    values.alat_count = this.alat.length;
+  } else {
+    values.alat_count = 0;
+  }
   return values;
 };
 
@@ -98,7 +106,6 @@ Kategori.getActiveKategori = function () {
       {
         model: require("./Alat"),
         as: "alat",
-        where: { is_active: true },
         required: false,
       },
     ],
@@ -113,7 +120,6 @@ Kategori.getKategoriWithAlat = function () {
       {
         model: require("./Alat"),
         as: "alat",
-        where: { is_active: true },
         required: false,
       },
     ],
@@ -133,7 +139,6 @@ Kategori.searchKategori = function (searchTerm) {
       {
         model: require("./Alat"),
         as: "alat",
-        where: { is_active: true },
         required: false,
       },
     ],
@@ -141,20 +146,16 @@ Kategori.searchKategori = function (searchTerm) {
 };
 
 Kategori.getKategoriStats = function () {
+  const Alat = require("./Alat");
   return this.findAll({
-    attributes: [
-      "id",
-      "nama_kategori",
-      "deskripsi",
-      "is_active",
-      [
-        sequelize.literal(
-          "(SELECT COUNT(*) FROM alat WHERE alat.kategori_id = kategori.id AND alat.is_active = true)",
-        ),
-        "alat_count",
-      ],
-    ],
     where: { is_active: true },
+    include: [
+      {
+        model: Alat,
+        as: "alat",
+        required: false,
+      },
+    ],
     order: [["nama_kategori", "ASC"]],
   });
 };
