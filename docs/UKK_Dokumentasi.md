@@ -689,6 +689,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 
 - Form user: `nama`, `username`, `email`, `password`, `role`
 - Filter laporan (opsional): `start_date`, `end_date` (query string)
+- Export laporan (opsional): `format=pdf` atau `format=excel` (query string)
 
 #### Proses Dashboard, User, Log & Laporan
 
@@ -696,16 +697,19 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - User: create/delete non-admin, log aktivitas.
 - Log: tampilkan `log_aktivitas` join `users`.
 - Laporan: generate agregasi dari service report, render view laporan.
+- Jika `format` diisi: generate file export (PDF/XLSX) lalu kirim sebagai attachment download.
 
 #### Output Dashboard, User, Log & Laporan
 
 - Halaman dashboard, daftar user, log aktivitas, laporan.
+- File export laporan (PDF/XLSX) jika request menggunakan `?format=...`.
 
 #### Fungsi/Method terkait Dashboard, User, Log & Laporan
 
 - `src/controllers/adminController.js`: `dashboard()`, `userIndex()`, `createUser()`, `destroyUser()`, `logIndex()`, `reportIndex()`, `petugasReportIndex()`, `generate*()`
 - `src/services/userService.js`: `getDashboardStats()`, `getAllUsersPaginated()`, `create()`, `delete()`, `getActivityLogs()`
 - `src/services/reportService.js`: `generateReportDashboard()`, `generateUserReport()`, `generateInventoryReport()`, `generatePeminjamanReport()`, `generateActivityReport()`, `generateStatistics()`
+- `src/services/reportExportService.js`: `build*Pdf()`, `build*Excel()` (export laporan PDF/XLSX)
 
 ---
 
