@@ -193,7 +193,11 @@
             </div>
         <% } %>
         
-        <%- body %>
+        <% if (typeof allowHtml !== 'undefined' && allowHtml) { %>
+            <%- body %>
+        <% } else { %>
+            <%= body %>
+        <% } %>
     </main>
 
     <!-- Footer -->

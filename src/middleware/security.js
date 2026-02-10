@@ -172,6 +172,11 @@ const csrfToken = (req, res, next) => {
     return next();
   }
 
+  // Ensure session is initialized so CSRF secret can be stored
+  if (req.session && !req.session.csrfInitialized) {
+    req.session.csrfInitialized = true;
+  }
+
   return csurf({ cookie: false })(req, res, (err) => {
     if (err) {
       logger.warn(

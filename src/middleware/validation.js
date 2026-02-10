@@ -1,6 +1,7 @@
 const logger = require("../config/logging");
 const { ValidationError } = require("../utils/helpers");
 const appConfig = require("../config/appConfig");
+const validator = require("validator");
 
 /**
  * Validation middleware untuk field yang wajib diisi
@@ -34,8 +35,15 @@ const validateEmail = (field = "email") => {
     const email = req.body[field];
     if (!email) return next();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const trimmedEmail =
+      typeof email === "string" ? email.trim() : String(email);
+    const isValidEmail = validator.isEmail(trimmedEmail, {
+      allow_display_name: false,
+      require_display_name: false,
+      allow_utf8_local_part: true,
+    });
+
+    if (!isValidEmail) {
       logger.warn(`Validation failed: invalid email format for field ${field}`);
       throw new ValidationError(
         `Format email tidak valid untuk field ${field}`,

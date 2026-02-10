@@ -2,6 +2,7 @@ const userService = require("../services/userService");
 const User = require("../models/User");
 const logger = require("../config/logging");
 const { ROLES } = require("../utils/constants");
+const appConfig = require("../config/appConfig");
 
 // Import cache helper
 const { cacheHelper } = require("../middleware/caching");
@@ -142,7 +143,7 @@ const login = async (req, res) => {
     res.cookie("remember_token", token, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      secure: process.env.NODE_ENV === "production",
+      secure: appConfig.security.rememberMe.cookie.secure,
       sameSite: "strict",
     });
     logger.info(`Remember token generated for user ${user.id}`);
@@ -185,7 +186,7 @@ const logout = async (req, res) => {
   // Clear remember token cookie
   res.clearCookie("remember_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: appConfig.security.rememberMe.cookie.secure,
     sameSite: "strict",
   });
 

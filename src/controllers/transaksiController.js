@@ -50,7 +50,8 @@ const create = async (req, res) => {
     res.redirect("/peminjaman");
   } catch (error) {
     logger.error("Error in peminjaman create:", error);
-    res.status(400).send(error.message);
+    req.flash("error", error.message || "Terjadi kesalahan");
+    res.redirect(req.get("Referrer") || "/peminjaman");
   }
 };
 

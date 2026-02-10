@@ -4,6 +4,10 @@
  */
 
 const appConfig = {
+  // Cookie security override for local/dev HTTP
+  allowInsecureCookies:
+    process.env.ALLOW_INSECURE_COOKIES === "true" ||
+    process.env.NODE_ENV !== "production",
   // Session configuration
   session: {
     secret:
@@ -19,7 +23,10 @@ const appConfig = {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure:
+        process.env.ALLOW_INSECURE_COOKIES === "true"
+          ? false
+          : process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
       sameSite: "strict",
@@ -62,7 +69,10 @@ const appConfig = {
       enabled: true,
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure:
+          process.env.ALLOW_INSECURE_COOKIES === "true"
+            ? false
+            : process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       },

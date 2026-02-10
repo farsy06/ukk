@@ -6,6 +6,8 @@
 const logger = require("../config/logging");
 const appConfig = require("../config/appConfig");
 const xss = require("xss");
+const validator = require("validator");
+const logDetails = process.env.NODE_ENV === "development";
 
 /**
  * Custom Error Classes
@@ -17,9 +19,13 @@ class ValidationError extends Error {
     this.name = "ValidationError";
     this.field = field;
     this.statusCode = 400;
-    logger.warn(
-      `Validation Error: ${message} ${field ? `on field: ${field}` : ""}`,
-    );
+    if (logDetails) {
+      logger.warn(
+        `Validation Error: ${message} ${field ? `on field: ${field}` : ""}`,
+      );
+    } else {
+      logger.warn("Validation Error", field ? { field } : undefined);
+    }
   }
 }
 
@@ -28,7 +34,11 @@ class AuthenticationError extends Error {
     super(message);
     this.name = "AuthenticationError";
     this.statusCode = 401;
-    logger.warn(`Authentication Error: ${message}`);
+    if (logDetails) {
+      logger.warn(`Authentication Error: ${message}`);
+    } else {
+      logger.warn("Authentication Error");
+    }
   }
 }
 
@@ -37,7 +47,11 @@ class AuthorizationError extends Error {
     super(message);
     this.name = "AuthorizationError";
     this.statusCode = 403;
-    logger.warn(`Authorization Error: ${message}`);
+    if (logDetails) {
+      logger.warn(`Authorization Error: ${message}`);
+    } else {
+      logger.warn("Authorization Error");
+    }
   }
 }
 
@@ -47,7 +61,11 @@ class DatabaseError extends Error {
     this.name = "DatabaseError";
     this.statusCode = 500;
     this.originalError = originalError;
-    logger.error(`Database Error: ${message}`, originalError);
+    if (logDetails) {
+      logger.error(`Database Error: ${message}`, originalError);
+    } else {
+      logger.error("Database Error");
+    }
   }
 }
 
@@ -56,7 +74,11 @@ class NotFoundError extends Error {
     super(`${resource} tidak ditemukan`);
     this.name = "NotFoundError";
     this.statusCode = 404;
-    logger.warn(`Not Found Error: ${resource}`);
+    if (logDetails) {
+      logger.warn(`Not Found Error: ${resource}`);
+    } else {
+      logger.warn("Not Found Error");
+    }
   }
 }
 
@@ -120,8 +142,12 @@ function errorHandler(err, req, res) {
  * @returns {boolean} - True if email is valid
  */
 function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (typeof email !== "string") return false;
+  return validator.isEmail(email, {
+    allow_display_name: false,
+    require_display_name: false,
+    allow_utf8_local_part: true,
+  });
 }
 
 /**

@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
+// Allow trusted HTML rendering for all web routes
+router.use((req, res, next) => {
+  res.locals.allowHtml = true;
+  next();
+});
+
 // Import controllers
 const userController = require("../controllers/userController");
 const homeController = require("../controllers/homeController");

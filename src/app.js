@@ -59,6 +59,7 @@ async function startServer() {
     // Konfigurasi view engine
     app.set("view engine", "ejs");
     app.set("views", path.join(__dirname, "views"));
+    app.set("trust proxy", 1);
 
     // Gunakan express-ejs-layouts
     app.use(expressLayouts);
@@ -86,7 +87,13 @@ async function startServer() {
     });
 
     // CSRF Protection
-    app.use(csrfToken);
+    const enableCsrf = appConfig.security.csrf !== false;
+    app.use((req, res, next) => {
+      if (!enableCsrf) {
+        return next();
+      }
+      return csrfToken(req, res, next);
+    });
 
     // Input sanitization (after body parsing & CSRF)
     app.use(sanitizeInput);
