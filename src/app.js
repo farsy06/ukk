@@ -74,7 +74,15 @@ async function startServer() {
     app.use(express.json());
 
     // Session configuration
-    app.use(session(appConfig.session));
+    const sessionConfig = {
+      ...appConfig.session,
+      cookie: {
+        ...(appConfig.session && appConfig.session.cookie),
+        httpOnly: true,
+        secure: appConfig.app.environment === "production",
+      },
+    };
+    app.use(session(sessionConfig));
 
     // Enforce HTTPS in production to avoid clear-text cookie transmission
     if (appConfig.app.environment === "production") {

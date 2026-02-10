@@ -298,7 +298,8 @@
                                 const url = new URL(href, window.location.origin);
                                 if (url.origin !== window.location.origin) return '#';
                                 if (!url.pathname.startsWith('/')) return '#';
-                                return url.pathname + url.search + url.hash;
+                                // Use only the validated path and query string; drop the hash fragment
+                                return url.pathname + url.search;
                             } catch (e) {
                                 return '#';
                             }

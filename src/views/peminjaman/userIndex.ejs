@@ -29,12 +29,25 @@
                                     <th scope="col">Tanggal Pinjam</th>
                                     <th scope="col">Tanggal Kembali</th>
                                     <th scope="col">Status</th>
+                                    <th scope="col">Keterlambatan</th>
+                                    <th scope="col">Denda</th>
                                     <th scope="col">Tanggal Pengembalian</th>
                                     <th scope="col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <% peminjaman.forEach(function(item, index) { %>
+                                    <% 
+                                        const isOverdue = typeof item.isOverdue === 'function' 
+                                            ? item.isOverdue() 
+                                            : !!item.is_overdue;
+                                        const daysOverdue = typeof item.getDaysOverdue === 'function' 
+                                            ? item.getDaysOverdue() 
+                                            : (item.days_overdue || 0);
+                                        const fineAmount = typeof item.calculateFine === 'function' 
+                                            ? item.calculateFine() 
+                                            : (item.fine_amount || 0);
+                                    %>
                                     <tr>
                                         <td class="text-center"><%= index + 1 %></td>
                                         <td>
@@ -93,6 +106,24 @@
                                                 <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
                                                     <i class="fas fa-question-circle me-2"></i> Status Tidak Diketahui
                                                 </span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (isOverdue) { %>
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> Terlambat <%= daysOverdue %> hari
+                                                </span>
+                                            <% } else { %>
+                                                <span class="text-muted fst-italic">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (isOverdue) { %>
+                                                <span class="badge bg-light text-dark">
+                                                    Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %>
+                                                </span>
+                                            <% } else { %>
+                                                <span class="text-muted fst-italic">-</span>
                                             <% } %>
                                         </td>
                                         <td>

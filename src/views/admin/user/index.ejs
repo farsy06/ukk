@@ -180,9 +180,9 @@
                     const role = row.getAttribute('data-role').toLowerCase();
                     
                     const matches = nama.includes(searchTerm) || 
-                                   username.includes(searchTerm) || 
-                                   email.includes(searchTerm) || 
-                                   role.includes(searchTerm);
+                        username.includes(searchTerm) || 
+                        email.includes(searchTerm) || 
+                        role.includes(searchTerm);
                     
                     row.style.display = matches ? '' : 'none';
                 });

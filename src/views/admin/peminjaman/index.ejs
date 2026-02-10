@@ -36,6 +36,8 @@
                                 <th>Tanggal Pinjam</th>
                                 <th>Tanggal Kembali</th>
                                 <th>Status</th>
+                                <th>Keterlambatan</th>
+                                <th>Denda</th>
                                 <th>Tanggal Pengembalian</th>
                                 <th>Aksi</th>
                             </tr>
@@ -43,6 +45,17 @@
                         <tbody>
                             <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
                                 <% peminjaman.forEach(function(item, index) { %>
+                                    <% 
+                                        const isOverdue = typeof item.isOverdue === 'function' 
+                                            ? item.isOverdue() 
+                                            : !!item.is_overdue;
+                                        const daysOverdue = typeof item.getDaysOverdue === 'function' 
+                                            ? item.getDaysOverdue() 
+                                            : (item.days_overdue || 0);
+                                        const fineAmount = typeof item.calculateFine === 'function' 
+                                            ? item.calculateFine() 
+                                            : (item.fine_amount || 0);
+                                    %>
                                     <tr data-id="<%= item.id %>" data-peminjam="<%= item.user.nama %>" data-alat="<%= item.alat.nama_alat %>" data-status="<%= item.status %>">
                                         <td><%= (pagination && pagination.offset ? pagination.offset : 0) + index + 1 %></td>
                                         <td>
@@ -118,6 +131,24 @@
                                             <% } %>
                                         </td>
                                         <td>
+                                            <% if (isOverdue) { %>
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> Terlambat <%= daysOverdue %> hari
+                                                </span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (isOverdue) { %>
+                                                <span class="badge bg-light text-dark">
+                                                    Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %>
+                                                </span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
                                             <% if (item.tanggal_pengembalian) { %>
                                                 <div class="text-nowrap">
                                                     <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
@@ -148,7 +179,7 @@
                                 <% }); %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="9" class="text-center py-5">
+                                    <td colspan="11" class="text-center py-5">
                                         <div class="alert alert-info mb-0">
                                             <i class="fas fa-info-circle"></i> Belum ada data peminjaman.
                                         </div>

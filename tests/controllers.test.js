@@ -65,7 +65,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Session configuration
-app.use(session(testConfig.session));
+const sessionConfig = {
+  ...testConfig.session,
+  cookie: {
+    ...(testConfig.session.cookie || {}),
+    secure: true,
+  },
+};
+app.use(session(sessionConfig));
 
 // CSRF Protection
 app.use(csrfToken);

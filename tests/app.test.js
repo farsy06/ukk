@@ -72,7 +72,14 @@ const createTestApp = () => {
   app.use(express.json());
 
   // Session configuration
-  app.use(session(testConfig.session));
+  const sessionConfig = {
+    ...testConfig.session,
+    cookie: {
+      ...(testConfig.session.cookie || {}),
+      secure: true,
+    },
+  };
+  app.use(session(sessionConfig));
 
   // CSRF Protection
   app.use(csrfToken);
@@ -130,22 +137,7 @@ describe("Basic App Tests", () => {
     app = createTestApp();
   });
 
-  afterAll(async () => {
-    // Close database connection if needed
-    try {
-      await db.sequelize.close();
-    } catch (error) {
-      logger.error("Error closing database connection:", error);
-    }
-
-    // Stop cache timer to avoid open handle warnings
-    try {
-      const { _cache } = require("../src/middleware/caching");
-      _cache.close();
-    } catch (error) {
-      logger.error("Error closing cache:", error);
-    }
-  });
+  // Teardown handled by Jest global teardown to avoid closing shared resources mid-run
 
   test("GET /login should return 200 status", async () => {
     const response = await request(app).get("/login");
