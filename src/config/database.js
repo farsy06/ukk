@@ -87,14 +87,54 @@ let sequelize = new Sequelize(dbName, dbUser, dbPassword, {
   logging: false, // Set true jika ingin melihat query SQL
 });
 
-// Re-initialize Sequelize after ensuring database exists (for cases where database might not have existed when first initialized)
-async function initializeSequelize() {
+const modelModules = [
+  "../models/User",
+  "../models/Alat",
+  "../models/Kategori",
+  "../models/Peminjaman",
+  "../models/LogAktivitas",
+  "../models/associations",
+];
+
+const reloadModels = () => {
+  modelModules.forEach((modulePath) => {
+    const resolved = require.resolve(modulePath, { paths: [__dirname] });
+    if (require.cache[resolved]) {
+      delete require.cache[resolved];
+    }
+  });
+
+  // Re-require models and associations so they bind to the current sequelize
+  require("../models/User");
+  require("../models/Alat");
+  require("../models/Kategori");
+  require("../models/Peminjaman");
+  require("../models/LogAktivitas");
+  require("../models/associations");
+};
+
+// Re-initialize Sequelize and optionally reload models
+async function initializeSequelize({ reinitializeModels = false } = {}) {
+  if (!reinitializeModels) {
+    return sequelize;
+  }
+
+  try {
+    await sequelize.close();
+  } catch (_err) {
+    logger.warn("Gagal menutup koneksi database:", _err.message);
+  }
+
   sequelize = new Sequelize(dbName, dbUser, dbPassword, {
     host: dbHost,
     dialect: "mysql",
     port: dbPort,
     logging: false, // Set true jika ingin melihat query SQL
   });
+
+  // Keep exported reference in sync with the latest instance
+  module.exports.sequelize = sequelize;
+  reloadModels();
 
   return sequelize;
 }
@@ -110,9 +150,11 @@ async function testConnection() {
 }
 
 // Main initialization function
-async function initializeDatabase() {
+async function initializeDatabase(options = {}) {
   await createDatabaseIfNotExists();
-  await initializeSequelize();
+  if (options.reinitializeModels) {
+    await initializeSequelize({ reinitializeModels: true });
+  }
   await testConnection();
 }
 
@@ -121,4 +163,5 @@ module.exports = {
   testConnection,
   initializeDatabase,
   createDatabaseIfNotExists,
+  initializeSequelize,
 };

@@ -4,9 +4,16 @@ require("dotenv").config({
   override: true, // Override any existing environment variables
 });
 
+jest.mock("../src/config/logging", () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+}));
+
 const request = require("supertest");
 const testConfig = require("./testConfig");
-const { sequelize, initializeDatabase } = require("../src/config/database");
+const db = require("../src/config/database");
 const logger = require("../src/config/logging");
 
 // Create a test app instance
@@ -90,7 +97,7 @@ describe("Basic App Tests", () => {
     logger.info("Skipping database synchronization for basic app tests");
 
     // Initialize database
-    await initializeDatabase();
+    await db.initializeDatabase();
 
     // Define model associations before creating the app
     // This ensures models are properly associated for the tests
@@ -102,15 +109,30 @@ describe("Basic App Tests", () => {
       logger.error("Failed to define model associations:", error);
     }
 
+    // Ensure tables exist for basic route tests
+    try {
+      await db.sequelize.sync();
+    } catch (error) {
+      logger.error("Failed to sync database in basic app tests:", error);
+    }
+
     app = createTestApp();
   });
 
   afterAll(async () => {
     // Close database connection if needed
     try {
-      await sequelize.close();
+      await db.sequelize.close();
     } catch (error) {
       logger.error("Error closing database connection:", error);
+    }
+
+    // Stop cache timer to avoid open handle warnings
+    try {
+      const { _cache } = require("../src/middleware/caching");
+      _cache.close();
+    } catch (error) {
+      logger.error("Error closing cache:", error);
     }
   });
 

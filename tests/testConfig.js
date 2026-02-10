@@ -3,6 +3,7 @@ require("dotenv").config({
   path: "./.env.test.local",
   override: true, // Override any existing environment variables
 });
+process.env.NODE_ENV = "test";
 
 const appConfig = require("../src/config/appConfig");
 const constants = require("../src/utils/constants");

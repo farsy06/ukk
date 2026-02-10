@@ -21,7 +21,7 @@ const index = async (req, res) => {
 
 // Menampilkan form tambah kategori
 const showCreate = (req, res) => {
-  res.render("admin/kategori/create", {
+  res.render("admin/kategori/tambah", {
     title: "Tambah Kategori",
     error: null,
   });
@@ -36,7 +36,7 @@ const create = async (req, res) => {
     res.redirect("/admin/kategori");
   } catch (error) {
     logger.error("Error in kategori create:", error);
-    res.status(400).render("admin/kategori/create", {
+    res.status(400).render("admin/kategori/tambah", {
       title: "Tambah Kategori",
       error: error.message,
     });

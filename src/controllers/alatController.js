@@ -23,7 +23,7 @@ const showCreate = async (req, res) => {
   try {
     const kategori = await alatService.getKategori();
 
-    res.render("admin/alat/create", {
+    res.render("admin/alat/tambah", {
       title: "Tambah Alat",
       kategori,
       error: null,

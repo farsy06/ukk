@@ -18,7 +18,7 @@ const showCreate = async (req, res) => {
       return res.status(400).send(availability.message);
     }
 
-    res.render("peminjaman/create", {
+    res.render("peminjaman/tambah", {
       title: "Ajukan Peminjaman",
       alat,
       user: req.user,

@@ -23,6 +23,31 @@
     </div>
 </div>
 
+<%
+    const parsedPeminjaman = (() => {
+        if (typeof peminjaman === 'string') {
+            try {
+                return JSON.parse(peminjaman);
+            } catch (_err) {
+                return [];
+            }
+        }
+        return peminjaman;
+    })();
+    const peminjamanList = Array.isArray(parsedPeminjaman)
+        ? parsedPeminjaman
+        : (parsedPeminjaman && Array.isArray(parsedPeminjaman.rows))
+            ? parsedPeminjaman.rows
+            : [];
+    const normalizeStatus = (status) =>
+        typeof status === 'string' ? status.toLowerCase().trim() : '';
+    const pendingCount = peminjamanList.filter(p => normalizeStatus(p.status) === 'pending').length;
+    const disetujuiCount = peminjamanList.filter(p => normalizeStatus(p.status) === 'disetujui').length;
+    const dipinjamCount = peminjamanList.filter(p => normalizeStatus(p.status) === 'dipinjam').length;
+    const dikembalikanCount = peminjamanList.filter(p => normalizeStatus(p.status) === 'dikembalikan').length;
+    const totalCount = peminjamanList.length;
+%>
+
 <div class="row mt-4">
     <div class="col-md-3">
         <div class="card border-info">
@@ -39,10 +64,6 @@
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-info">Pending</span>
                     <span class="badge bg-primary">Jumlah: 
-                        <% 
-                        const pendingCount = (typeof peminjaman !== 'undefined' && peminjaman) ? 
-                            peminjaman.filter(p => p.status === 'pending').length : 0;
-                        %>
                         <%= pendingCount %>
                     </span>
                 </div>
@@ -65,10 +86,6 @@
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-success">Approved</span>
                     <span class="badge bg-success">Jumlah: 
-                        <% 
-                        const disetujuiCount = (typeof peminjaman !== 'undefined' && peminjaman) ? 
-                            peminjaman.filter(p => p.status === 'disetujui').length : 0;
-                        %>
                         <%= disetujuiCount %>
                     </span>
                 </div>
@@ -91,10 +108,6 @@
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-primary">Dipinjam</span>
                     <span class="badge bg-primary">Jumlah: 
-                        <% 
-                        const dipinjamCount = (typeof peminjaman !== 'undefined' && peminjaman) ? 
-                            peminjaman.filter(p => p.status === 'dipinjam').length : 0;
-                        %>
                         <%= dipinjamCount %>
                     </span>
                 </div>
@@ -117,10 +130,6 @@
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-secondary">Selesai</span>
                     <span class="badge bg-secondary">Jumlah: 
-                        <% 
-                        const dikembalikanCount = (typeof peminjaman !== 'undefined' && peminjaman) ? 
-                            peminjaman.filter(p => p.status === 'dikembalikan').length : 0;
-                        %>
                         <%= dikembalikanCount %>
                     </span>
                 </div>
@@ -147,10 +156,6 @@
                     </div>
                     <div>
                         <span class="badge bg-info">Total: 
-                            <% 
-                            const totalCount = (typeof peminjaman !== 'undefined' && peminjaman) ? 
-                                peminjaman.length : 0;
-                            %>
                             <%= totalCount %>
                         </span>
                     </div>
@@ -171,8 +176,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
-                                <% peminjaman.forEach(function(item, index) { %>
+                            <% if (peminjamanList.length > 0) { %>
+                                <% peminjamanList.forEach(function(item, index) { %>
                                     <tr data-id="<%= item.id %>" data-peminjam="<%= item.user.nama %>" data-alat="<%= item.alat.nama_alat %>" data-status="<%= item.status %>">
                                         <td><%= index + 1 %></td>
                                         <td>

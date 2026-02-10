@@ -38,9 +38,17 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-info">Terbatas</span>
-                    <a href="/laporan/peminjaman" class="btn btn-info btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
+                    <div class="btn-group" role="group">
+                        <a href="<%= reportBasePath %>/peminjaman" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye"></i> Lihat
+                        </a>
+                        <a href="<%= reportBasePath %>/peminjaman?format=pdf" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        <a href="<%= reportBasePath %>/peminjaman?format=excel" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-file-excel"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,9 +68,17 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-primary">Ringkasan</span>
-                    <a href="/laporan/statistik" class="btn btn-primary btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
+                    <div class="btn-group" role="group">
+                        <a href="<%= reportBasePath %>/statistik" class="btn btn-primary btn-sm">
+                            <i class="fas fa-eye"></i> Lihat
+                        </a>
+                        <a href="<%= reportBasePath %>/statistik?format=pdf" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        <a href="<%= reportBasePath %>/statistik?format=excel" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-file-excel"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -82,43 +98,16 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <span class="badge bg-secondary">Audit Trail</span>
-                    <a href="/laporan/aktivitas" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informasi Akses</h6>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>Akses Terbatas:</strong> Sebagai petugas, Anda hanya dapat mengakses laporan terbatas.
-                    Untuk laporan lengkap, hubungi administrator.
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-check-circle text-success"></i> Akses Tersedia:</h6>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-hand-holding text-info"></i> Laporan Peminjaman</li>
-                            <li><i class="fas fa-chart-line text-primary"></i> Statistik Sistem</li>
-                            <li><i class="fas fa-history text-secondary"></i> Log Aktivitas</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-times-circle text-danger"></i> Akses Dibatasi:</h6>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-users text-muted"></i> Laporan User</li>
-                            <li><i class="fas fa-tools text-muted"></i> Laporan Inventori Lengkap</li>
-                            <li><i class="fas fa-file-pdf text-muted"></i> Ekspor PDF/Excel</li>
-                        </ul>
+                    <div class="btn-group" role="group">
+                        <a href="<%= reportBasePath %>/aktivitas" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> Lihat
+                        </a>
+                        <a href="<%= reportBasePath %>/aktivitas?format=pdf" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        <a href="<%= reportBasePath %>/aktivitas?format=excel" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-file-excel"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -135,17 +124,17 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3">
-                        <a href="/laporan/peminjaman" class="btn btn-info w-100 mb-2">
+                        <a href="<%= reportBasePath %>/peminjaman" class="btn btn-info w-100 mb-2">
                             <i class="fas fa-hand-holding"></i> Laporan Peminjaman
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="/laporan/statistik" class="btn btn-primary w-100 mb-2">
+                        <a href="<%= reportBasePath %>/statistik" class="btn btn-primary w-100 mb-2">
                             <i class="fas fa-chart-line"></i> Statistik Sistem
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="/laporan/aktivitas" class="btn btn-secondary w-100 mb-2">
+                        <a href="<%= reportBasePath %>/aktivitas" class="btn btn-secondary w-100 mb-2">
                             <i class="fas fa-history"></i> Log Aktivitas
                         </a>
                     </div>

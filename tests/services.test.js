@@ -71,6 +71,59 @@ jest.mock("../src/middleware/caching", () => ({
 // Mock the logger import for reportService
 jest.mock("../src/config/logging", () => mockLogger);
 
+// Mock database connection to prevent actual connections during tests
+jest.mock("../src/config/database", () => ({
+  sequelize: {
+    authenticate: jest.fn(),
+    sync: jest.fn(),
+  },
+  testConnection: jest.fn(),
+}));
+
+// Mock models to prevent database operations
+jest.mock("../src/models/User", () => ({
+  findAll: jest.fn(),
+  findOne: jest.fn(),
+  create: jest.fn(),
+  findByPk: jest.fn(),
+  count: jest.fn(),
+  findAndCountAll: jest.fn(),
+}));
+
+jest.mock("../src/models/Alat", () => ({
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  count: jest.fn(),
+  findAndCountAll: jest.fn(),
+}));
+
+jest.mock("../src/models/Kategori", () => ({
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  create: jest.fn(),
+  findOne: jest.fn(),
+  count: jest.fn(),
+  getKategoriStats: jest.fn(),
+}));
+
+jest.mock("../src/models/Peminjaman", () => ({
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  create: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
+  count: jest.fn(),
+  findAndCountAll: jest.fn(),
+}));
+
+jest.mock("../src/models/LogAktivitas", () => ({
+  create: jest.fn(),
+  findAll: jest.fn(),
+  count: jest.fn(),
+}));
+
 describe("Service Tests", () => {
   let userService,
     alatService,
@@ -78,60 +131,10 @@ describe("Service Tests", () => {
     peminjamanService,
     reportService;
 
-  beforeAll(() => {
-    // Mock database connection to prevent actual connections during tests
-    jest.mock("../src/config/database", () => ({
-      sequelize: {
-        authenticate: jest.fn(),
-        sync: jest.fn(),
-      },
-      testConnection: jest.fn(),
-    }));
-
-    // Mock models to prevent database operations
-    jest.mock("../src/models/User", () => ({
-      findAll: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      findByPk: jest.fn(),
-      count: jest.fn(),
-    }));
-
-    jest.mock("../src/models/Alat", () => ({
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    }));
-
-    jest.mock("../src/models/Kategori", () => ({
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
-      create: jest.fn(),
-      findOne: jest.fn(),
-      count: jest.fn(),
-    }));
-
-    jest.mock("../src/models/Peminjaman", () => ({
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
-      create: jest.fn(),
-      findOne: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    }));
-
-    jest.mock("../src/models/LogAktivitas", () => ({
-      create: jest.fn(),
-      findAll: jest.fn(),
-      count: jest.fn(),
-    }));
-  });
-
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    jest.resetModules();
 
     // Mock services with dependencies
     userService = require("../src/services/userService");
@@ -224,6 +227,33 @@ describe("Service Tests", () => {
       });
     });
 
+    describe("getAllUsersPaginated", () => {
+      it("should fetch paginated users", async () => {
+        const User = require("../src/models/User");
+        const paged = { rows: [mockUser], count: 1 };
+        jest.spyOn(User, "findAndCountAll").mockResolvedValue(paged);
+
+        const result = await userService.getAllUsersPaginated({
+          limit: 10,
+          offset: 0,
+        });
+
+        expect(result).toBe(paged);
+        expect(User.findAndCountAll).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("getById", () => {
+      it("should throw error if user not found", async () => {
+        const User = require("../src/models/User");
+        jest.spyOn(User, "findByPk").mockResolvedValue(null);
+
+        await expect(userService.getById(999)).rejects.toThrow(
+          "User tidak ditemukan",
+        );
+      });
+    });
+
     describe("create", () => {
       it("should create user successfully", async () => {
         const userData = {
@@ -273,6 +303,58 @@ describe("Service Tests", () => {
           "Username sudah digunakan",
         );
       });
+
+      it("should throw error if email already exists", async () => {
+        const userData = {
+          nama: "New User",
+          username: "newuser",
+          email: "existing@example.com",
+          password: "password123",
+          role: "peminjam",
+        };
+
+        const adminUser = { id: 1, nama: "Admin" };
+
+        const User = require("../src/models/User");
+        jest
+          .spyOn(User, "findOne")
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(mockUser);
+
+        await expect(userService.create(userData, adminUser)).rejects.toThrow(
+          "Email sudah digunakan",
+        );
+      });
+
+      it("should skip activity log for system user", async () => {
+        const userData = {
+          nama: "System User",
+          username: "systemuser",
+          email: "system@example.com",
+          password: "password123",
+          role: "peminjam",
+        };
+
+        const adminUser = { id: 0, nama: "System" };
+
+        const User = require("../src/models/User");
+        jest
+          .spyOn(User, "findOne")
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        jest.spyOn(User, "create").mockResolvedValue(mockUser);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create");
+
+        await userService.create(userData, adminUser);
+
+        expect(LogAktivitas.create).not.toHaveBeenCalled();
+        expect(mockLogger.info).toHaveBeenCalled();
+        expect(mockLogger.info.mock.calls[0][0]).toContain(
+          "User registration completed",
+        );
+      });
     });
 
     describe("delete", () => {
@@ -301,6 +383,75 @@ describe("Service Tests", () => {
         await expect(userService.delete(1, adminUser)).rejects.toThrow(
           "Tidak dapat menghapus user admin lain",
         );
+      });
+    });
+
+    describe("getActivityLogs", () => {
+      it("should fetch logs from database if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const logs = [mockLogAktivitas];
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "findAll").mockResolvedValue(logs);
+
+        const result = await userService.getActivityLogs();
+
+        expect(result).toBe(logs);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "admin_log_index",
+          logs,
+          300,
+        );
+      });
+    });
+
+    describe("counts and uniqueness", () => {
+      it("should fetch kategori count", async () => {
+        const Kategori = require("../src/models/Kategori");
+        jest.spyOn(Kategori, "count").mockResolvedValue(5);
+
+        const result = await userService.getKategoriCount();
+        expect(result).toBe(5);
+      });
+
+      it("should fetch alat count", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "count").mockResolvedValue(4);
+
+        const result = await userService.getAlatCount();
+        expect(result).toBe(4);
+      });
+
+      it("should fetch peminjaman count", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "count").mockResolvedValue(2);
+
+        const result = await userService.getPeminjamanCount();
+        expect(result).toBe(2);
+      });
+
+      it("should fetch user count", async () => {
+        const User = require("../src/models/User");
+        jest.spyOn(User, "count").mockResolvedValue(7);
+
+        const result = await userService.getUserCount();
+        expect(result).toBe(7);
+      });
+
+      it("should check username uniqueness", async () => {
+        const User = require("../src/models/User");
+        jest.spyOn(User, "findOne").mockResolvedValue(null);
+
+        const result = await userService.isUsernameUnique("unique");
+        expect(result).toBe(true);
+      });
+
+      it("should check email uniqueness", async () => {
+        const User = require("../src/models/User");
+        jest.spyOn(User, "findOne").mockResolvedValue(mockUser);
+
+        const result = await userService.isEmailUnique("taken@example.com");
+        expect(result).toBe(false);
       });
     });
   });
@@ -337,6 +488,36 @@ describe("Service Tests", () => {
       });
     });
 
+    describe("getAllForAdmin", () => {
+      it("should fetch alat for admin if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const mockAlatList = [mockAlat];
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findAll").mockResolvedValue(mockAlatList);
+
+        const result = await alatService.getAllForAdmin();
+
+        expect(result).toStrictEqual(mockAlatList);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "alat_admin_index",
+          mockAlatList,
+          300,
+        );
+      });
+    });
+
+    describe("getById", () => {
+      it("should throw error if alat not found", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(null);
+
+        await expect(alatService.getById(999)).rejects.toThrow(
+          "Alat tidak ditemukan",
+        );
+      });
+    });
+
     describe("create", () => {
       it("should create alat successfully", async () => {
         const alatData = {
@@ -361,6 +542,151 @@ describe("Service Tests", () => {
         expect(result).toBe(mockAlat);
         expect(Alat.create).toHaveBeenCalledTimes(1);
         expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+      });
+
+      it("should skip activity log for system user", async () => {
+        const alatData = {
+          nama_alat: "System Alat",
+          kategori_id: 1,
+          kondisi: "baik",
+          stok: 5,
+        };
+
+        const systemUser = { id: 0, nama: "System" };
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "create").mockResolvedValue(mockAlat);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create");
+
+        const result = await alatService.create(alatData, systemUser);
+
+        expect(result).toBe(mockAlat);
+        expect(LogAktivitas.create).not.toHaveBeenCalled();
+        expect(mockLogger.info).toHaveBeenCalled();
+      });
+
+      it("should use default stok of 1 when not provided", async () => {
+        const alatData = {
+          nama_alat: "Alat Tanpa Stok",
+          kategori_id: 1,
+          kondisi: "baik",
+        };
+
+        const user = { id: 1, nama: "User" };
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "create").mockResolvedValue(mockAlat);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+        await alatService.create(alatData, user);
+
+        expect(Alat.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            nama_alat: "Alat Tanpa Stok",
+            kategori_id: 1,
+            kondisi: "baik",
+            stok: 1,
+          }),
+        );
+      });
+    });
+
+    describe("update", () => {
+      it("should update alat successfully", async () => {
+        const alatToUpdate = {
+          ...mockAlat,
+          update: jest.fn().mockResolvedValue(),
+        };
+
+        jest.spyOn(alatService, "getById").mockResolvedValue(alatToUpdate);
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+        const invalidateSpy = jest.spyOn(alatService, "invalidateCache");
+
+        const data = {
+          nama_alat: "Updated Alat",
+          kategori_id: 2,
+          kondisi: "baik",
+          status: "tersedia",
+          stok: 10,
+        };
+
+        const result = await alatService.update(1, data, { id: 1 });
+
+        expect(result).toBe(alatToUpdate);
+        expect(alatToUpdate.update).toHaveBeenCalledTimes(1);
+        expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it("should use existing stok when not provided in update", async () => {
+        const alatToUpdate = {
+          ...mockAlat,
+          stok: 5,
+          update: jest.fn().mockResolvedValue(),
+        };
+
+        jest.spyOn(alatService, "getById").mockResolvedValue(alatToUpdate);
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+        jest.spyOn(alatService, "invalidateCache");
+
+        const data = {
+          nama_alat: "Updated Alat",
+          kategori_id: 2,
+          kondisi: "rusak",
+          status: "tersedia",
+          // stok not provided
+        };
+
+        await alatService.update(1, data, { id: 1 });
+
+        expect(alatToUpdate.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            nama_alat: "Updated Alat",
+            kategori_id: 2,
+            kondisi: "rusak",
+            status: "tersedia",
+            stok: 5, // should keep existing stock
+          }),
+        );
+      });
+    });
+
+    describe("delete", () => {
+      it("should delete alat successfully", async () => {
+        const alatToDelete = {
+          ...mockAlat,
+          destroy: jest.fn().mockResolvedValue(),
+        };
+
+        jest.spyOn(alatService, "getById").mockResolvedValue(alatToDelete);
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+        const invalidateSpy = jest.spyOn(alatService, "invalidateCache");
+
+        await alatService.delete(1, { id: 1 });
+
+        expect(alatToDelete.destroy).toHaveBeenCalledTimes(1);
+        expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("getKategori", () => {
+      it("should fetch kategori for dropdown", async () => {
+        const Kategori = require("../src/models/Kategori");
+        const list = [mockKategori];
+        jest.spyOn(Kategori, "findAll").mockResolvedValue(list);
+
+        const result = await alatService.getKategori();
+
+        expect(result).toBe(list);
+        expect(Kategori.findAll).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -390,6 +716,49 @@ describe("Service Tests", () => {
 
         expect(result).toBe(false);
       });
+
+      it("should return falsy value if alat not found", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(null);
+
+        const result = await alatService.isAvailable(999);
+
+        expect(result).toBeFalsy();
+      });
+    });
+
+    describe("updateStock", () => {
+      it("should update stock and status", async () => {
+        const alatToUpdate = {
+          ...mockAlat,
+          stok: 2,
+          status: "tersedia",
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(alatService, "getById").mockResolvedValue(alatToUpdate);
+        const invalidateSpy = jest.spyOn(alatService, "invalidateCache");
+
+        const result = await alatService.updateStock(1, -2);
+
+        expect(result).toBe(alatToUpdate);
+        expect(alatToUpdate.update).toHaveBeenCalledWith({
+          stok: 0,
+          status: "dipinjam",
+        });
+        expect(invalidateSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error when stock becomes negative", async () => {
+        const alatToUpdate = {
+          ...mockAlat,
+          stok: 1,
+        };
+        jest.spyOn(alatService, "getById").mockResolvedValue(alatToUpdate);
+
+        await expect(alatService.updateStock(1, -2)).rejects.toThrow(
+          "Stok tidak mencukupi",
+        );
+      });
     });
   });
 
@@ -412,11 +781,14 @@ describe("Service Tests", () => {
 
         const mockKategoriList = [mockKategori];
         const Kategori = require("../src/models/Kategori");
-        jest.spyOn(Kategori, "findAll").mockResolvedValue(mockKategoriList);
+        jest
+          .spyOn(Kategori, "getKategoriStats")
+          .mockResolvedValue(mockKategoriList);
 
         const result = await kategoriService.getAll();
 
         expect(result).toStrictEqual(mockKategoriList);
+        expect(Kategori.getKategoriStats).toHaveBeenCalledTimes(1);
         expect(mockCacheHelper.set).toHaveBeenCalledWith(
           "kategori_index",
           mockKategoriList,
@@ -469,9 +841,223 @@ describe("Service Tests", () => {
         ).rejects.toThrow("Nama kategori sudah ada");
       });
     });
+
+    describe("getById", () => {
+      it("should throw error if kategori not found", async () => {
+        const Kategori = require("../src/models/Kategori");
+        jest.spyOn(Kategori, "findByPk").mockResolvedValue(null);
+
+        await expect(kategoriService.getById(999)).rejects.toThrow(
+          "Kategori tidak ditemukan",
+        );
+      });
+    });
+
+    describe("update", () => {
+      it("should update kategori successfully", async () => {
+        const kategori = {
+          ...mockKategori,
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(kategoriService, "getById").mockResolvedValue(kategori);
+
+        const Kategori = require("../src/models/Kategori");
+        jest.spyOn(Kategori, "findOne").mockResolvedValue(null);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+        const invalidateSpy = jest.spyOn(kategoriService, "invalidateCache");
+
+        const result = await kategoriService.update(
+          1,
+          { nama_kategori: "Updated", deskripsi: "Desc" },
+          { id: 1 },
+        );
+
+        expect(result).toBe(kategori);
+        expect(kategori.update).toHaveBeenCalledTimes(1);
+        expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error if kategori name already used", async () => {
+        jest.spyOn(kategoriService, "getById").mockResolvedValue(mockKategori);
+
+        const Kategori = require("../src/models/Kategori");
+        jest.spyOn(Kategori, "findOne").mockResolvedValue(mockKategori);
+
+        await expect(
+          kategoriService.update(
+            1,
+            { nama_kategori: "Existing", deskripsi: "Desc" },
+            { id: 1 },
+          ),
+        ).rejects.toThrow("Nama kategori sudah digunakan");
+      });
+    });
+
+    describe("delete", () => {
+      it("should delete kategori successfully", async () => {
+        const kategori = {
+          ...mockKategori,
+          destroy: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(kategoriService, "getById").mockResolvedValue(kategori);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+        const invalidateSpy = jest.spyOn(kategoriService, "invalidateCache");
+
+        await kategoriService.delete(1, { id: 1 });
+
+        expect(kategori.destroy).toHaveBeenCalledTimes(1);
+        expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("isNameUnique", () => {
+      it("should return true when name is unique", async () => {
+        const Kategori = require("../src/models/Kategori");
+        jest.spyOn(Kategori, "findOne").mockResolvedValue(null);
+
+        const result = await kategoriService.isNameUnique("Unique");
+        expect(result).toBe(true);
+      });
+    });
   });
 
   describe("PeminjamanService", () => {
+    describe("getById", () => {
+      it("should throw error if peminjaman not found", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findByPk").mockResolvedValue(null);
+
+        await expect(peminjamanService.getById(999)).rejects.toThrow(
+          "Peminjaman tidak ditemukan",
+        );
+      });
+    });
+
+    describe("getAllForAdmin", () => {
+      it("should fetch peminjaman for admin if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const mockPeminjamanList = [mockPeminjaman];
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findAll").mockResolvedValue(mockPeminjamanList);
+
+        const result = await peminjamanService.getAllForAdmin();
+
+        expect(result).toStrictEqual(mockPeminjamanList);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "peminjaman_admin",
+          mockPeminjamanList,
+          180,
+        );
+      });
+    });
+
+    describe("getAllForAdminPaginated", () => {
+      it("should fetch paginated peminjaman for admin", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        const paged = { rows: [mockPeminjaman], count: 1 };
+        jest.spyOn(Peminjaman, "findAndCountAll").mockResolvedValue(paged);
+
+        const result = await peminjamanService.getAllForAdminPaginated({
+          limit: 5,
+          offset: 0,
+        });
+
+        expect(result).toBe(paged);
+      });
+    });
+
+    describe("getForPetugas", () => {
+      it("should fetch peminjaman for petugas if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const mockPeminjamanList = [mockPeminjaman];
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findAll").mockResolvedValue(mockPeminjamanList);
+
+        const result = await peminjamanService.getForPetugas();
+
+        expect(result).toStrictEqual(mockPeminjamanList);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "peminjaman_petugas",
+          mockPeminjamanList,
+          120,
+        );
+      });
+
+      it("should return cached peminjaman for petugas if available", async () => {
+        const cached = [mockPeminjaman];
+        mockCacheHelper.get.mockReturnValue(cached);
+
+        const result = await peminjamanService.getForPetugas();
+
+        expect(result).toBe(cached);
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          "Peminjaman petugas index: Cache hit",
+        );
+      });
+    });
+
+    describe("checkAlatAvailability", () => {
+      it("should return not found when alat missing", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(null);
+
+        const result = await peminjamanService.checkAlatAvailability(1, 1);
+
+        expect(result.available).toBe(false);
+        expect(result.message).toBe("Alat tidak ditemukan");
+      });
+
+      it("should return insufficient stock message", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "tersedia",
+          stok: 1,
+        });
+
+        const result = await peminjamanService.checkAlatAvailability(1, 3);
+
+        expect(result.available).toBe(false);
+        expect(result.message).toContain("Stok tidak mencukupi");
+      });
+
+      it("should return not available when status is not tersedia", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "dipinjam",
+          stok: 5,
+        });
+
+        const result = await peminjamanService.checkAlatAvailability(1, 1);
+
+        expect(result.available).toBe(false);
+        expect(result.message).toContain("Alat tidak tersedia");
+      });
+
+      it("should return out of stock when stok is 0", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "tersedia",
+          stok: 0,
+        });
+
+        const result = await peminjamanService.checkAlatAvailability(1, 1);
+
+        expect(result.available).toBe(false);
+        expect(result.message).toBe("Stok alat habis");
+      });
+    });
+
     describe("getByUserId", () => {
       it("should return cached peminjaman if available", async () => {
         const cachedPeminjaman = [mockPeminjaman];
@@ -504,11 +1090,43 @@ describe("Service Tests", () => {
     });
 
     describe("create", () => {
+      it("should throw error if data is incomplete", async () => {
+        await expect(peminjamanService.create({}, { id: 1 })).rejects.toThrow(
+          "Data peminjaman tidak lengkap",
+        );
+      });
+
+      it("should throw error if jumlah kurang dari 1", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() + 1);
+        const tanggalKembali = new Date(tanggalPinjam);
+        tanggalKembali.setDate(tanggalKembali.getDate() + 1);
+
+        await expect(
+          peminjamanService.create(
+            {
+              alat_id: 1,
+              tanggal_pinjam: tanggalPinjam,
+              tanggal_kembali: tanggalKembali,
+              jumlah: -1,
+            },
+            { id: 1 },
+          ),
+        ).rejects.toThrow("Jumlah peminjaman minimal 1");
+      });
+
       it("should create peminjaman successfully", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() + 1);
+        tanggalPinjam.setHours(0, 0, 0, 0);
+
+        const tanggalKembali = new Date(tanggalPinjam);
+        tanggalKembali.setDate(tanggalKembali.getDate() + 3);
+
         const peminjamanData = {
           alat_id: 1,
-          tanggal_pinjam: "2024-01-01",
-          tanggal_kembali: "2024-01-07",
+          tanggal_pinjam: tanggalPinjam,
+          tanggal_kembali: tanggalKembali,
         };
 
         const user = { id: 1, nama: "User" };
@@ -537,15 +1155,21 @@ describe("Service Tests", () => {
 
         expect(result).toBe(mockPeminjaman);
         expect(Peminjaman.create).toHaveBeenCalledTimes(1);
-        expect(mockAlatWithUpdate.update).toHaveBeenCalledTimes(1);
         expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
       });
 
       it("should throw error if alat is not available", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() + 1);
+        tanggalPinjam.setHours(0, 0, 0, 0);
+
+        const tanggalKembali = new Date(tanggalPinjam);
+        tanggalKembali.setDate(tanggalKembali.getDate() + 3);
+
         const peminjamanData = {
           alat_id: 1,
-          tanggal_pinjam: "2024-01-01",
-          tanggal_kembali: "2024-01-07",
+          tanggal_pinjam: tanggalPinjam,
+          tanggal_kembali: tanggalKembali,
         };
 
         const user = { id: 1, nama: "User" };
@@ -559,7 +1183,84 @@ describe("Service Tests", () => {
 
         await expect(
           peminjamanService.create(peminjamanData, user),
-        ).rejects.toThrow("Alat tidak tersedia untuk dipinjam");
+        ).rejects.toThrow("Alat tidak tersedia (status: dipinjam)");
+      });
+
+      it("should throw error if tanggal kembali before pinjam", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() + 2);
+        const tanggalKembali = new Date(tanggalPinjam);
+        tanggalKembali.setDate(tanggalKembali.getDate() - 1);
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "tersedia",
+          stok: 5,
+        });
+
+        await expect(
+          peminjamanService.create(
+            {
+              alat_id: 1,
+              tanggal_pinjam: tanggalPinjam,
+              tanggal_kembali: tanggalKembali,
+            },
+            { id: 1, nama: "User" },
+          ),
+        ).rejects.toThrow(
+          "Tanggal kembali harus lebih besar dari tanggal pinjam",
+        );
+      });
+
+      it("should throw error if peminjaman lebih dari 7 hari", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() + 1);
+        const tanggalKembali = new Date(tanggalPinjam);
+        tanggalKembali.setDate(tanggalKembali.getDate() + 10);
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "tersedia",
+          stok: 5,
+        });
+
+        await expect(
+          peminjamanService.create(
+            {
+              alat_id: 1,
+              tanggal_pinjam: tanggalPinjam,
+              tanggal_kembali: tanggalKembali,
+            },
+            { id: 1, nama: "User" },
+          ),
+        ).rejects.toThrow("Maksimal peminjaman adalah 7 hari");
+      });
+
+      it("should throw error if tanggal pinjam in the past", async () => {
+        const tanggalPinjam = new Date();
+        tanggalPinjam.setDate(tanggalPinjam.getDate() - 1);
+        const tanggalKembali = new Date();
+        tanggalKembali.setDate(tanggalKembali.getDate() + 1);
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          status: "tersedia",
+          stok: 5,
+        });
+
+        await expect(
+          peminjamanService.create(
+            {
+              alat_id: 1,
+              tanggal_pinjam: tanggalPinjam,
+              tanggal_kembali: tanggalKembali,
+            },
+            { id: 1, nama: "User" },
+          ),
+        ).rejects.toThrow("Tanggal pinjam tidak boleh di masa lalu");
       });
     });
 
@@ -570,6 +1271,8 @@ describe("Service Tests", () => {
         // Create a mock peminjaman with nested alat and user objects
         const mockPeminjamanWithRelations = {
           ...mockPeminjaman,
+          status: "pending",
+          jumlah: 1,
           alat: { nama_alat: "Test Alat" },
           user: { nama: "Test User" },
           update: jest.fn().mockResolvedValue(),
@@ -580,9 +1283,15 @@ describe("Service Tests", () => {
           .spyOn(peminjamanService, "getById")
           .mockResolvedValue(mockPeminjamanWithRelations);
 
-        // Mock Alat.update
+        // Mock Alat.findByPk for stock deduction
         const Alat = require("../src/models/Alat");
-        jest.spyOn(Alat, "update").mockResolvedValue();
+        const mockAlatForApprove = {
+          ...mockAlat,
+          stok: 5,
+          status: "tersedia",
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(mockAlatForApprove);
 
         // Mock LogAktivitas.create
         const LogAktivitas = require("../src/models/LogAktivitas");
@@ -592,8 +1301,229 @@ describe("Service Tests", () => {
 
         expect(result).toBe(mockPeminjamanWithRelations);
         expect(mockPeminjamanWithRelations.update).toHaveBeenCalledTimes(1);
-        expect(Alat.update).toHaveBeenCalledTimes(1);
+        expect(mockAlatForApprove.update).toHaveBeenCalledTimes(1);
         expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error if status not pending", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "disetujui",
+        });
+
+        await expect(
+          peminjamanService.approve(1, { id: 1, nama: "Petugas" }),
+        ).rejects.toThrow("Peminjaman sudah diproses sebelumnya");
+      });
+
+      it("should throw error if alat not found", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "pending",
+          jumlah: 1,
+        });
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(null);
+
+        await expect(
+          peminjamanService.approve(1, { id: 1, nama: "Petugas" }),
+        ).rejects.toThrow("Alat tidak ditemukan");
+      });
+
+      it("should reject when stock insufficient", async () => {
+        const peminjaman = {
+          ...mockPeminjaman,
+          status: "pending",
+          jumlah: 5,
+          user: { nama: "Test User" },
+          alat: { nama_alat: "Test Alat" },
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue({
+          ...mockAlat,
+          stok: 1,
+          status: "tersedia",
+        });
+
+        await expect(
+          peminjamanService.approve(1, { id: 1, nama: "Petugas" }),
+        ).rejects.toThrow("Stok tidak mencukupi");
+        expect(peminjaman.update).toHaveBeenCalledWith({ status: "ditolak" });
+      });
+    });
+
+    describe("reject", () => {
+      it("should reject peminjaman successfully", async () => {
+        const peminjaman = {
+          ...mockPeminjaman,
+          status: "pending",
+          alat: { nama_alat: "Test Alat" },
+          user: { nama: "Test User" },
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+        const result = await peminjamanService.reject(1, { id: 1 });
+
+        expect(result).toBe(peminjaman);
+        expect(peminjaman.update).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error if status not pending", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "dipinjam",
+        });
+
+        await expect(peminjamanService.reject(1, { id: 1 })).rejects.toThrow(
+          "Peminjaman sudah diproses sebelumnya",
+        );
+      });
+    });
+
+    describe("returnItem", () => {
+      it("should return item and update stock", async () => {
+        const peminjaman = {
+          ...mockPeminjaman,
+          status: "disetujui",
+          jumlah: 1,
+          alat: { nama_alat: "Test Alat" },
+          user: { nama: "Test User" },
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
+
+        const Alat = require("../src/models/Alat");
+        const alat = {
+          ...mockAlat,
+          stok: 0,
+          status: "dipinjam",
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(alat);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+        const result = await peminjamanService.returnItem(1, { id: 1 });
+
+        expect(result).toBe(peminjaman);
+        expect(peminjaman.update).toHaveBeenCalledTimes(1);
+        expect(alat.update).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error for invalid status", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "pending",
+        });
+
+        await expect(
+          peminjamanService.returnItem(1, { id: 1 }),
+        ).rejects.toThrow("Status peminjaman tidak valid untuk pengembalian");
+      });
+
+      it("should return item even if alat not found", async () => {
+        const peminjaman = {
+          ...mockPeminjaman,
+          status: "disetujui",
+          jumlah: 1,
+          alat: { nama_alat: "Test Alat" },
+          user: { nama: "Test User" },
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
+
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findByPk").mockResolvedValue(null);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+        const result = await peminjamanService.returnItem(1, { id: 1 });
+
+        expect(result).toBe(peminjaman);
+        expect(peminjaman.update).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("cancel", () => {
+      it("should cancel peminjaman successfully", async () => {
+        const peminjaman = {
+          ...mockPeminjaman,
+          status: "pending",
+          user_id: 1,
+          alat: { nama_alat: "Test Alat" },
+          update: jest.fn().mockResolvedValue(),
+        };
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
+
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+        const result = await peminjamanService.cancel(1, { id: 1 });
+
+        expect(result).toBe(peminjaman);
+        expect(peminjaman.update).toHaveBeenCalledTimes(1);
+      });
+
+      it("should throw error if user not owner", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "pending",
+          user_id: 2,
+        });
+
+        await expect(peminjamanService.cancel(1, { id: 1 })).rejects.toThrow(
+          "Anda tidak memiliki akses untuk membatalkan peminjaman ini",
+        );
+      });
+
+      it("should throw error if status not pending", async () => {
+        jest.spyOn(peminjamanService, "getById").mockResolvedValue({
+          ...mockPeminjaman,
+          status: "disetujui",
+          user_id: 1,
+        });
+
+        await expect(peminjamanService.cancel(1, { id: 1 })).rejects.toThrow(
+          "Peminjaman yang sudah diproses tidak dapat dibatalkan",
+        );
+      });
+    });
+
+    describe("isAlatAvailable", () => {
+      it("should return true when no overlapping peminjaman", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findOne").mockResolvedValue(null);
+
+        const result = await peminjamanService.isAlatAvailable(
+          1,
+          new Date(),
+          new Date(),
+        );
+
+        expect(result).toBe(true);
+      });
+
+      it("should return false when overlapping peminjaman exists", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findOne").mockResolvedValue(mockPeminjaman);
+
+        const result = await peminjamanService.isAlatAvailable(
+          1,
+          new Date(),
+          new Date(),
+        );
+
+        expect(result).toBe(false);
       });
     });
   });
@@ -627,6 +1557,21 @@ describe("Service Tests", () => {
           600,
         );
       });
+
+      it("should apply date filters for user report", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const User = require("../src/models/User");
+        jest.spyOn(User, "findAll").mockResolvedValue([mockUser]);
+
+        const result = await reportService.generateUserReport({
+          startDate: "2026-02-01",
+          endDate: "2026-02-02",
+        });
+
+        expect(result.stats.period.start).toBeInstanceOf(Date);
+        expect(result.stats.period.end).toBeInstanceOf(Date);
+      });
     });
 
     describe("generateInventoryReport", () => {
@@ -655,6 +1600,91 @@ describe("Service Tests", () => {
         expect(result.alat).toStrictEqual(mockAlatList);
         expect(mockCacheHelper.set).toHaveBeenCalledWith(
           "inventory_report_{}",
+          result,
+          300,
+        );
+      });
+
+      it("should compute kategoriStats", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const mockAlatList = [
+          {
+            ...mockAlat,
+            status: "tersedia",
+            kategori: { nama_kategori: "K1" },
+          },
+          {
+            ...mockAlat,
+            status: "dipinjam",
+            kategori: { nama_kategori: "K1" },
+          },
+        ];
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "findAll").mockResolvedValue(mockAlatList);
+
+        const result = await reportService.generateInventoryReport();
+
+        expect(result.kategoriStats.K1.total).toBe(2);
+        expect(result.kategoriStats.K1.tersedia).toBe(1);
+        expect(result.kategoriStats.K1.dipinjam).toBe(1);
+      });
+    });
+
+    describe("generatePeminjamanReport", () => {
+      it("should generate peminjaman report from database if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const mockList = [
+          {
+            status: "diproses",
+            alat: { nama_alat: "Alat A" },
+          },
+          {
+            status: "dipinjam",
+            alat: { nama_alat: "Alat A" },
+          },
+          {
+            status: "selesai",
+            alat: { nama_alat: "Alat B" },
+          },
+        ];
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "findAll").mockResolvedValue(mockList);
+
+        const result = await reportService.generatePeminjamanReport();
+
+        expect(result.title).toBe("Laporan Peminjaman");
+        expect(result.peminjaman).toStrictEqual(mockList);
+        expect(result.popularItems["Alat A"]).toBe(2);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "peminjaman_report_{}",
+          result,
+          300,
+        );
+      });
+    });
+
+    describe("generateActivityReport", () => {
+      it("should generate activity report from database if not cached", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const logs = [
+          { aktivitas: "Login: ok", user: { username: "u1" } },
+          { aktivitas: "Login: ok", user: { username: "u1" } },
+          { aktivitas: "Logout: ok", user: { username: "u2" } },
+        ];
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "findAll").mockResolvedValue(logs);
+
+        const result = await reportService.generateActivityReport();
+
+        expect(result.title).toBe("Laporan Aktivitas Sistem");
+        expect(result.stats.total).toBe(3);
+        expect(result.stats.perUser.u1).toBe(2);
+        expect(result.stats.perActivity.Login).toBe(2);
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "activity_report_{}",
           result,
           300,
         );
@@ -720,6 +1750,136 @@ describe("Service Tests", () => {
           "dashboard_statistics",
           result,
           120,
+        );
+      });
+    });
+
+    describe("statistics helpers", () => {
+      it("should get user statistics", async () => {
+        const User = require("../src/models/User");
+        jest.spyOn(User, "count").mockResolvedValue(5);
+        jest.spyOn(User, "findAll").mockResolvedValue([
+          { role: "peminjam", get: jest.fn().mockReturnValue(4) },
+          { role: "petugas", get: jest.fn().mockReturnValue(1) },
+        ]);
+
+        const result = await reportService.getUserStatistics();
+        expect(result.total).toBe(5);
+        expect(result.byRole.peminjam).toBe(4);
+      });
+
+      it("should get alat statistics", async () => {
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Alat, "count").mockResolvedValue(3);
+        jest.spyOn(Alat, "findAll").mockResolvedValueOnce([
+          { status: "tersedia", get: jest.fn().mockReturnValue(2) },
+          { status: "dipinjam", get: jest.fn().mockReturnValue(1) },
+        ]);
+        jest.spyOn(Alat, "findAll").mockResolvedValueOnce([
+          { kondisi: "baik", get: jest.fn().mockReturnValue(2) },
+          { kondisi: "rusak", get: jest.fn().mockReturnValue(1) },
+        ]);
+
+        const result = await reportService.getAlatStatistics();
+        expect(result.total).toBe(3);
+        expect(result.byStatus.tersedia).toBe(2);
+        expect(result.byKondisi.rusak).toBe(1);
+      });
+
+      it("should get peminjaman statistics", async () => {
+        const Peminjaman = require("../src/models/Peminjaman");
+        jest.spyOn(Peminjaman, "count").mockResolvedValue(2);
+        jest.spyOn(Peminjaman, "findAll").mockResolvedValue([
+          { status: "dipinjam", get: jest.fn().mockReturnValue(1) },
+          { status: "selesai", get: jest.fn().mockReturnValue(1) },
+        ]);
+
+        const result = await reportService.getPeminjamanStatistics();
+        expect(result.total).toBe(2);
+        expect(result.byStatus.selesai).toBe(1);
+      });
+
+      it("should get kategori statistics", async () => {
+        const Kategori = require("../src/models/Kategori");
+        const Alat = require("../src/models/Alat");
+        jest.spyOn(Kategori, "count").mockResolvedValue(2);
+        jest
+          .spyOn(Alat, "findAll")
+          .mockResolvedValue([
+            { kategori_id: 1, get: jest.fn().mockReturnValue(3) },
+          ]);
+
+        const result = await reportService.getKategoriStatistics();
+        expect(result.total).toBe(2);
+        expect(result.alatPerKategori[0].count).toBe(3);
+      });
+
+      it("should get activity statistics", async () => {
+        const LogAktivitas = require("../src/models/LogAktivitas");
+        jest.spyOn(LogAktivitas, "count").mockResolvedValue(4);
+        jest
+          .spyOn(LogAktivitas, "findAll")
+          .mockResolvedValue([mockLogAktivitas]);
+
+        const result = await reportService.getActivityStatistics();
+        expect(result.total).toBe(4);
+        expect(result.recent.length).toBe(1);
+      });
+    });
+
+    describe("helpers", () => {
+      it("should parse date filters", () => {
+        const result = reportService.parseDateFilters({
+          startDate: "2026-02-01",
+          endDate: "2026-02-05",
+        });
+
+        expect(result.startDate).toBeInstanceOf(Date);
+        expect(result.endDate).toBeInstanceOf(Date);
+        expect(result.endDate.getHours()).toBe(23);
+      });
+
+      it("should group logs by user and activity", () => {
+        const logs = [
+          { aktivitas: "Login: ok", user: { username: "u1" } },
+          { aktivitas: "Login: ok", user: { username: "u1" } },
+          { aktivitas: "Logout: ok", user: null },
+        ];
+
+        const byUser = reportService.groupByUser(logs);
+        const byActivity = reportService.groupByActivity(logs);
+
+        expect(byUser.u1).toBe(2);
+        expect(byUser.System).toBe(1);
+        expect(byActivity.Login).toBe(2);
+        expect(byActivity.Logout).toBe(1);
+      });
+    });
+
+    describe("dashboards", () => {
+      it("should generate report dashboard data", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const result = await reportService.generateReportDashboard();
+
+        expect(result.title).toBe("Laporan Sistem");
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "report_dashboard",
+          result,
+          600,
+        );
+      });
+
+      it("should generate petugas report dashboard data", async () => {
+        mockCacheHelper.get.mockReturnValue(null);
+
+        const result = await reportService.generatePetugasReportDashboard();
+
+        expect(result.title).toBe("Laporan Petugas");
+        expect(mockCacheHelper.set).toHaveBeenCalledWith(
+          "petugas_report_dashboard",
+          result,
+          600,
         );
       });
     });

@@ -20,6 +20,9 @@ const renderReport = async ({
   try {
     logger.info(`${logLabel} by user: ${req.user.id}`);
 
+    const reportBasePath = req.originalUrl.startsWith("/admin/")
+      ? "/admin/laporan"
+      : "/laporan";
     const filters = includeFilters ? getReportFilters(req) : undefined;
     const result = await (includeFilters
       ? generator.call(reportService, filters)
@@ -28,6 +31,7 @@ const renderReport = async ({
     res.render(view, {
       user: req.user,
       filters,
+      reportBasePath,
       ...mapResult(result),
     });
   } catch (error) {
@@ -107,7 +111,7 @@ const userIndex = async (req, res) => {
 const showCreateUser = (req, res) => {
   try {
     logger.info(`Create user form accessed by admin: ${req.user.id}`);
-    res.render("admin/user/create", {
+    res.render("admin/user/tambah", {
       title: "Tambah User",
       error: null,
     });
@@ -141,7 +145,7 @@ const createUser = async (req, res) => {
     res.redirect("/admin/user");
   } catch (error) {
     logger.error("Error in create user:", error);
-    res.status(400).render("admin/user/create", {
+    res.status(400).render("admin/user/tambah", {
       title: "Tambah User",
       error: error.message,
     });
@@ -268,7 +272,7 @@ const generateInventoryReport = async (req, res) => {
     res,
     logLabel: "Generating inventory report",
     generator: reportService.generateInventoryReport,
-    view: "admin/laporan/inventory",
+    view: "admin/laporan/alat",
     mapResult: (reportData) => ({
       title: reportData.title,
       reportData,

@@ -108,11 +108,7 @@ router.use("/", peminjamRouter);
 const petugasRouter = express.Router();
 petugasRouter.use(isAuthenticated, requirePetugas);
 
-petugasRouter.get(
-  "/petugas",
-  standardCache.peminjaman,
-  asyncHandler(peminjamanController.petugasIndex),
-);
+petugasRouter.get("/petugas", asyncHandler(peminjamanController.petugasIndex));
 
 petugasRouter.post(
   "/petugas/setujui/:id",

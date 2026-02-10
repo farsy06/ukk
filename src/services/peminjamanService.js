@@ -169,7 +169,14 @@ class PeminjamanService {
 
     const peminjaman = await Peminjaman.findAll({
       where: {
-        status: ["pending", "disetujui", "dipinjam"],
+        status: [
+          "pending",
+          "disetujui",
+          "dipinjam",
+          "dikembalikan",
+          "ditolak",
+          "dibatalkan",
+        ],
       },
       include: [
         {

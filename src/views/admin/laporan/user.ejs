@@ -164,19 +164,19 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="/laporan/user?format=pdf&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
+                        <a href="<%= reportBasePath %>/user?format=pdf&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
                            class="btn btn-primary w-100 mb-2">
                             <i class="fas fa-file-pdf"></i> Download PDF
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <a href="/laporan/user?format=excel&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
+                        <a href="<%= reportBasePath %>/user?format=excel&start_date=<%= filters.startDate || '' %>&end_date=<%= filters.endDate || '' %>" 
                            class="btn btn-success w-100 mb-2">
                             <i class="fas fa-file-excel"></i> Export Excel
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <a href="/laporan" class="btn btn-secondary w-100 mb-2">
+                        <a href="<%= reportBasePath %>" class="btn btn-secondary w-100 mb-2">
                             <i class="fas fa-arrow-left"></i> Kembali
                         </a>
                     </div>
