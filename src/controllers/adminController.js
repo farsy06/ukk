@@ -1,5 +1,6 @@
 const userService = require("../services/userService");
 const reportService = require("../services/reportService");
+const reportExportService = require("../services/reportExportService");
 const logger = require("../config/logging");
 const { getPagination } = require("../utils/helpers");
 
@@ -16,6 +17,8 @@ const renderReport = async ({
   view,
   mapResult = (data) => ({ reportData: data }),
   includeFilters = true,
+  exportHandlers = null,
+  exportPrefix = "laporan",
 }) => {
   try {
     logger.info(`${logLabel} by user: ${req.user.id}`);
@@ -27,6 +30,24 @@ const renderReport = async ({
     const result = await (includeFilters
       ? generator.call(reportService, filters)
       : generator.call(reportService));
+
+    const format = (req.query.format || "").toLowerCase();
+    if (format && exportHandlers && exportHandlers[format]) {
+      const { buffer, contentType, extension } = await exportHandlers[format](
+        result,
+        filters,
+      );
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "")
+        .slice(0, 15);
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${exportPrefix}-${timestamp}.${extension}"`,
+      );
+      return res.send(buffer);
+    }
 
     res.render(view, {
       user: req.user,
@@ -253,6 +274,20 @@ const generateUserReport = async (req, res) => {
     logLabel: "Generating user report",
     generator: reportService.generateUserReport,
     view: "admin/laporan/user",
+    exportPrefix: "laporan-user",
+    exportHandlers: {
+      pdf: async (reportData, filters) => ({
+        buffer: await reportExportService.buildUserPdf(reportData, filters),
+        contentType: "application/pdf",
+        extension: "pdf",
+      }),
+      excel: async (reportData, filters) => ({
+        buffer: await reportExportService.buildUserExcel(reportData, filters),
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        extension: "xlsx",
+      }),
+    },
     mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
@@ -273,6 +308,20 @@ const generateInventoryReport = async (req, res) => {
     logLabel: "Generating inventory report",
     generator: reportService.generateInventoryReport,
     view: "admin/laporan/alat",
+    exportPrefix: "laporan-alat",
+    exportHandlers: {
+      pdf: async (reportData) => ({
+        buffer: await reportExportService.buildInventoryPdf(reportData),
+        contentType: "application/pdf",
+        extension: "pdf",
+      }),
+      excel: async (reportData) => ({
+        buffer: await reportExportService.buildInventoryExcel(reportData),
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        extension: "xlsx",
+      }),
+    },
     mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
@@ -293,6 +342,26 @@ const generatePeminjamanReport = async (req, res) => {
     logLabel: "Generating peminjaman report",
     generator: reportService.generatePeminjamanReport,
     view: "admin/laporan/peminjaman",
+    exportPrefix: "laporan-peminjaman",
+    exportHandlers: {
+      pdf: async (reportData, filters) => ({
+        buffer: await reportExportService.buildPeminjamanPdf(
+          reportData,
+          filters,
+        ),
+        contentType: "application/pdf",
+        extension: "pdf",
+      }),
+      excel: async (reportData, filters) => ({
+        buffer: await reportExportService.buildPeminjamanExcel(
+          reportData,
+          filters,
+        ),
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        extension: "xlsx",
+      }),
+    },
     mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
@@ -313,6 +382,23 @@ const generateActivityReport = async (req, res) => {
     logLabel: "Generating activity report",
     generator: reportService.generateActivityReport,
     view: "admin/laporan/activity",
+    exportPrefix: "laporan-aktivitas",
+    exportHandlers: {
+      pdf: async (reportData, filters) => ({
+        buffer: await reportExportService.buildActivityPdf(reportData, filters),
+        contentType: "application/pdf",
+        extension: "pdf",
+      }),
+      excel: async (reportData, filters) => ({
+        buffer: await reportExportService.buildActivityExcel(
+          reportData,
+          filters,
+        ),
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        extension: "xlsx",
+      }),
+    },
     mapResult: (reportData) => ({
       title: reportData.title,
       reportData,
@@ -334,6 +420,20 @@ const generateStatistics = async (req, res) => {
     generator: reportService.generateStatistics,
     view: "admin/laporan/statistics",
     includeFilters: false,
+    exportPrefix: "laporan-statistik",
+    exportHandlers: {
+      pdf: async (stats) => ({
+        buffer: await reportExportService.buildStatisticsPdf(stats),
+        contentType: "application/pdf",
+        extension: "pdf",
+      }),
+      excel: async (stats) => ({
+        buffer: await reportExportService.buildStatisticsExcel(stats),
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        extension: "xlsx",
+      }),
+    },
     mapResult: (stats) => ({
       title: "Statistik Sistem",
       stats,
