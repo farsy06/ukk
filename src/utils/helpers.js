@@ -19,13 +19,7 @@ class ValidationError extends Error {
     this.name = "ValidationError";
     this.field = field;
     this.statusCode = 400;
-    if (logDetails) {
-      logger.warn(
-        `Validation Error: ${message} ${field ? `on field: ${field}` : ""}`,
-      );
-    } else {
-      logger.warn("Validation Error", field ? { field } : undefined);
-    }
+    logger.warn("Validation Error", field ? { field } : undefined);
   }
 }
 

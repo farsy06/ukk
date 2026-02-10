@@ -23,6 +23,10 @@ const testConfig = {
     secret: "test-secret-key",
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      ...appConfig.session.cookie,
+      secure: true,
+    },
   },
   database: {
     ...appConfig.database,

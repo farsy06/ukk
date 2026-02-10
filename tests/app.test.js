@@ -11,10 +11,20 @@ jest.mock("../src/config/logging", () => ({
   debug: jest.fn(),
 }));
 
+jest.mock("../src/models/User", () => ({
+  findOne: jest.fn(),
+}));
+
+jest.mock("../src/services/userService", () => ({
+  create: jest.fn(),
+}));
+
 const request = require("supertest");
 const testConfig = require("./testConfig");
 const db = require("../src/config/database");
 const logger = require("../src/config/logging");
+const User = require("../src/models/User");
+const userService = require("../src/services/userService");
 
 // Create a test app instance
 const createTestApp = () => {
@@ -46,6 +56,7 @@ const createTestApp = () => {
   // Konfigurasi view engine
   app.set("view engine", "ejs");
   app.set("views", path.join(__dirname, "../src/views"));
+  app.set("trust proxy", 1);
 
   // Gunakan express-ejs-layouts
   app.use(expressLayouts);
@@ -147,20 +158,32 @@ describe("Basic App Tests", () => {
   });
 
   test("GET /login should handle POST request", async () => {
-    const response = await request(app).post("/login").send({
-      username: "testuser",
-      password: "TestPassword123!",
-    });
+    User.findOne.mockResolvedValue(null);
+    const agent = request.agent(app);
+    await agent.get("/login").set("X-Forwarded-Proto", "https");
+    const response = await agent
+      .post("/login")
+      .set("X-Forwarded-Proto", "https")
+      .send({
+        username: "testuser",
+        password: "TestPassword123!",
+      });
     expect(response.status).toBe(302); // Redirect after failed login
   });
 
   test("GET /register should handle POST request", async () => {
-    const response = await request(app).post("/register").send({
-      username: "testuser",
-      email: "test@example.com",
-      password: "password123",
-      confirmPassword: "password123",
-    });
+    userService.create.mockRejectedValue(new Error("Registration failed"));
+    const agent = request.agent(app);
+    await agent.get("/register").set("X-Forwarded-Proto", "https");
+    const response = await agent
+      .post("/register")
+      .set("X-Forwarded-Proto", "https")
+      .send({
+        username: "testuser",
+        email: "test@example.com",
+        password: "password123",
+        confirmPassword: "password123",
+      });
     expect(response.status).toBe(302); // Redirect after failed registration
   });
 });

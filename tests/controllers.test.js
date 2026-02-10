@@ -49,6 +49,7 @@ app = express();
 // Konfigurasi view engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../src/views"));
+app.set("trust proxy", 1);
 
 // Gunakan express-ejs-layouts
 app.use(expressLayouts);
@@ -148,6 +149,7 @@ describe("Controller Tests", () => {
   const loginAndGetSession = async (username, password) => {
     const loginResponse = await request(app)
       .post("/login")
+      .set("X-Forwarded-Proto", "https")
       .send({ username, password })
       .expect(302);
 

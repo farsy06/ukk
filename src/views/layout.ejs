@@ -268,6 +268,19 @@
             const confirmDeleteButton = document.getElementById('confirmDeleteButton');
 
             if (confirmDeleteModal && confirmDeleteForm && confirmDeleteButton) {
+                const setButtonContent = (button, iconClass, label) => {
+                    while (button.firstChild) {
+                        button.removeChild(button.firstChild);
+                    }
+                    if (iconClass) {
+                        const icon = document.createElement('i');
+                        icon.className = iconClass;
+                        button.appendChild(icon);
+                        button.appendChild(document.createTextNode(' '));
+                    }
+                    button.appendChild(document.createTextNode(label));
+                };
+
                 const deleteTriggers = document.querySelectorAll('[data-confirm-href]');
                 deleteTriggers.forEach(trigger => {
                     trigger.addEventListener('click', function() {
@@ -279,18 +292,29 @@
                         if (titleEl) titleEl.textContent = title;
                         if (confirmDeleteMessage) confirmDeleteMessage.textContent = message;
 
-                        confirmDeleteForm.setAttribute('action', href);
+                        const safeAction = (() => {
+                            if (!href || href === '#') return '#';
+                            try {
+                                const url = new URL(href, window.location.origin);
+                                if (url.origin !== window.location.origin) return '#';
+                                if (!url.pathname.startsWith('/')) return '#';
+                                return url.pathname + url.search + url.hash;
+                            } catch (e) {
+                                return '#';
+                            }
+                        })();
+                        confirmDeleteForm.setAttribute('action', safeAction);
                         confirmDeleteButton.classList.remove('disabled');
-                        confirmDeleteButton.innerHTML = '<i class="fas fa-trash"></i> Hapus';
+                        setButtonContent(confirmDeleteButton, 'fas fa-trash', 'Hapus');
                     });
                 });
 
                 confirmDeleteForm.addEventListener('submit', function() {
-                    const originalText = confirmDeleteButton.innerHTML;
-                    confirmDeleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+                    const originalText = confirmDeleteButton.textContent;
+                    setButtonContent(confirmDeleteButton, 'fas fa-spinner fa-spin', 'Menghapus...');
                     confirmDeleteButton.classList.add('disabled');
                     setTimeout(() => {
-                        confirmDeleteButton.innerHTML = originalText;
+                        setButtonContent(confirmDeleteButton, 'fas fa-trash', originalText.trim() || 'Hapus');
                         confirmDeleteButton.classList.remove('disabled');
                     }, 2000);
                 });

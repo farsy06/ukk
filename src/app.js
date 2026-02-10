@@ -76,6 +76,22 @@ async function startServer() {
     // Session configuration
     app.use(session(appConfig.session));
 
+    // Enforce HTTPS in production to avoid clear-text cookie transmission
+    if (appConfig.app.environment === "production") {
+      app.use((req, res, next) => {
+        if (req.secure) {
+          return next();
+        }
+        if (req.headers["x-forwarded-proto"] === "https") {
+          return next();
+        }
+        return res.redirect(
+          301,
+          `https://${req.headers.host}${req.originalUrl}`,
+        );
+      });
+    }
+
     // Flash messages (after session)
     app.use(flash());
 
