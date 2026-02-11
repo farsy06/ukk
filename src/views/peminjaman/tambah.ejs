@@ -213,11 +213,11 @@
             const tanggalPinjamValue = new Date(tanggalPinjam.value);
             const tanggalKembaliValue = new Date(this.value);
 
-            if (tanggalKembaliValue <= tanggalPinjamValue) {
+            if (tanggalKembaliValue < tanggalPinjamValue) {
                 this.value = '';
                 const alert = document.createElement('div');
                 alert.className = 'alert alert-warning alert-dismissible fade show';
-                alert.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tanggal kembali harus lebih dari tanggal pinjam. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                alert.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tanggal kembali harus sama dengan atau setelah tanggal pinjam. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
                 form.insertBefore(alert, form.firstChild);
             }
         });
@@ -241,8 +241,8 @@
                 const tanggalPinjamValue = new Date(tanggalPinjam.value);
                 const tanggalKembaliValue = new Date(tanggalKembali.value);
                 
-                if (tanggalKembaliValue <= tanggalPinjamValue) {
-                    errors.push('Tanggal kembali harus lebih dari tanggal pinjam');
+                if (tanggalKembaliValue < tanggalPinjamValue) {
+                    errors.push('Tanggal kembali harus sama dengan atau setelah tanggal pinjam');
                     isValid = false;
                 }
             }
@@ -291,7 +291,7 @@
                 const tanggalPinjamValue = new Date(tanggalPinjam.value);
                 const tanggalKembaliValue = new Date(this.value);
                 
-                if (tanggalKembaliValue <= tanggalPinjamValue) {
+                if (tanggalKembaliValue < tanggalPinjamValue) {
                     this.classList.add('is-invalid');
                 } else {
                     this.classList.remove('is-invalid');

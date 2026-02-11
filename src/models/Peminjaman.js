@@ -69,9 +69,14 @@ const Peminjaman = sequelize.define(
         isDate: {
           msg: "Tanggal pinjam harus berupa tanggal yang valid",
         },
-        isAfter: {
-          args: [new Date().toISOString().split("T")[0]],
-          msg: "Tanggal pinjam tidak boleh di masa lalu",
+        notPast(value) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dateValue = new Date(value);
+          dateValue.setHours(0, 0, 0, 0);
+          if (dateValue < today) {
+            throw new Error("Tanggal pinjam tidak boleh di masa lalu");
+          }
         },
       },
     },
@@ -82,9 +87,14 @@ const Peminjaman = sequelize.define(
         isDate: {
           msg: "Tanggal kembali harus berupa tanggal yang valid",
         },
-        isAfter: {
-          args: [new Date().toISOString().split("T")[0]],
-          msg: "Tanggal kembali tidak boleh di masa lalu",
+        notPast(value) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dateValue = new Date(value);
+          dateValue.setHours(0, 0, 0, 0);
+          if (dateValue < today) {
+            throw new Error("Tanggal kembali tidak boleh di masa lalu");
+          }
         },
       },
     },
@@ -201,9 +211,9 @@ const Peminjaman = sequelize.define(
           const pinjam = new Date(this.tanggal_pinjam);
           const kembali = new Date(this.tanggal_kembali);
 
-          if (pinjam >= kembali) {
+          if (pinjam > kembali) {
             throw new Error(
-              "Tanggal kembali harus lebih besar dari tanggal pinjam",
+              "Tanggal kembali harus sama dengan atau lebih besar dari tanggal pinjam",
             );
           }
 

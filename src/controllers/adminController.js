@@ -197,6 +197,34 @@ const destroyUser = async (req, res) => {
 };
 
 /**
+ * Toggle user activation
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Redirect or error response
+ */
+const toggleUserActivation = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    logger.info(
+      `Admin ${req.user.id} attempting to toggle activation for user: ${userId}`,
+    );
+
+    const result = await userService.toggleActive(userId, req.user);
+    req.flash(
+      "success",
+      result.is_active
+        ? "User berhasil diaktifkan"
+        : "User berhasil dinonaktifkan",
+    );
+
+    res.redirect("/admin/user");
+  } catch (error) {
+    logger.error("Error in toggle user activation:", error);
+    res.status(500).send("Terjadi kesalahan");
+  }
+};
+
+/**
  * Display activity logs
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -447,6 +475,7 @@ module.exports = {
   showCreateUser,
   createUser,
   destroyUser,
+  toggleUserActivation,
   logIndex,
   reportIndex,
   petugasReportIndex,

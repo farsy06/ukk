@@ -1,4 +1,5 @@
 const Kategori = require("../models/Kategori");
+const Alat = require("../models/Alat");
 const LogAktivitas = require("../models/LogAktivitas");
 const { cacheHelper } = require("../middleware/caching");
 const logger = require("../config/logging");
@@ -131,6 +132,10 @@ class KategoriService {
    */
   async delete(id, user) {
     const kategori = await this.getById(id);
+    const alatCount = await Alat.count({ where: { kategori_id: id } });
+    if (alatCount > 0) {
+      throw new Error("Kategori tidak dapat dihapus karena masih digunakan");
+    }
     await kategori.destroy();
 
     // Log aktivitas

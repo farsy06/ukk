@@ -34,6 +34,7 @@ jest.mock("../../src/models/User", () => ({
   findByPk: jest.fn(),
   count: jest.fn(),
   findAndCountAll: jest.fn(),
+  update: jest.fn(),
 }));
 
 jest.mock("../../src/models/Kategori", () => ({
@@ -54,8 +55,13 @@ jest.mock("../../src/models/LogAktivitas", () => ({
   count: jest.fn(),
 }));
 
+const { ROLES } = require("../../src/utils/constants");
+
 describe("UserService", () => {
   let userService;
+  const safeAttributes = {
+    exclude: ["password", "remember_token", "remember_expires"],
+  };
 
   const mockUser = {
     id: 1,
@@ -149,6 +155,14 @@ describe("UserService", () => {
       const result = await userService.getAllUsers();
 
       expect(result).toStrictEqual(mockUsers);
+      expect(User.findAll).toHaveBeenCalledWith({
+        where: {
+          role: {
+            [require("sequelize").Op.ne]: ROLES.ADMIN,
+          },
+        },
+        attributes: safeAttributes,
+      });
       expect(mockCacheHelper.set).toHaveBeenCalledWith(
         "admin_user_index",
         mockUsers,
@@ -169,7 +183,17 @@ describe("UserService", () => {
       });
 
       expect(result).toBe(paged);
-      expect(User.findAndCountAll).toHaveBeenCalledTimes(1);
+      expect(User.findAndCountAll).toHaveBeenCalledWith({
+        where: {
+          role: {
+            [require("sequelize").Op.ne]: ROLES.ADMIN,
+          },
+        },
+        order: [["created_at", "DESC"]],
+        limit: 10,
+        offset: 0,
+        attributes: safeAttributes,
+      });
     });
   });
 
@@ -181,6 +205,9 @@ describe("UserService", () => {
       await expect(userService.getById(999)).rejects.toThrow(
         "User tidak ditemukan",
       );
+      expect(User.findByPk).toHaveBeenCalledWith(999, {
+        attributes: safeAttributes,
+      });
     });
   });
 
@@ -305,6 +332,48 @@ describe("UserService", () => {
 
       await expect(userService.delete(1, adminUser)).rejects.toThrow(
         "Tidak dapat menghapus user admin lain",
+      );
+    });
+  });
+
+  describe("toggleActive", () => {
+    it("should toggle user activation status", async () => {
+      const adminUser = { id: 1, nama: "Admin" };
+      const User = require("../../src/models/User");
+      const LogAktivitas = require("../../src/models/LogAktivitas");
+
+      jest.spyOn(User, "findByPk").mockResolvedValue({
+        id: 2,
+        nama: "User",
+        role: "peminjam",
+        is_active: true,
+      });
+      jest.spyOn(User, "update").mockResolvedValue([1]);
+      jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
+
+      const result = await userService.toggleActive(2, adminUser);
+
+      expect(result).toEqual({ id: 2, is_active: false });
+      expect(User.update).toHaveBeenCalledWith(
+        { is_active: false, remember_token: null, remember_expires: null },
+        { where: { id: 2 } },
+      );
+      expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("should block toggling admin user", async () => {
+      const adminUser = { id: 1, nama: "Admin" };
+      const User = require("../../src/models/User");
+
+      jest.spyOn(User, "findByPk").mockResolvedValue({
+        id: 2,
+        nama: "Admin2",
+        role: "admin",
+        is_active: true,
+      });
+
+      await expect(userService.toggleActive(2, adminUser)).rejects.toThrow(
+        "Tidak dapat menonaktifkan user admin",
       );
     });
   });

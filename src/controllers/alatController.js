@@ -1,6 +1,16 @@
 const alatService = require("../services/alatService");
 const logger = require("../config/logging");
 const { getPagination } = require("../utils/helpers");
+const fs = require("fs");
+const path = require("path");
+
+const deleteUploadedFile = (fotoPath) => {
+  if (!fotoPath || !fotoPath.startsWith("/uploads/alat/")) return;
+  const absolutePath = path.join(__dirname, "../../public", fotoPath);
+  if (fs.existsSync(absolutePath)) {
+    fs.unlinkSync(absolutePath);
+  }
+};
 
 // Menampilkan daftar alat (untuk peminjam)
 const index = async (req, res) => {
@@ -37,7 +47,9 @@ const showCreate = async (req, res) => {
 // Proses tambah alat
 const create = async (req, res) => {
   try {
-    const { nama_alat, kategori_id, kondisi, stok } = req.body;
+    const { nama_alat, kategori_id, kondisi, stok, status, deskripsi } =
+      req.body;
+    const foto = req.file ? `/uploads/alat/${req.file.filename}` : null;
 
     await alatService.create(
       {
@@ -45,12 +57,18 @@ const create = async (req, res) => {
         kategori_id,
         kondisi,
         stok,
+        status,
+        deskripsi,
+        foto,
       },
       req.user,
     );
 
     res.redirect("/admin/alat");
   } catch (error) {
+    if (req.file) {
+      deleteUploadedFile(`/uploads/alat/${req.file.filename}`);
+    }
     logger.error("Error in alat create:", error);
     res.status(500).send("Terjadi kesalahan");
   }
@@ -77,7 +95,18 @@ const showEdit = async (req, res) => {
 // Proses update alat
 const update = async (req, res) => {
   try {
-    const { nama_alat, kategori_id, kondisi, status, stok } = req.body;
+    const { nama_alat, kategori_id, kondisi, status, stok, deskripsi } =
+      req.body;
+    const hapusFoto = !!req.body.hapus_foto;
+    const currentAlat = await alatService.getById(req.params.id);
+    const newFoto = req.file ? `/uploads/alat/${req.file.filename}` : null;
+    let foto = currentAlat.foto;
+
+    if (newFoto) {
+      foto = newFoto;
+    } else if (hapusFoto) {
+      foto = null;
+    }
 
     await alatService.update(
       req.params.id,
@@ -87,12 +116,21 @@ const update = async (req, res) => {
         kondisi,
         status,
         stok,
+        deskripsi,
+        foto,
       },
       req.user,
     );
 
+    if ((newFoto || hapusFoto) && currentAlat.foto) {
+      deleteUploadedFile(currentAlat.foto);
+    }
+
     res.redirect("/admin/alat");
   } catch (error) {
+    if (req.file) {
+      deleteUploadedFile(`/uploads/alat/${req.file.filename}`);
+    }
     logger.error("Error in alat update:", error);
     res.status(500).send("Terjadi kesalahan");
   }
@@ -101,7 +139,11 @@ const update = async (req, res) => {
 // Hapus alat
 const destroy = async (req, res) => {
   try {
+    const alat = await alatService.getById(req.params.id);
     await alatService.delete(req.params.id, req.user);
+    if (alat && alat.foto) {
+      deleteUploadedFile(alat.foto);
+    }
     res.redirect("/admin/alat");
   } catch (error) {
     logger.error("Error in alat delete:", error);

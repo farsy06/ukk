@@ -24,7 +24,7 @@ const {
 } = require("../middleware/auth");
 
 // Import security middleware
-const { loginLimiter } = require("../middleware/security");
+const { loginLimiter, csrfProtection } = require("../middleware/security");
 
 // Import validation middleware
 const {
@@ -35,6 +35,7 @@ const {
 
 // Import async handler
 const { asyncHandler } = require("../middleware/asyncHandler");
+const { uploadAlatImageSingle } = require("../middleware/upload");
 
 // Import caching middleware
 const { invalidateCache } = require("../middleware/caching");
@@ -186,6 +187,8 @@ adminRouter.get(
 adminRouter.get("/alat/tambah", asyncHandler(alatController.showCreate));
 adminRouter.post(
   "/alat/tambah",
+  uploadAlatImageSingle,
+  csrfProtection,
   validateAlatCreate,
   invalidateCache(["alat", "kategori", "home"]), // Invalidasi cache alat, kategori dan home
   asyncHandler(alatController.create),
@@ -193,6 +196,8 @@ adminRouter.post(
 adminRouter.get("/alat/edit/:id", asyncHandler(alatController.showEdit));
 adminRouter.post(
   "/alat/edit/:id",
+  uploadAlatImageSingle,
+  csrfProtection,
   validateAlatUpdate,
   invalidateCache(["alat", "kategori", "home"]), // Invalidasi cache alat, kategori dan home
   asyncHandler(alatController.update),
@@ -228,6 +233,11 @@ adminRouter.post(
   "/user/hapus/:id",
   invalidateCache(["user"]), // Invalidasi cache user
   asyncHandler(adminController.destroyUser),
+);
+adminRouter.post(
+  "/user/toggle/:id",
+  invalidateCache(["user"]),
+  asyncHandler(adminController.toggleUserActivation),
 );
 
 // Catatan aktivitas

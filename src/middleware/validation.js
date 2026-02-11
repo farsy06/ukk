@@ -248,12 +248,12 @@ const validateTanggalPeminjaman = () => {
       throw new ValidationError("Format tanggal tidak valid", "tanggal_pinjam");
     }
 
-    if (pinjam >= kembali) {
+    if (pinjam > kembali) {
       logger.warn(
         `Validation failed: tanggal kembali harus setelah tanggal pinjam`,
       );
       throw new ValidationError(
-        "Tanggal kembali harus setelah tanggal pinjam",
+        "Tanggal kembali harus sama dengan atau setelah tanggal pinjam",
         "tanggal_kembali",
       );
     }

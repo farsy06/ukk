@@ -2,6 +2,9 @@ const User = require("../models/User");
 const logger = require("../config/logging");
 const { AuthenticationError, AuthorizationError } = require("../utils/helpers");
 const constants = require("../utils/constants");
+const safeUserAttributes = {
+  attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+};
 
 /**
  * Middleware untuk mengecek apakah user sudah login
@@ -45,6 +48,7 @@ const isAuthenticated = async (req, res, next) => {
 
           return next();
         }
+        res.clearCookie("remember_token");
       }
 
       logger.warn(`Unauthenticated access attempt to ${req.originalUrl}`);
@@ -52,10 +56,17 @@ const isAuthenticated = async (req, res, next) => {
     }
 
     // Ambil data user dari database
-    const user = await User.findByPk(req.session.userId);
+    const user = await User.findByPk(req.session.userId, safeUserAttributes);
     if (!user) {
       logger.warn(`Invalid session for userId: ${req.session.userId}`);
       req.session.destroy();
+      res.clearCookie("remember_token");
+      return res.redirect("/login");
+    }
+    if (!user.is_active) {
+      logger.warn(`Inactive user session blocked: ${user.id}`);
+      req.session.destroy();
+      res.clearCookie("remember_token");
       return res.redirect("/login");
     }
 

@@ -70,22 +70,53 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="/admin/kategori/edit/<%= item.id %>" class="btn btn-sm btn-warning" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
+                                            <div class="dropdown">
                                                 <button
-                                                    class="btn btn-sm btn-danger"
+                                                    class="btn btn-sm btn-outline-secondary"
                                                     type="button"
-                                                    title="Hapus"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#confirmDeleteModal"
-                                                    data-confirm-href="/admin/kategori/hapus/<%= item.id %>"
-                                                    data-confirm-title="Konfirmasi Hapus Kategori"
-                                                    data-confirm-message="Yakin ingin menghapus kategori <%= item.nama_kategori %>?"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false"
+                                                    aria-label="Aksi"
+                                                    title="Aksi"
                                                 >
-                                                    <i class="fas fa-trash"></i>
+                                                    <i class="fas fa-ellipsis-vertical"></i>
                                                 </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li>
+                                                        <a href="/admin/kategori/edit/<%= item.id %>" class="dropdown-item">
+                                                            <i class="fas fa-edit me-2"></i> Edit
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <% if ((item.alat_count || 0) > 0) { %>
+                                                            <button
+                                                                class="dropdown-item text-muted"
+                                                                type="button"
+                                                                disabled
+                                                                title="Tidak bisa dihapus karena masih digunakan oleh alat"
+                                                            >
+                                                                <i class="fas fa-trash me-2"></i> Hapus
+                                                                <small class="ms-1">(terpakai)</small>
+                                                            </button>
+                                                        <% } else { %>
+                                                            <button
+                                                                class="dropdown-item text-danger"
+                                                                type="button"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmDeleteModal"
+                                                                data-confirm-href="/admin/kategori/hapus/<%= item.id %>"
+                                                                data-confirm-title="Konfirmasi Hapus Kategori"
+                                                                data-confirm-message="Yakin ingin menghapus kategori <%= item.nama_kategori %>?"
+                                                                data-confirm-label="Hapus"
+                                                                data-confirm-icon="fas fa-trash"
+                                                                data-confirm-button-class="btn-danger"
+                                                            >
+                                                                <i class="fas fa-trash me-2"></i> Hapus
+                                                            </button>
+                                                        <% } %>
+                                                    </li>
+                                                </ul>
                                             </div>
                                         </td>
                                     </tr>
@@ -161,24 +192,5 @@
             }
         });
 
-        // Add loading state for actions
-        const actionButtons = document.querySelectorAll('.btn-danger, .btn-warning');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                if (this.classList.contains('btn-danger')) {
-                    // Don't show loading for delete confirmation
-                    return;
-                }
-                
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1000);
-            });
-        });
     });
 </script>

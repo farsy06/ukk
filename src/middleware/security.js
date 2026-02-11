@@ -172,6 +172,10 @@ const csrfToken = (req, res, next) => {
     return next();
   }
 
+  if (req.is("multipart/form-data")) {
+    return next();
+  }
+
   // Ensure session is initialized so CSRF secret can be stored
   if (req.session && !req.session.csrfInitialized) {
     req.session.csrfInitialized = true;
@@ -212,4 +216,30 @@ module.exports = {
   sanitizeInput,
   securityHeaders,
   csrfToken,
+  csrfProtection: (req, res, next) => {
+    if (process.env.NODE_ENV === "test" || !appConfig.security.csrf) {
+      return next();
+    }
+
+    return csurf({ cookie: false })(req, res, (err) => {
+      if (err) {
+        logger.warn(
+          `CSRF token validation failed for IP: ${req.ip} path: ${req.originalUrl}`,
+        );
+        if (req.accepts("html")) {
+          if (typeof req.flash === "function") {
+            req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
+          }
+          return res.redirect(req.get("Referrer") || "/");
+        }
+
+        return res.status(403).json({
+          error: "CSRF token validation failed",
+          message: "Invalid CSRF token",
+        });
+      }
+
+      return next();
+    });
+  },
 };

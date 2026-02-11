@@ -48,6 +48,7 @@ Dokumen ini menyajikan metode pengembangan **Waterfall (sederhana/prototype)**, 
 #### Kebutuhan non-fungsional (ringkas)
 
 - Keamanan: rate limit login, CSRF, security headers, sanitasi input.
+- Upload foto alat dengan validasi tipe/ukuran dan CSRF untuk multipart.
 - Konsistensi data: relasi foreign key dan validasi model.
 - Maintainability: arsitektur berlapis routes → controller → service → model.
 
@@ -155,7 +156,7 @@ Sumber: `src/models/Alat.js`
 | `status` | ENUM | `tersedia/dipinjam/maintenance` | Status ketersediaan |
 | `stok` | INT | default 1, min 0 | Jumlah stok |
 | `deskripsi` | TEXT | nullable | Deskripsi alat |
-| `foto` | VARCHAR(255) | nullable | URL foto (jika dipakai) |
+| `foto` | VARCHAR(255) | nullable | URL foto atau path upload `/uploads/alat/...` |
 | `created_at` | DATETIME | default NOW | Waktu dibuat |
 | `updated_at` | DATETIME | default NOW | Waktu diubah |
 
@@ -230,6 +231,7 @@ Contoh titik akses (berdasarkan file):
 
 1. Client mengirim request ke Express.
 2. Middleware security: rate limit, headers, CSRF, sanitasi (`src/middleware/security`).
+   - Catatan: CSRF untuk form multipart divalidasi setelah upload (route-level).
 3. Session + flash message (`express-session`, `connect-flash`).
 4. `req.user` di-set dari `req.session.userId` (`src/app.js`).
 5. Route match (`src/routes/web.js`).
@@ -444,7 +446,7 @@ function ajukanPeminjaman(user, alat_id, tanggal_pinjam, tanggal_kembali, jumlah
 
   if !alatTersedia(alat_id, jumlahPinjam): throw error
   if tanggal_pinjam < hariIni: throw error
-  if tanggal_kembali <= tanggal_pinjam: throw error
+  if tanggal_kembali < tanggal_pinjam: throw error
   if selisihHari(tanggal_pinjam, tanggal_kembali) > 7: throw error
 
   peminjaman = create Peminjaman(
@@ -590,12 +592,15 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 #### Input Alat
 
 - `nama_alat`, `kategori_id`, `kondisi`, `status` (admin update), `stok`, (opsional) `deskripsi`, `foto`
+  - Validasi foto: tipe `JPG/PNG/WEBP/GIF`, ukuran maksimal 2MB.
 
 #### Proses Alat
 
 - Peminjam hanya melihat alat `status=tersedia` (di service).
 - Admin melakukan CRUD alat.
 - Konsistensi stok/status dijaga oleh validasi model.
+- Upload foto alat disimpan ke `public/uploads/alat/` dan path disimpan di kolom `foto`.
+- Foto lama akan dihapus ketika diganti atau ketika alat dihapus.
 - Log aktivitas admin.
 
 #### Output Alat
@@ -607,6 +612,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `src/controllers/alatController.js`: `index()`, `adminIndex()`, `showCreate()`, `create()`, `showEdit()`, `update()`, `destroy()`
 - `src/services/alatService.js`: `getAllAvailable()`, `getAllForAdminPaginated()`, `create()`, `update()`, `delete()`
 - `src/models/Alat.js`: `isAvailable()`, `canBeBorrowed()`
+  - Catatan: upload foto tersimpan di `public/uploads/alat/` dan path disimpan di kolom `foto`.
 
 ### 5.4 Modul Peminjaman (Peminjam)
 
@@ -628,6 +634,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - Buat record peminjaman status `pending`.
 - Cache invalidation (alat/peminjaman/home).
 - Log aktivitas peminjam.
+  - Catatan: tanggal kembali boleh sama dengan tanggal pinjam (peminjaman 1 hari).
 
 #### Output Peminjaman
 
@@ -667,7 +674,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 
 #### Output Persetujuan & Pengembalian
 
-- Dashboard petugas diperbarui; flash message sukses/gagal.
+- Dashboard petugas diperbarui (termasuk stok alat pada tabel); flash message sukses/gagal.
 
 #### Fungsi/Method terkait Persetujuan & Pengembalian
 
@@ -698,6 +705,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - Log: tampilkan `log_aktivitas` join `users`.
 - Laporan: generate agregasi dari service report, render view laporan.
 - Jika `format` diisi: generate file export (PDF/XLSX) lalu kirim sebagai attachment download.
+  - Laporan inventori alat menampilkan stok per item.
 
 #### Output Dashboard, User, Log & Laporan
 

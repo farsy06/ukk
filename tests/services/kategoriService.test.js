@@ -36,6 +36,10 @@ jest.mock("../../src/models/Kategori", () => ({
   getKategoriStats: jest.fn(),
 }));
 
+jest.mock("../../src/models/Alat", () => ({
+  count: jest.fn(),
+}));
+
 jest.mock("../../src/models/LogAktivitas", () => ({
   create: jest.fn(),
   findAll: jest.fn(),
@@ -202,6 +206,9 @@ describe("KategoriService", () => {
       };
       jest.spyOn(kategoriService, "getById").mockResolvedValue(kategori);
 
+      const Alat = require("../../src/models/Alat");
+      jest.spyOn(Alat, "count").mockResolvedValue(0);
+
       const LogAktivitas = require("../../src/models/LogAktivitas");
       jest.spyOn(LogAktivitas, "create").mockResolvedValue(mockLogAktivitas);
       const invalidateSpy = jest.spyOn(kategoriService, "invalidateCache");
@@ -211,6 +218,17 @@ describe("KategoriService", () => {
       expect(kategori.destroy).toHaveBeenCalledTimes(1);
       expect(LogAktivitas.create).toHaveBeenCalledTimes(1);
       expect(invalidateSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should block delete when kategori is used by alat", async () => {
+      jest.spyOn(kategoriService, "getById").mockResolvedValue(mockKategori);
+
+      const Alat = require("../../src/models/Alat");
+      jest.spyOn(Alat, "count").mockResolvedValue(2);
+
+      await expect(kategoriService.delete(1, { id: 1 })).rejects.toThrow(
+        "Kategori tidak dapat dihapus karena masih digunakan",
+      );
     });
   });
 

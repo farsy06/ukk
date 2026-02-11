@@ -12,7 +12,7 @@
                     </div>
                 <% } %>
 
-                <form action="/admin/alat/edit/<%= alat.id %>" method="POST" id="alatEditForm">
+                <form action="/admin/alat/edit/<%= alat.id %>" method="POST" id="alatEditForm" enctype="multipart/form-data">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="row">
                         <div class="col-md-6">
@@ -79,15 +79,20 @@
                                 <label for="foto" class="form-label">Foto Alat</label>
                                 <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
                                 <div class="form-text">Unggah foto alat baru (opsional)</div>
+                                <div id="fotoError" class="text-danger small mt-1"></div>
                                 <% if (alat.foto) { %>
                                     <div class="mt-2">
-                                        <img src="<%= alat.foto %>" alt="Foto Alat" class="img-thumbnail" style="max-width: 200px;">
+                                        <img id="fotoPreview" src="<%= alat.foto %>" alt="Foto Alat" class="img-thumbnail" style="max-width: 200px;">
                                         <div class="form-check mt-2">
                                             <input class="form-check-input" type="checkbox" id="hapus_foto" name="hapus_foto">
                                             <label class="form-check-label" for="hapus_foto">
                                                 Hapus foto saat ini
                                             </label>
                                         </div>
+                                    </div>
+                                <% } else { %>
+                                    <div class="mt-2">
+                                        <img id="fotoPreview" src="" alt="Preview Foto" class="img-thumbnail" style="max-width: 200px; display: none;">
                                     </div>
                                 <% } %>
                             </div>
@@ -128,6 +133,68 @@
         const stok = document.getElementById('stok');
         const kondisi = document.getElementById('kondisi');
         const status = document.getElementById('status');
+        const foto = document.getElementById('foto');
+        const fotoPreview = document.getElementById('fotoPreview');
+        const fotoError = document.getElementById('fotoError');
+        const hapusFoto = document.getElementById('hapus_foto');
+        const maxFotoSize = 2 * 1024 * 1024;
+        const allowedFotoTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+        const resetFotoError = () => {
+            if (fotoError) fotoError.textContent = '';
+            if (foto) foto.classList.remove('is-invalid');
+        };
+
+        const showFotoError = (message) => {
+            if (fotoError) fotoError.textContent = message;
+            if (foto) foto.classList.add('is-invalid');
+        };
+
+        const updateFotoPreview = (file) => {
+            if (!fotoPreview) return;
+            if (!file) {
+                if (!fotoPreview.getAttribute('src')) {
+                    fotoPreview.style.display = 'none';
+                }
+                return;
+            }
+            fotoPreview.src = URL.createObjectURL(file);
+            fotoPreview.style.display = 'block';
+        };
+
+        if (foto) {
+            foto.addEventListener('change', function() {
+                resetFotoError();
+                const file = this.files && this.files[0];
+                if (!file) {
+                    updateFotoPreview(null);
+                    return;
+                }
+                if (!allowedFotoTypes.includes(file.type)) {
+                    showFotoError('Format foto tidak valid. Gunakan JPG, PNG, WEBP, atau GIF.');
+                    this.value = '';
+                    updateFotoPreview(null);
+                    return;
+                }
+                if (file.size > maxFotoSize) {
+                    showFotoError('Ukuran foto maksimal 2MB.');
+                    this.value = '';
+                    updateFotoPreview(null);
+                    return;
+                }
+                updateFotoPreview(file);
+            });
+        }
+
+        if (hapusFoto && fotoPreview) {
+            hapusFoto.addEventListener('change', function() {
+                if (this.checked && (!foto || !foto.files || !foto.files[0])) {
+                    fotoPreview.style.display = 'none';
+                } else if (fotoPreview.getAttribute('src')) {
+                    fotoPreview.style.display = 'block';
+                }
+            });
+        }
 
         // Form validation
         form.addEventListener('submit', function(e) {
@@ -144,6 +211,22 @@
             if (parseInt(stok.value) < 1) {
                 errors.push('Stok minimal 1');
                 isValid = false;
+            }
+
+            // Validate foto
+            if (foto && foto.files && foto.files[0]) {
+                const file = foto.files[0];
+                if (!allowedFotoTypes.includes(file.type)) {
+                    errors.push('Format foto tidak valid. Gunakan JPG, PNG, WEBP, atau GIF.');
+                    showFotoError('Format foto tidak valid. Gunakan JPG, PNG, WEBP, atau GIF.');
+                    isValid = false;
+                } else if (file.size > maxFotoSize) {
+                    errors.push('Ukuran foto maksimal 2MB.');
+                    showFotoError('Ukuran foto maksimal 2MB.');
+                    isValid = false;
+                } else {
+                    resetFotoError();
+                }
             }
 
             // Show errors if any

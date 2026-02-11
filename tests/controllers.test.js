@@ -137,6 +137,15 @@ describe("Controller Tests", () => {
       role: "peminjam",
       nama: "Peminjam Test",
     });
+
+    await User.create({
+      username: "inactiveuser",
+      email: "inactive@test.com",
+      password: "TestPassword123!",
+      role: "peminjam",
+      nama: "Inactive User",
+      is_active: false,
+    });
   });
 
   afterAll(async () => {
@@ -894,6 +903,22 @@ describe("Controller Tests", () => {
       });
       expect(response.status).toBe(302); // Redirects back to login with error
     });
+
+    test("POST /login should block inactive user", async () => {
+      const response = await request(app).post("/login").send({
+        username: "inactiveuser",
+        password: "TestPassword123!",
+      });
+      expect(response.status).toBe(302);
+
+      const sessionCookie = response.headers["set-cookie"];
+      const protectedRequest = request(app).get("/admin");
+      if (sessionCookie) {
+        protectedRequest.set("Cookie", sessionCookie);
+      }
+      const protectedResponse = await protectedRequest;
+      expect(protectedResponse.status).toBe(302);
+    });
   });
 
   describe("Admin Controller - User Management", () => {
@@ -918,6 +943,25 @@ describe("Controller Tests", () => {
         .post(`/admin/user/hapus/${userToDelete.id}`)
         .set("Cookie", adminCookie);
       expect([302, 404, 500]).toContain(response.status);
+    });
+
+    test("POST /admin/user/toggle/:id should toggle activation", async () => {
+      const User = require("../src/models/User");
+      const userToToggle = await User.create({
+        nama: "User To Toggle",
+        username: "usertoggle",
+        email: "toggle@test.com",
+        password: "Password123!",
+        role: "peminjam",
+      });
+
+      const response = await request(app)
+        .post(`/admin/user/toggle/${userToToggle.id}`)
+        .set("Cookie", adminCookie);
+      expect([302, 500]).toContain(response.status);
+
+      const updated = await User.findByPk(userToToggle.id);
+      expect(updated.is_active).toBe(false);
     });
 
     test("GET /admin/catatan should return 200 status", async () => {

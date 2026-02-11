@@ -121,6 +121,12 @@ const login = async (req, res) => {
     return res.redirect("/login");
   }
 
+  if (!user.is_active) {
+    logger.warn(`Login blocked: inactive user ${username}`);
+    req.flash("error", "Akun tidak aktif");
+    return res.redirect("/login");
+  }
+
   // Verify password
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
@@ -172,11 +178,12 @@ const logout = async (req, res) => {
   logger.info(`User logged out: ${userId}`);
 
   // Clear remember token if exists
-  if (req.user && req.user.remember_token) {
+  if (req.user) {
     try {
-      req.user.remember_token = null;
-      req.user.remember_expires = null;
-      await req.user.save();
+      await User.update(
+        { remember_token: null, remember_expires: null },
+        { where: { id: req.user.id } },
+      );
       logger.info(`Remember token cleared for user ${userId}`);
     } catch (error) {
       logger.error(`Failed to clear remember token for user ${userId}:`, error);

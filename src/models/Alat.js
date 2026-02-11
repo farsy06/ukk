@@ -94,8 +94,13 @@ const Alat = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
       validate: {
-        isUrl: {
-          msg: "Format foto tidak valid",
+        fotoPathOrUrl(value) {
+          if (!value) return;
+          const isUrl = /^https?:\/\//i.test(value);
+          const isUploadPath = value.startsWith("/uploads/alat/");
+          if (!isUrl && !isUploadPath) {
+            throw new Error("Format foto tidak valid");
+          }
         },
         len: {
           args: [0, 255],

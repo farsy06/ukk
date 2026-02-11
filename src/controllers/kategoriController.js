@@ -84,7 +84,8 @@ const destroy = async (req, res) => {
     res.redirect("/admin/kategori");
   } catch (error) {
     logger.error("Error in kategori delete:", error);
-    res.status(500).send("Terjadi kesalahan");
+    req.flash("error", error.message || "Terjadi kesalahan");
+    res.redirect("/admin/kategori");
   }
 };
 

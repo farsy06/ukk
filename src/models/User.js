@@ -197,9 +197,18 @@ User.prototype.comparePassword = function (password) {
 };
 
 User.prototype.toJSON = function () {
-  const values = { ...this.get() };
-  delete values.password;
-  return values;
+  const values = this.get();
+  return {
+    id: values.id,
+    nama: values.nama,
+    username: values.username,
+    email: values.email,
+    role: values.role,
+    is_active: values.is_active,
+    last_login: values.last_login,
+    created_at: values.created_at,
+    updated_at: values.updated_at,
+  };
 };
 
 // Generate remember me token (returns plain token, stores hashed version)
@@ -271,6 +280,7 @@ User.findByRememberToken = async function (token) {
       remember_expires: {
         [Op.gt]: new Date(),
       },
+      is_active: true,
     },
     attributes: { exclude: ["password", "remember_token", "remember_expires"] },
   });
@@ -280,7 +290,11 @@ User.findByRememberToken = async function (token) {
     // Need to fetch the full user with hashed token to validate
     const fullUser = await this.findByPk(user.id);
     if (fullUser && fullUser.validateRememberToken(token)) {
-      return fullUser;
+      return this.findByPk(fullUser.id, {
+        attributes: {
+          exclude: ["password", "remember_token", "remember_expires"],
+        },
+      });
     }
   }
 

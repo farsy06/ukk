@@ -280,6 +280,12 @@
                     }
                     button.appendChild(document.createTextNode(label));
                 };
+                const setButtonClass = (button, buttonClass) => {
+                    button.classList.remove('btn-danger', 'btn-warning', 'btn-success');
+                    if (buttonClass) {
+                        button.classList.add(buttonClass);
+                    }
+                };
 
                 const deleteTriggers = document.querySelectorAll('[data-confirm-href]');
                 deleteTriggers.forEach(trigger => {
@@ -287,6 +293,9 @@
                         const href = this.getAttribute('data-confirm-href') || '#';
                         const title = this.getAttribute('data-confirm-title') || 'Konfirmasi Hapus';
                         const message = this.getAttribute('data-confirm-message') || 'Yakin ingin menghapus item ini?';
+                        const label = this.getAttribute('data-confirm-label') || 'Hapus';
+                        const icon = this.getAttribute('data-confirm-icon') || 'fas fa-trash';
+                        const buttonClass = this.getAttribute('data-confirm-button-class') || 'btn-danger';
 
                         const titleEl = document.getElementById('confirmDeleteLabel');
                         if (titleEl) titleEl.textContent = title;
@@ -306,13 +315,14 @@
                         })();
                         confirmDeleteForm.setAttribute('action', safeAction);
                         confirmDeleteButton.classList.remove('disabled');
-                        setButtonContent(confirmDeleteButton, 'fas fa-trash', 'Hapus');
+                        setButtonClass(confirmDeleteButton, buttonClass);
+                        setButtonContent(confirmDeleteButton, icon, label);
                     });
                 });
 
                 confirmDeleteForm.addEventListener('submit', function() {
                     const originalText = confirmDeleteButton.textContent;
-                    setButtonContent(confirmDeleteButton, 'fas fa-spinner fa-spin', 'Menghapus...');
+                    setButtonContent(confirmDeleteButton, 'fas fa-spinner fa-spin', 'Memproses...');
                     confirmDeleteButton.classList.add('disabled');
                     setTimeout(() => {
                         setButtonContent(confirmDeleteButton, 'fas fa-trash', originalText.trim() || 'Hapus');

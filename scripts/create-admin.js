@@ -28,17 +28,22 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const isValidUsername = (username) => /^[a-zA-Z0-9_-]{3,20}$/.test(username);
 
-const isValidPassword = (password) => password.length >= 6;
+const isValidPassword = (password) =>
+  password.length >= 8 &&
+  /[A-Z]/.test(password) &&
+  /[a-z]/.test(password) &&
+  /\d/.test(password) &&
+  /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
 /* =======================
   MAIN FUNCTION
 ======================= */
 async function createAdminAccount() {
   try {
-    console.log("\n=== 🛡️ CREATE ADMIN ACCOUNT ===\n");
+    console.log("\n=== CREATE ADMIN ACCOUNT ===\n");
 
     await sequelize.authenticate();
-    console.log("✓ Database connected\n");
+    console.log("Database connected\n");
 
     /* ===== INPUT ===== */
     const nama = await ask("Nama Lengkap: ");
@@ -53,9 +58,13 @@ async function createAdminAccount() {
     const email = await ask("Email: ");
     if (!isValidEmail(email)) throw new Error("Email tidak valid");
 
-    const password = await askPassword("Password (min 6 karakter): ");
+    const password = await askPassword(
+      "Password (min 8 karakter, huruf besar, huruf kecil, angka, spesial): ",
+    );
     if (!isValidPassword(password))
-      throw new Error("Password minimal 6 karakter");
+      throw new Error(
+        "Password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, angka, dan karakter spesial",
+      );
 
     const confirmPassword = await askPassword("Konfirmasi Password: ");
     if (password !== confirmPassword) throw new Error("Password tidak cocok");
@@ -63,7 +72,7 @@ async function createAdminAccount() {
     /* ===== CHECK EXISTING ADMIN ===== */
     const existingAdmin = await User.findOne({ where: { role: "admin" } });
     if (existingAdmin) {
-      console.log("\n⚠️ Admin sudah ada:");
+      console.log("\nAdmin sudah ada:");
       console.log(`- Username: ${existingAdmin.username}`);
       console.log(`- Email   : ${existingAdmin.email}`);
 
@@ -104,21 +113,52 @@ async function createAdminAccount() {
       email,
       password: password,
       role: "admin",
+      is_active: true,
     });
 
-    console.log("\n✓ Admin berhasil dibuat!");
+    console.log("\nAdmin berhasil dibuat!");
     console.log("========================");
     console.log(`ID        : ${admin.id}`);
     console.log(`Nama      : ${admin.nama}`);
     console.log(`Username  : ${admin.username}`);
     console.log(`Email     : ${admin.email}`);
     console.log(`Role      : ${admin.role}`);
-    console.log(`CreatedAt : ${admin.createdAt}`);
+    console.log(`CreatedAt : ${admin.created_at}`);
     console.log("========================\n");
 
-    console.log("💡 Silakan login menggunakan akun admin tersebut.");
+    console.log("Silakan login menggunakan akun admin tersebut.");
   } catch (err) {
-    console.error("\n❌ Gagal:", err.message);
+    if (err && err.name === "SequelizeValidationError" && err.errors) {
+      const messages = err.errors
+        .map((e) => {
+          const field = e.path || e.param || "field";
+          const msg = e.message || "invalid";
+          return `${field}: ${msg}`;
+        })
+        .filter(Boolean);
+      console.error(
+        "\nGagal:",
+        messages.length ? messages.join("; ") : err.message,
+      );
+    } else if (
+      err &&
+      err.name === "SequelizeUniqueConstraintError" &&
+      err.errors
+    ) {
+      const messages = err.errors
+        .map((e) => {
+          const field = e.path || e.param || "field";
+          const msg = e.message || "duplicate";
+          return `${field}: ${msg}`;
+        })
+        .filter(Boolean);
+      console.error(
+        "\nGagal:",
+        messages.length ? messages.join("; ") : err.message,
+      );
+    } else {
+      console.error("\nGagal:", err.message);
+    }
   } finally {
     rl.close();
     await sequelize.close();

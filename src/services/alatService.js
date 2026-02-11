@@ -123,6 +123,9 @@ class AlatService {
       kategori_id: parseInt(data.kategori_id),
       kondisi: data.kondisi,
       stok: parseInt(data.stok) || 1,
+      status: data.status || "tersedia",
+      deskripsi: data.deskripsi || null,
+      foto: data.foto || null,
     });
 
     // Log aktivitas - handle system user (id 0) specially
@@ -160,6 +163,8 @@ class AlatService {
       kondisi: data.kondisi,
       status: data.status,
       stok: parseInt(data.stok) || alat.stok,
+      deskripsi: data.deskripsi ?? alat.deskripsi,
+      foto: typeof data.foto !== "undefined" ? data.foto : alat.foto,
     });
 
     // Log aktivitas

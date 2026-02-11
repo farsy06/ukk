@@ -277,8 +277,10 @@ class PeminjamanService {
       throw new Error("Tanggal pinjam tidak boleh di masa lalu");
     }
 
-    if (tanggalKembali <= tanggalPinjam) {
-      throw new Error("Tanggal kembali harus lebih besar dari tanggal pinjam");
+    if (tanggalKembali < tanggalPinjam) {
+      throw new Error(
+        "Tanggal kembali harus sama dengan atau lebih besar dari tanggal pinjam",
+      );
     }
 
     // Max borrowing 7 days

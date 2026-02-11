@@ -9,6 +9,11 @@ const { ROLES } = require("../utils/constants");
  * Service layer for user business logic
  */
 class UserService {
+  constructor() {
+    this.safeUserAttributes = {
+      exclude: ["password", "remember_token", "remember_expires"],
+    };
+  }
   /**
    * Get dashboard statistics
    * @returns {Promise<Object>} - Dashboard statistics
@@ -60,6 +65,7 @@ class UserService {
           [require("sequelize").Op.ne]: ROLES.ADMIN,
         },
       },
+      attributes: this.safeUserAttributes,
     });
 
     // Cache for 10 minutes
@@ -84,6 +90,7 @@ class UserService {
       order: [["created_at", "DESC"]],
       limit,
       offset,
+      attributes: this.safeUserAttributes,
     });
   }
 
@@ -93,7 +100,9 @@ class UserService {
    * @returns {Promise<Object>} - User object
    */
   async getById(id) {
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(id, {
+      attributes: this.safeUserAttributes,
+    });
     if (!user) {
       throw new Error("User tidak ditemukan");
     }
@@ -144,7 +153,7 @@ class UserService {
     }
 
     // Invalidasi cache
-    this.invalidateCache();
+    await this.invalidateCache();
 
     return user;
   }
@@ -172,7 +181,44 @@ class UserService {
     });
 
     // Invalidasi cache
-    this.invalidateCache();
+    await this.invalidateCache();
+  }
+
+  /**
+   * Toggle user active status (non-admin only)
+   * @param {number} id - User ID
+   * @param {Object} adminUser - Admin user object
+   * @returns {Promise<Object>} - Updated status
+   */
+  async toggleActive(id, adminUser) {
+    const user = await User.findByPk(id);
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    if (user.role === ROLES.ADMIN) {
+      throw new Error("Tidak dapat menonaktifkan user admin");
+    }
+
+    const newStatus = !user.is_active;
+
+    await User.update(
+      {
+        is_active: newStatus,
+        remember_token: null,
+        remember_expires: null,
+      },
+      { where: { id } },
+    );
+
+    await LogAktivitas.create({
+      user_id: adminUser.id,
+      aktivitas: `${newStatus ? "Mengaktifkan" : "Menonaktifkan"} user: ${user.nama} (${user.role})`,
+    });
+
+    await this.invalidateCache();
+
+    return { id: user.id, is_active: newStatus };
   }
 
   /**
@@ -254,10 +300,10 @@ class UserService {
    * Invalidate cache for user-related data
    * @returns {void}
    */
-  invalidateCache() {
-    cacheHelper.del("admin_dashboard_stats");
-    cacheHelper.del("admin_user_index");
-    cacheHelper.del("admin_log_index");
+  async invalidateCache() {
+    await cacheHelper.del("admin_dashboard_stats");
+    await cacheHelper.del("admin_user_index");
+    await cacheHelper.del("admin_log_index");
   }
 
   /**

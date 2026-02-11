@@ -23,6 +23,8 @@ const asyncHandler = (fn) => {
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
   const logger = require("../config/logging");
+  const fs = require("fs");
+  const path = require("path");
 
   // Handle case where err might be undefined or null
   if (!err) {
@@ -40,6 +42,24 @@ const errorHandler = (err, req, res, next) => {
       // Fallback for when res is not available
       console.error("Error Handler: Cannot send response - invalid res object");
       return;
+    }
+  }
+
+  // Cleanup uploaded file if validation fails after upload
+  if (req && req.file && req.file.path) {
+    try {
+      const normalizedPath = path.normalize(req.file.path);
+      const uploadsRoot = path.normalize(
+        path.join(__dirname, "../../public/uploads/alat"),
+      );
+      if (
+        normalizedPath.startsWith(uploadsRoot) &&
+        fs.existsSync(normalizedPath)
+      ) {
+        fs.unlinkSync(normalizedPath);
+      }
+    } catch (cleanupErr) {
+      logger.warn(`Failed to cleanup uploaded file: ${cleanupErr.message}`);
     }
   }
 

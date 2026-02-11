@@ -92,6 +92,7 @@
                                 <th>Kategori</th>
                                 <th>Status</th>
                                 <th>Kondisi</th>
+                                <th>Stok</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,6 +109,11 @@
                                 <td>
                                     <span class="badge <%= alat.kondisi === 'baik' ? 'bg-info' : 'bg-danger' %>">
                                         <%= alat.kondisi %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge <%= typeof alat.stok !== 'undefined' ? (alat.stok > 0 ? 'bg-success' : 'bg-danger') : 'bg-secondary' %>">
+                                        <%= typeof alat.stok !== 'undefined' ? alat.stok : '-' %>
                                     </span>
                                 </td>
                             </tr>

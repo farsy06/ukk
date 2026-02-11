@@ -92,26 +92,60 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
-                                                <% if (user.role !== 'admin') { %>
+                                            <% if (user.role !== 'admin') { %>
+                                                <div class="dropdown">
                                                     <button
-                                                        class="btn btn-sm btn-danger"
+                                                        class="btn btn-sm btn-outline-secondary"
                                                         type="button"
-                                                        title="Hapus"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#confirmDeleteModal"
-                                                        data-confirm-href="/admin/user/hapus/<%= user.id %>"
-                                                        data-confirm-title="Konfirmasi Hapus User"
-                                                        data-confirm-message="Yakin ingin menghapus user <%= user.nama %> (@<%= user.username %>)?"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false"
+                                                        aria-label="Aksi"
+                                                        title="Aksi"
                                                     >
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-ellipsis-vertical"></i>
                                                     </button>
-                                                <% } else { %>
-                                                    <button class="btn btn-sm btn-secondary" disabled title="Admin tidak dapat dihapus">
-                                                        <i class="fas fa-ban"></i>
-                                                    </button>
-                                                <% } %>
-                                            </div>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <button
+                                                                class="dropdown-item"
+                                                                type="button"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmDeleteModal"
+                                                                data-confirm-href="/admin/user/toggle/<%= user.id %>"
+                                                                data-confirm-title="<%= user.is_active ? 'Konfirmasi Nonaktifkan User' : 'Konfirmasi Aktifkan User' %>"
+                                                                data-confirm-message="<%= user.is_active ? `Yakin ingin menonaktifkan user ${user.nama} (@${user.username})?` : `Yakin ingin mengaktifkan user ${user.nama} (@${user.username})?` %>"
+                                                                data-confirm-label="<%= user.is_active ? 'Nonaktifkan' : 'Aktifkan' %>"
+                                                                data-confirm-icon="<%= user.is_active ? 'fas fa-user-slash' : 'fas fa-user-check' %>"
+                                                                data-confirm-button-class="<%= user.is_active ? 'btn-warning' : 'btn-success' %>"
+                                                            >
+                                                                <i class="<%= user.is_active ? 'fas fa-user-slash' : 'fas fa-user-check' %> me-2"></i>
+                                                                <%= user.is_active ? 'Nonaktifkan' : 'Aktifkan' %>
+                                                            </button>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button
+                                                                class="dropdown-item text-danger"
+                                                                type="button"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmDeleteModal"
+                                                                data-confirm-href="/admin/user/hapus/<%= user.id %>"
+                                                                data-confirm-title="Konfirmasi Hapus User"
+                                                                data-confirm-message="Yakin ingin menghapus user <%= user.nama %> (@<%= user.username %>)?"
+                                                                data-confirm-label="Hapus"
+                                                                data-confirm-icon="fas fa-trash"
+                                                                data-confirm-button-class="btn-danger"
+                                                            >
+                                                                <i class="fas fa-trash me-2"></i> Hapus
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            <% } else { %>
+                                                <button class="btn btn-sm btn-secondary" disabled title="Admin tidak dapat dihapus">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            <% } %>
                                         </td>
                                     </tr>
                                 <% }); %>

@@ -160,19 +160,41 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <div class="btn-group-vertical" role="group">
-                                                <% if (item.status === 'pending') { %>
-                                                    <a href="/admin/peminjaman/setujui/<%= item.id %>" class="btn btn-sm btn-success" title="Setujui">
-                                                        <i class="fas fa-check"></i>
-                                                    </a>
-                                                    <a href="/admin/peminjaman/tolak/<%= item.id %>" class="btn btn-sm btn-danger" title="Tolak">
-                                                        <i class="fas fa-times"></i>
-                                                    </a>
-                                                <% } else if (item.status === 'dipinjam') { %>
-                                                    <a href="/admin/peminjaman/kembalikan/<%= item.id %>" class="btn btn-sm btn-info" title="Kembalikan">
-                                                        <i class="fas fa-undo"></i>
-                                                    </a>
-                                                <% } %>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    type="button"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false"
+                                                    aria-label="Aksi"
+                                                    title="Aksi"
+                                                >
+                                                    <i class="fas fa-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <% if (item.status === 'pending') { %>
+                                                        <li>
+                                                            <a href="/admin/peminjaman/setujui/<%= item.id %>" class="dropdown-item text-success">
+                                                                <i class="fas fa-check me-2"></i> Setujui
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a href="/admin/peminjaman/tolak/<%= item.id %>" class="dropdown-item text-danger">
+                                                                <i class="fas fa-times me-2"></i> Tolak
+                                                            </a>
+                                                        </li>
+                                                    <% } else if (item.status === 'dipinjam') { %>
+                                                        <li>
+                                                            <a href="/admin/peminjaman/kembalikan/<%= item.id %>" class="dropdown-item text-info">
+                                                                <i class="fas fa-undo me-2"></i> Kembalikan
+                                                            </a>
+                                                        </li>
+                                                    <% } else { %>
+                                                        <li>
+                                                            <span class="dropdown-item text-muted">Tidak ada aksi</span>
+                                                        </li>
+                                                    <% } %>
+                                                </ul>
                                             </div>
                                         </td>
                                     </tr>
@@ -272,19 +294,5 @@
             }
         });
 
-        // Add loading state for actions
-        const actionButtons = document.querySelectorAll('.btn-success, .btn-danger, .btn-info');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1000);
-            });
-        });
     });
 </script>
