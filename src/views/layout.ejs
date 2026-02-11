@@ -194,6 +194,7 @@
         <% } %>
         
         <% if (typeof allowHtml !== 'undefined' && allowHtml) { %>
+            <!-- codeql[js/xss]=trusted layout injection gated by allowHtml -->
             <%- body %>
         <% } else { %>
             <%= body %>

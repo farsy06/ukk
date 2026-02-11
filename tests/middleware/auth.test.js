@@ -18,12 +18,13 @@ jest.mock("../../src/models/User", () => mockUserModel);
 
 const buildApp = () => {
   const app = express();
+  app.set("trust proxy", 1);
   app.use(
     session({
       secret: "test-secret",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: false },
+      cookie: { secure: true, sameSite: "lax" },
     }),
   );
 
@@ -47,6 +48,9 @@ const buildApp = () => {
   return app;
 };
 
+const httpsRequest = (app) =>
+  request(app).get("/protected").set("X-Forwarded-Proto", "https");
+
 describe("Auth middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,9 +67,7 @@ describe("Auth middleware", () => {
     };
     mockUserModel.findByRememberToken.mockResolvedValue(user);
 
-    const response = await request(app)
-      .get("/protected")
-      .set("x-remember-token", "old-token");
+    const response = await httpsRequest(app).set("x-remember-token", "old-token");
 
     expect(response.status).toBe(200);
     expect(mockUserModel.findByRememberToken).toHaveBeenCalledWith("old-token");
@@ -75,9 +77,7 @@ describe("Auth middleware", () => {
     const app = buildApp();
     mockUserModel.findByRememberToken.mockResolvedValue(null);
 
-    const response = await request(app)
-      .get("/protected")
-      .set("x-remember-token", "bad-token");
+    const response = await httpsRequest(app).set("x-remember-token", "bad-token");
 
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe("/login");
@@ -90,9 +90,7 @@ describe("Auth middleware", () => {
     const app = buildApp();
     mockUserModel.findByPk.mockResolvedValue(null);
 
-    const response = await request(app)
-      .get("/protected")
-      .set("x-user-id", "42");
+    const response = await httpsRequest(app).set("x-user-id", "42");
 
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe("/login");
@@ -105,9 +103,7 @@ describe("Auth middleware", () => {
     const app = buildApp();
     mockUserModel.findByPk.mockResolvedValue({ id: 42, is_active: false });
 
-    const response = await request(app)
-      .get("/protected")
-      .set("x-user-id", "42");
+    const response = await httpsRequest(app).set("x-user-id", "42");
 
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe("/login");
@@ -120,9 +116,7 @@ describe("Auth middleware", () => {
     const app = buildApp();
     mockUserModel.findByPk.mockResolvedValue({ id: 42, is_active: true });
 
-    const response = await request(app)
-      .get("/protected")
-      .set("x-user-id", "42");
+    const response = await httpsRequest(app).set("x-user-id", "42");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, userId: 42 });

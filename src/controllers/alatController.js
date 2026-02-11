@@ -4,11 +4,26 @@ const { getPagination } = require("../utils/helpers");
 const fs = require("fs");
 const path = require("path");
 
+const uploadsRoot = path.resolve(__dirname, "../../public/uploads/alat");
+
+const resolveUploadPath = (fotoPath) => {
+  if (typeof fotoPath !== "string") return null;
+  if (!fotoPath.startsWith("/uploads/alat/")) return null;
+  const relativePath = fotoPath.slice("/uploads/alat/".length);
+  if (!relativePath) return null;
+  const resolvedPath = path.resolve(uploadsRoot, relativePath);
+  const uploadsRootWithSep = uploadsRoot.endsWith(path.sep)
+    ? uploadsRoot
+    : `${uploadsRoot}${path.sep}`;
+  if (!resolvedPath.startsWith(uploadsRootWithSep)) return null;
+  return resolvedPath;
+};
+
 const deleteUploadedFile = (fotoPath) => {
-  if (!fotoPath || !fotoPath.startsWith("/uploads/alat/")) return;
-  const absolutePath = path.join(__dirname, "../../public", fotoPath);
-  if (fs.existsSync(absolutePath)) {
-    fs.unlinkSync(absolutePath);
+  const resolvedPath = resolveUploadPath(fotoPath);
+  if (!resolvedPath) return;
+  if (fs.existsSync(resolvedPath)) {
+    fs.unlinkSync(resolvedPath);
   }
 };
 

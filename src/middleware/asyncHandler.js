@@ -45,19 +45,23 @@ const errorHandler = (err, req, res, next) => {
     }
   }
 
+  const safeUnlinkUpload = (filePath) => {
+    if (typeof filePath !== "string") return;
+    const uploadsRoot = path.resolve(__dirname, "../../public/uploads/alat");
+    const resolvedPath = path.resolve(filePath);
+    const uploadsRootWithSep = uploadsRoot.endsWith(path.sep)
+      ? uploadsRoot
+      : `${uploadsRoot}${path.sep}`;
+    if (!resolvedPath.startsWith(uploadsRootWithSep)) return;
+    if (fs.existsSync(resolvedPath)) {
+      fs.unlinkSync(resolvedPath);
+    }
+  };
+
   // Cleanup uploaded file if validation fails after upload
   if (req && req.file && req.file.path) {
     try {
-      const normalizedPath = path.normalize(req.file.path);
-      const uploadsRoot = path.normalize(
-        path.join(__dirname, "../../public/uploads/alat"),
-      );
-      if (
-        normalizedPath.startsWith(uploadsRoot) &&
-        fs.existsSync(normalizedPath)
-      ) {
-        fs.unlinkSync(normalizedPath);
-      }
+      safeUnlinkUpload(req.file.path);
     } catch (cleanupErr) {
       logger.warn(`Failed to cleanup uploaded file: ${cleanupErr.message}`);
     }

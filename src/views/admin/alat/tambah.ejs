@@ -120,6 +120,29 @@
         const maxFotoSize = 2 * 1024 * 1024;
         const allowedFotoTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+        const createAlert = (messages, type, iconClass) => {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.setAttribute('role', 'alert');
+
+            messages.forEach((msg) => {
+                const row = document.createElement('div');
+                const icon = document.createElement('i');
+                icon.className = iconClass;
+                row.appendChild(icon);
+                row.appendChild(document.createTextNode(` ${msg}`));
+                alertDiv.appendChild(row);
+            });
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'btn-close';
+            closeButton.setAttribute('data-bs-dismiss', 'alert');
+            alertDiv.appendChild(closeButton);
+
+            return alertDiv;
+        };
+
         const resetFotoError = () => {
             if (fotoError) fotoError.textContent = '';
             if (foto) foto.classList.remove('is-invalid');
@@ -201,10 +224,7 @@
             // Show errors if any
             if (!isValid) {
                 e.preventDefault();
-                const errorHtml = errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
-                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                const errorDiv = createAlert(errors, 'danger', 'fas fa-exclamation-circle');
                 
                 // Remove existing error messages
                 const existingErrors = document.querySelectorAll('.alert-danger');
@@ -236,9 +256,11 @@
         kondisi.addEventListener('change', function() {
             if (this.value === 'rusak_berat' && status.value !== 'maintenance') {
                 status.value = 'maintenance';
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-warning alert-dismissible fade show';
-                alert.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Alat dengan kondisi rusak berat harus berstatus maintenance <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                const alert = createAlert(
+                    ['Alat dengan kondisi rusak berat harus berstatus maintenance'],
+                    'warning',
+                    'fas fa-exclamation-triangle'
+                );
                 form.insertBefore(alert, form.firstChild);
             }
         });
