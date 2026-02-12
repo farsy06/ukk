@@ -13,12 +13,14 @@ window.authUi = (() => {
     errorDiv.className =
       "alert alert-danger alert-dismissible fade show auth-local-error";
     errorDiv.setAttribute("role", "alert");
-    errorDiv.innerHTML = messages
-      .map(
-        (msg) =>
-          `<div><i class="fas fa-exclamation-circle me-1"></i>${msg}</div>`,
-      )
-      .join("");
+    messages.forEach((msg) => {
+      const messageRow = document.createElement("div");
+      const icon = document.createElement("i");
+      icon.className = "fas fa-exclamation-circle me-1";
+      messageRow.appendChild(icon);
+      messageRow.appendChild(document.createTextNode(String(msg)));
+      errorDiv.appendChild(messageRow);
+    });
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";

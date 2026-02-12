@@ -10,6 +10,9 @@ const setNoStoreHeaders = (res) => {
 };
 
 const setHttpCachePolicy = (req, res, next) => {
+  const hasCookieHeader =
+    typeof req.headers.cookie === "string" && req.headers.cookie.length > 0;
+
   // Only GET/HEAD are cacheable by HTTP semantics.
   if (!["GET", "HEAD"].includes(req.method)) {
     setNoStoreHeaders(res);
@@ -19,13 +22,22 @@ const setHttpCachePolicy = (req, res, next) => {
   // Never allow browser/proxy caching for authenticated sessions.
   if (req.user) {
     setNoStoreHeaders(res);
-    res.set("Vary", "Cookie");
+    res.append("Vary", "Cookie");
+    return next();
+  }
+
+  // Requests carrying cookies should not receive publicly cacheable HTML.
+  // This prevents guest-cached pages being reused after login/logout state changes.
+  if (hasCookieHeader) {
+    setNoStoreHeaders(res);
+    res.append("Vary", "Cookie");
     return next();
   }
 
   // Public landing pages can be cached briefly.
   if (PUBLIC_CACHEABLE_ROUTES.has(req.path)) {
     res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    res.append("Vary", "Cookie");
     return next();
   }
 

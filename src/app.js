@@ -93,9 +93,13 @@ async function startServer() {
                 ? res.locals.allowHtml
                 : true;
 
+          const sanitizedOptions = Object.fromEntries(
+            Object.entries(opts).filter(([, value]) => value !== undefined),
+          );
+
           const layoutData = {
             ...res.locals,
-            ...opts,
+            ...sanitizedOptions,
             body: html,
             allowHtml: resolvedAllowHtml,
           };
