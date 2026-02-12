@@ -67,7 +67,10 @@ describe("Auth middleware", () => {
     };
     mockUserModel.findByRememberToken.mockResolvedValue(user);
 
-    const response = await httpsRequest(app).set("x-remember-token", "old-token");
+    const response = await httpsRequest(app).set(
+      "x-remember-token",
+      "old-token",
+    );
 
     expect(response.status).toBe(200);
     expect(mockUserModel.findByRememberToken).toHaveBeenCalledWith("old-token");
@@ -77,7 +80,10 @@ describe("Auth middleware", () => {
     const app = buildApp();
     mockUserModel.findByRememberToken.mockResolvedValue(null);
 
-    const response = await httpsRequest(app).set("x-remember-token", "bad-token");
+    const response = await httpsRequest(app).set(
+      "x-remember-token",
+      "bad-token",
+    );
 
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe("/login");

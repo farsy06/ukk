@@ -429,10 +429,14 @@ class PeminjamanService {
     const jumlah = peminjaman.jumlah || 1;
     const today = new Date();
 
+    // Calculate fine for overdue items
+    const fine = peminjaman.calculateFine();
+
     // Update peminjaman status
     await peminjaman.update({
       status: "dikembalikan",
       tanggal_pengembalian: today,
+      denda: fine,
     });
 
     // Add stock back

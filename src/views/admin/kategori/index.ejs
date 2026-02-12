@@ -1,42 +1,31 @@
 <div class="row">
     <div class="col-12">
-        <h2>Kelola Kategori Alat</h2>
-        <p class="text-muted">Kelola kategori untuk mengorganisir alat.</p>
+        <%- include('../../_partials/page-head', {
+            title: 'Kelola Kategori Alat',
+            subtitle: 'Kelola kategori untuk mengorganisir alat.'
+        }) %>
     </div>
 </div>
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="d-flex gap-2">
-                <a href="/admin/kategori/tambah" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Tambah Kategori
-                </a>
-                <a href="/admin/kategori" class="btn btn-outline-secondary" title="Refresh">
-                    <i class="fas fa-refresh"></i>
-                </a>
-            </div>
-            <div class="d-flex gap-2">
-                <div class="input-group" style="width: 300px;">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Cari kategori...">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <%- include('../../_partials/table-toolbar', {
+            addUrl: '/admin/kategori/tambah',
+            addLabel: 'Tambah Kategori',
+            refreshUrl: '/admin/kategori',
+            searchPlaceholder: 'Cari kategori...'
+        }) %>
 
-        <div class="card">
+        <div class="card table-card">
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="kategoriTable">
-                        <thead class="table-dark">
+                <table class="table table-striped table-hover" id="kategoriTable">
+                        <thead class="table-light">
                             <tr>
                                 <th>No</th>
                                 <th>Nama Kategori</th>
                                 <th>Deskripsi</th>
                                 <th>Jumlah Alat</th>
-                                <th>Aksi</th>
+                                <th class="table-actions">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -44,7 +33,7 @@
                                 <% kategori.forEach(function(item, index) { %>
                                     <tr data-id="<%= item.id %>" data-nama="<%= item.nama_kategori %>" data-deskripsi="<%= item.deskripsi || '' %>">
                                         <td><%= index + 1 %></td>
-                                        <td>
+                                        <td class="table-actions">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary rounded me-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
                                                     <i class="fas fa-layer-group text-white"></i>
@@ -136,7 +125,6 @@
                             <% } %>
                         </tbody>
                     </table>
-                </div>
             </div>
         </div>
     </div>
@@ -172,17 +160,6 @@
                 searchInput.dispatchEvent(new Event('input'));
             });
         }
-
-        // Add hover effects for better UX
-        rows.forEach(row => {
-            row.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f8f9fa';
-            });
-            
-            row.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-        });
 
         // Add keyboard navigation
         document.addEventListener('keydown', function(e) {

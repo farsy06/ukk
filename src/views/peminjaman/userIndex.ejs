@@ -1,38 +1,27 @@
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h2 class="mb-1">Riwayat Peminjaman</h2>
-                <p class="text-muted mb-0">Berikut adalah riwayat pengajuan peminjaman alat Anda.</p>
-            </div>
-            <div>
-                <a href="/alat" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Ajukan Peminjaman
-                </a>
-            </div>
-        </div>
+        <%- include('../_partials/page-head', {
+            title: 'Riwayat Peminjaman',
+            subtitle: 'Berikut adalah riwayat pengajuan peminjaman alat Anda.',
+            actions: '<a href=\"/alat\" class=\"btn btn-primary\"><i class=\"fas fa-plus\"></i> Ajukan Peminjaman</a>'
+        }) %>
     </div>
 </div>
 
 <div class="row">
     <div class="col-12">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm table-card">
             <div class="card-body">
                 <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
-                    <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col" class="text-center">#</th>
                                     <th scope="col">Alat</th>
-                                    <th scope="col">Jumlah</th>
-                                    <th scope="col">Tanggal Pinjam</th>
-                                    <th scope="col">Tanggal Kembali</th>
+                                    <th scope="col">Periode</th>
                                     <th scope="col">Status</th>
-                                    <th scope="col">Keterlambatan</th>
-                                    <th scope="col">Denda</th>
-                                    <th scope="col">Tanggal Pengembalian</th>
-                                    <th scope="col">Aksi</th>
+                                    <th scope="col">Late/Fine</th>
+                                    <th scope="col" class="table-actions">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -50,87 +39,72 @@
                                     %>
                                     <tr>
                                         <td class="text-center"><%= index + 1 %></td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div>
-                                                    <h6 class="mb-1 fw-semibold">
-                                                        <%= item.alat ? item.alat.nama_alat : 'Alat tidak ditemukan' %>
-                                                    </h6>
-                                                    <small class="text-muted">
-                                                        Kategori: <%= item.alat && item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
-                                                    </small>
-                                                </div>
+                                        <td class="table-actions">
+                                            <div>
+                                                <h6 class="mb-1 fw-semibold">
+                                                    <%= item.alat ? item.alat.nama_alat : 'Alat tidak ditemukan' %>
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Kategori: <%= item.alat && item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
+                                                </small>
+                                                <small class="text-muted d-block">
+                                                    Jumlah: <%= item.jumlah || 1 %>
+                                                </small>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                <%= item.jumlah || 1 %>
-                                            </span>
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark">
                                                 <%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
                                             </span>
-                                        </td>
-                                        <td>
+                                            <span class="text-muted">→</span>
                                             <span class="badge bg-light text-dark">
                                                 <%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
                                             </span>
+                                            <% if (item.tanggal_pengembalian) { %>
+                                                <small class="text-muted d-block mt-1">
+                                                    Kembali: <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                                                </small>
+                                            <% } %>
                                         </td>
                                         <td>
                                             <% if (item.status === 'pending') { %>
-                                                <span class="badge bg-warning d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-clock me-2"></i> Menunggu Persetujuan
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock"></i> Menunggu
                                                 </span>
                                             <% } else if (item.status === 'disetujui') { %>
-                                                <span class="badge bg-info d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-check-circle me-2"></i> Disetujui
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-check-circle"></i> Disetujui
                                                 </span>
                                             <% } else if (item.status === 'dipinjam') { %>
-                                                <span class="badge bg-primary d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-handshake me-2"></i> Sedang Dipinjam
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-handshake"></i> Dipinjam
                                                 </span>
                                             <% } else if (item.status === 'dikembalikan') { %>
-                                                <span class="badge bg-success d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-undo me-2"></i> Dikembalikan
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-undo"></i> Kembali
                                                 </span>
                                             <% } else if (item.status === 'ditolak') { %>
-                                                <span class="badge bg-danger d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-times-circle me-2"></i> Ditolak
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Ditolak
                                                 </span>
                                             <% } else if (item.status === 'dibatalkan') { %>
-                                                <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-ban me-2"></i> Dibatalkan
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-ban"></i> Dibatalkan
                                                 </span>
                                             <% } else { %>
-                                                <span class="badge bg-secondary d-flex align-items-center" style="min-width: 140px;">
-                                                    <i class="fas fa-question-circle me-2"></i> Status Tidak Diketahui
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-question-circle"></i> Tidak Diketahui
                                                 </span>
                                             <% } %>
                                         </td>
                                         <td>
                                             <% if (isOverdue) { %>
                                                 <span class="badge bg-danger">
-                                                    <i class="fas fa-exclamation-triangle"></i> Terlambat <%= daysOverdue %> hari
+                                                    <i class="fas fa-exclamation-triangle"></i> <%= daysOverdue %> hari
                                                 </span>
-                                            <% } else { %>
-                                                <span class="text-muted fst-italic">-</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <% if (isOverdue) { %>
-                                                <span class="badge bg-light text-dark">
+                                                <div class="text-muted small mt-1">
                                                     Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %>
-                                                </span>
-                                            <% } else { %>
-                                                <span class="text-muted fst-italic">-</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <% if (item.tanggal_pengembalian) { %>
-                                                <span class="badge bg-light text-dark">
-                                                    <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-                                                </span>
+                                                </div>
                                             <% } else { %>
                                                 <span class="text-muted fst-italic">-</span>
                                             <% } %>
@@ -151,7 +125,6 @@
                                 <% }); %>
                             </tbody>
                         </table>
-                    </div>
                 <% } else { %>
                     <div class="text-center py-5">
                         <div class="mb-4">
@@ -169,35 +142,11 @@
     </div>
 </div>
 
-<!-- Add some custom styles -->
 <style>
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-    
     .badge {
         font-size: 0.85rem;
         padding: 6px 12px;
     }
-    
-    .card {
-        border: none;
-        border-radius: 8px;
-    }
-    
-    .card-header {
-        background-color: #fff;
-        border-bottom: 1px solid #dee2e6;
-        border-radius: 8px 8px 0 0 !important;
-    }
-    
-    .table th {
-        font-weight: 600;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
     .fw-semibold {
         font-weight: 600;
     }

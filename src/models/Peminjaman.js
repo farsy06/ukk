@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
+const appConfig = require("../config/appConfig");
 
 /**
  * Peminjaman Model
@@ -248,7 +249,9 @@ Peminjaman.prototype.isOverdue = function () {
   if (this.status === "dikembalikan") return false;
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const kembali = new Date(this.tanggal_kembali);
+  kembali.setHours(0, 0, 0, 0);
   return today > kembali;
 };
 
@@ -256,15 +259,16 @@ Peminjaman.prototype.getDaysOverdue = function () {
   if (!this.isOverdue()) return 0;
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const kembali = new Date(this.tanggal_kembali);
+  kembali.setHours(0, 0, 0, 0);
   const diffTime = today.getTime() - kembali.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 Peminjaman.prototype.calculateFine = function () {
   const daysOverdue = this.getDaysOverdue();
-  // Denda Rp 5000 per hari keterlambatan
-  return daysOverdue * 5000;
+  return daysOverdue * appConfig.fines.overduePerDay;
 };
 
 Peminjaman.prototype.toJSON = function () {

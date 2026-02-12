@@ -2,7 +2,6 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const flash = require("connect-flash");
-const expressLayouts = require("express-ejs-layouts");
 const { sequelize, initializeDatabase } = require("./config/database");
 const logger = require("./config/logging");
 const { appConfig } = require("./utils/helpers");
@@ -61,8 +60,60 @@ async function startServer() {
     app.set("views", path.join(__dirname, "views"));
     app.set("trust proxy", 1);
 
-    // Gunakan express-ejs-layouts
-    app.use(expressLayouts);
+    // Custom layout renderer (replacement for express-ejs-layouts)
+    app.use((req, res, next) => {
+      const rawRender = res.render.bind(res);
+      res.render = (view, options, callback) => {
+        let opts = options || {};
+        let cb = callback;
+
+        if (typeof options === "function") {
+          cb = options;
+          opts = {};
+        }
+
+        if (view === "layout" || opts.layout === false) {
+          return rawRender(view, opts, cb);
+        }
+
+        return rawRender(view, opts, (viewErr, html) => {
+          if (viewErr) {
+            if (cb) {
+              return cb(viewErr);
+            }
+            return next(viewErr);
+          }
+
+          const resolvedAllowHtml =
+            typeof opts.allowHtml !== "undefined"
+              ? opts.allowHtml
+              : typeof res.locals.allowHtml !== "undefined"
+                ? res.locals.allowHtml
+                : true;
+
+          const layoutData = {
+            ...res.locals,
+            ...opts,
+            body: html,
+            allowHtml: resolvedAllowHtml,
+          };
+
+          return rawRender("layout", layoutData, (layoutErr, finalHtml) => {
+            if (layoutErr) {
+              if (cb) {
+                return cb(layoutErr);
+              }
+              return next(layoutErr);
+            }
+            if (cb) {
+              return cb(null, finalHtml);
+            }
+            return res.send(finalHtml);
+          });
+        });
+      };
+      next();
+    });
 
     // Security middleware (harus dijalankan pertama)
     app.use(generalLimiter);
@@ -107,6 +158,10 @@ async function startServer() {
     app.use((req, res, next) => {
       res.locals.success = req.flash("success");
       res.locals.error = req.flash("error");
+      res.locals.overdueFinePerDay = appConfig.fines.overduePerDay;
+      res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat(
+        "id-ID",
+      ).format(appConfig.fines.overduePerDay);
       next();
     });
 

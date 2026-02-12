@@ -1,33 +1,23 @@
 <div class="row">
     <div class="col-12">
-        <h2>Log Aktivitas</h2>
-        <p class="text-muted">Pantau aktivitas sistem oleh admin dan petugas.</p>
+        <%- include('../../_partials/page-head', {
+            title: 'Log Aktivitas',
+            subtitle: 'Pantau aktivitas sistem oleh admin dan petugas.'
+        }) %>
     </div>
 </div>
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="d-flex gap-2">
-                <a href="/admin/catatan" class="btn btn-outline-secondary" title="Refresh">
-                    <i class="fas fa-refresh"></i>
-                </a>
-            </div>
-            <div class="d-flex gap-2">
-                <div class="input-group" style="width: 300px;">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Cari aktivitas...">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <%- include('../../_partials/table-toolbar', {
+            refreshUrl: '/admin/catatan',
+            searchPlaceholder: 'Cari aktivitas...'
+        }) %>
 
-        <div class="card">
+        <div class="card table-card">
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="logTable">
-                        <thead class="table-dark">
+                <table class="table table-striped table-hover" id="logTable">
+                        <thead class="table-light">
                             <tr>
                                 <th>No</th>
                                 <th>User</th>
@@ -100,7 +90,6 @@
                             <% } %>
                         </tbody>
                     </table>
-                </div>
             </div>
         </div>
     </div>
@@ -139,17 +128,6 @@
                 searchInput.dispatchEvent(new Event('input'));
             });
         }
-
-        // Add hover effects for better UX
-        rows.forEach(row => {
-            row.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f8f9fa';
-            });
-            
-            row.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-        });
 
         // Add keyboard navigation
         document.addEventListener('keydown', function(e) {

@@ -1,25 +1,18 @@
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2>Dashboard Petugas</h2>
-                <p class="text-muted mb-0">Kelola pengajuan peminjaman alat dari peminjam.</p>
-            </div>
-            <div class="text-end">
-                <div class="badge bg-warning">
-                    <i class="fas fa-user-tie"></i> Petugas
-                </div>
-                <div class="text-muted small">
-                    <i class="fas fa-clock"></i> 
-                    <%= new Date().toLocaleDateString('id-ID', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    }) %>
-                </div>
-            </div>
-        </div>
+        <%- include('../_partials/page-head', {
+            title: 'Dashboard Petugas',
+            subtitle: 'Kelola pengajuan peminjaman alat dari peminjam.',
+            actions: `<div class="text-end">
+                <div class="badge bg-warning"><i class="fas fa-user-tie"></i> Petugas</div>
+                <div class="text-muted small"><i class="fas fa-clock"></i> ${new Date().toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })}</div>
+            </div>`
+        }) %>
     </div>
 </div>
 
@@ -140,12 +133,12 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="card">
+        <div class="card table-card">
             <div class="card-header">
                 <h6 class="mb-0"><i class="fas fa-list"></i> Daftar Peminjaman</h6>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="table-toolbar">
                     <div class="d-flex gap-2">
                         <div class="input-group" style="width: 300px;">
                             <input type="text" class="form-control" id="searchInput" placeholder="Cari peminjaman...">
@@ -161,9 +154,8 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
                     <table class="table table-striped table-hover" id="peminjamanTable">
-                        <thead class="table-dark">
+                        <thead class="table-light">
                             <tr>
                                 <th>No</th>
                                 <th>Peminjam</th>
@@ -175,7 +167,7 @@
                                 <th>Status</th>
                                 <th>Keterlambatan</th>
                                 <th>Denda</th>
-                                <th>Aksi</th>
+                                <th class="table-actions">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -281,7 +273,7 @@
                                                 <span class="text-muted fst-italic">-</span>
                                             <% } %>
                                         </td>
-                                        <td>
+                                        <td class="table-actions">
                                             <div class="btn-group-vertical" role="group">
                                                 <% if (item.status === 'pending') { %>
                                                     <form action="/petugas/setujui/<%= item.id %>" method="post" class="d-inline" data-confirm="Setujui peminjaman alat ini?">
@@ -323,7 +315,6 @@
                             <% } %>
                         </tbody>
                     </table>
-                </div>
             </div>
         </div>
     </div>
@@ -446,8 +437,8 @@
                     const status = row.getAttribute('data-status').toLowerCase();
                     
                     const matches = peminjam.includes(searchTerm) || 
-                                   alat.includes(searchTerm) || 
-                                   status.includes(searchTerm);
+                        alat.includes(searchTerm) || 
+                        status.includes(searchTerm);
                     
                     row.style.display = matches ? '' : 'none';
                 });
@@ -461,17 +452,6 @@
                 searchInput.dispatchEvent(new Event('input'));
             });
         }
-
-        // Add hover effects for better UX
-        rows.forEach(row => {
-            row.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f8f9fa';
-            });
-            
-            row.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-        });
 
         // Add keyboard navigation
         document.addEventListener('keydown', function(e) {

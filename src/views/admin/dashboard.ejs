@@ -1,343 +1,190 @@
+<style>
+    .admin-hero {
+        padding: 1.35rem 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border-color);
+        background: linear-gradient(130deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.12));
+        box-shadow: var(--shadow-soft);
+    }
+    .admin-stat {
+        border-radius: 1rem;
+        border: 1px solid var(--border-color);
+    }
+    .admin-stat .icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-2);
+        color: var(--primary-color);
+        border: 1px solid var(--border-color);
+    }
+    .admin-panel {
+        border-radius: 1rem;
+        border: 1px solid var(--border-color);
+    }
+    .quick-link {
+        border: 1px solid var(--border-color);
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        background: var(--surface);
+        color: var(--text-color);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .quick-link:hover {
+        background: var(--surface-2);
+        border-color: rgba(var(--bs-primary-rgb), 0.35);
+        color: var(--text-color);
+        transform: translateY(-1px);
+    }
+</style>
+
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="admin-hero d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
-                <h2>Dashboard Admin</h2>
-                <p class="text-muted mb-0">Selamat datang, <%= user.nama %>!</p>
+                <h2 class="mb-1">Dashboard Admin</h2>
+                <p class="text-muted mb-0">Selamat datang, <%= user.nama %>.</p>
             </div>
             <div class="text-end">
-                <div class="badge bg-primary">
-                    <i class="fas fa-user-shield"></i> Admin
-                </div>
-                <div class="text-muted small">
-                    <i class="fas fa-clock"></i> 
-                    <%= new Date().toLocaleDateString('id-ID', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    }) %>
+                <span class="badge bg-primary mb-2"><i class="fas fa-user-shield me-1"></i>Admin</span>
+                <div class="small text-muted">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    <%= new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="card border-primary">
+<div class="row mt-4 g-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-stat h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-primary">Kategori Alat</h6>
-                        <p class="card-text text-muted">Kelola kategori alat</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tags fa-2x text-primary"></i>
-                    </div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="icon"><i class="fas fa-tags"></i></span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Kategori</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-primary">Total: <%= stats.kategori %></span>
-                    <a href="/admin/kategori" class="btn btn-primary btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
+                <h3 class="mb-1"><%= stats.kategori %></h3>
+                <p class="text-muted small mb-3">Kategori aktif</p>
+                <a href="/admin/kategori" class="btn btn-sm btn-outline-primary">Kelola</a>
             </div>
         </div>
     </div>
-
-    <div class="col-md-3">
-        <div class="card border-success">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-stat h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-success">Data Alat</h6>
-                        <p class="card-text text-muted">Kelola inventori alat</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tools fa-2x text-success"></i>
-                    </div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="icon"><i class="fas fa-tools"></i></span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Alat</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-success">Total: <%= stats.alat %></span>
-                    <a href="/admin/alat" class="btn btn-success btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
+                <h3 class="mb-1"><%= stats.alat %></h3>
+                <p class="text-muted small mb-3">Inventori terdaftar</p>
+                <a href="/admin/alat" class="btn btn-sm btn-outline-success">Kelola</a>
             </div>
         </div>
     </div>
-
-    <div class="col-md-3">
-        <div class="card border-info">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-stat h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-info">Peminjaman</h6>
-                        <p class="card-text text-muted">Pantau semua peminjaman</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-hand-holding fa-2x text-info"></i>
-                    </div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="icon"><i class="fas fa-hand-holding"></i></span>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle">Peminjaman</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-info">Aktif: <%= stats.peminjaman %></span>
-                    <a href="/admin/peminjaman" class="btn btn-info btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
+                <h3 class="mb-1"><%= stats.peminjaman %></h3>
+                <p class="text-muted small mb-3">Transaksi tercatat</p>
+                <a href="/admin/peminjaman" class="btn btn-sm btn-outline-info">Lihat</a>
             </div>
         </div>
     </div>
-
-    <div class="col-md-3">
-        <div class="card border-warning">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-stat h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-warning">Kelola User</h6>
-                        <p class="card-text text-muted">Tambah admin & petugas</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-2x text-warning"></i>
-                    </div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">User</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-warning">Total: <%= stats.user %></span>
-                    <a href="/admin/user" class="btn btn-warning btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
+                <h3 class="mb-1"><%= stats.user %></h3>
+                <p class="text-muted small mb-3">Pengguna terdaftar</p>
+                <a href="/admin/user" class="btn btn-sm btn-outline-warning">Kelola</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Total Kategori</h6>
-                        <h3 class="mb-0"><%= stats.kategori %></h3>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tags fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Total Alat</h6>
-                        <h3 class="mb-0"><%= stats.alat %></h3>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tools fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-info">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Peminjaman Aktif</h6>
-                        <h3 class="mb-0"><%= stats.peminjaman %></h3>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-hand-holding fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6>Total User</h6>
-                        <h3 class="mb-0"><%= stats.user %></h3>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card border-secondary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-secondary">Log Aktivitas</h6>
-                        <p class="card-text text-muted">Pantau aktivitas sistem</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-history fa-2x text-secondary"></i>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-secondary">Audit Trail</span>
-                    <a href="/admin/catatan" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-eye"></i> Lihat
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card border-danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title text-danger">Laporan</h6>
-                        <p class="card-text text-muted">Generate laporan sistem</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-chart-bar fa-2x text-danger"></i>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="badge bg-danger">Tersedia</span>
-                    <a href="/admin/laporan" class="btn btn-danger btn-sm">
-                        <i class="fas fa-chart-bar"></i> Generate Laporan
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+<div class="row mt-4 g-3">
+    <div class="col-lg-8">
+        <div class="card admin-panel h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Akses Cepat</h6>
+                <small class="text-muted">Operasi admin</small>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <a href="/admin/kategori/tambah" class="btn btn-outline-primary w-100 mb-2">
-                            <i class="fas fa-plus-circle"></i> Tambah Kategori
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="/admin/alat/tambah" class="btn btn-outline-success w-100 mb-2">
-                            <i class="fas fa-plus-circle"></i> Tambah Alat
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="/admin/user/tambah" class="btn btn-outline-warning w-100 mb-2">
-                            <i class="fas fa-plus-circle"></i> Tambah User
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="/admin/peminjaman" class="btn btn-outline-info w-100 mb-2">
-                            <i class="fas fa-list"></i> Lihat Semua Peminjaman
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Sistem Info</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
+                <div class="row g-2">
                     <div class="col-md-6">
-                        <div class="text-center">
-                            <i class="fas fa-database fa-2x text-primary"></i>
-                            <h6 class="mt-2">Database</h6>
-                            <span class="badge bg-success">Terhubung</span>
-                        </div>
+                        <a href="/admin/kategori/tambah" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-plus-circle me-2 text-primary"></i>Tambah Kategori</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
                     </div>
                     <div class="col-md-6">
-                        <div class="text-center">
-                            <i class="fas fa-shield-alt fa-2x text-success"></i>
-                            <h6 class="mt-2">Keamanan</h6>
-                            <span class="badge bg-success">Aman</span>
-                        </div>
+                        <a href="/admin/alat/tambah" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-plus-circle me-2 text-success"></i>Tambah Alat</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/admin/user/tambah" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-plus-circle me-2 text-warning"></i>Tambah User</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/admin/peminjaman" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-list me-2 text-info"></i>Semua Peminjaman</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/admin/catatan" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-history me-2 text-secondary"></i>Log Aktivitas</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/admin/laporan" class="quick-link d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-chart-bar me-2 text-danger"></i>Laporan</span>
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-lg-4">
+        <div class="card admin-panel h-100">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-user-clock"></i> Aktivitas Terakhir</h6>
+                <h6 class="mb-0"><i class="fas fa-user-circle me-2"></i>Profil Saya</h6>
             </div>
             <div class="card-body">
-                <div class="text-muted small">
-                    <i class="fas fa-clock"></i> Terakhir login: 
-                    <%= user.last_login ? new Date(user.last_login).toLocaleString('id-ID') : 'Belum pernah' %>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="user-avatar me-3"><%= user.nama.charAt(0).toUpperCase() %></div>
+                    <div>
+                        <div class="fw-semibold"><%= user.nama %></div>
+                        <small class="text-muted">@<%= user.username %></small>
+                    </div>
                 </div>
-                <div class="text-muted small mt-2">
-                    <i class="fas fa-user"></i> Role: 
-                    <span class="badge bg-primary"><%= user.role %></span>
+                <div class="small text-muted mb-2"><i class="fas fa-envelope me-2"></i><%= user.email %></div>
+                <div class="small text-muted mb-3">
+                    <i class="fas fa-clock me-2"></i>
+                    Login terakhir:
+                    <%= user.last_login ? new Date(user.last_login).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Pertama kali' %>
                 </div>
+                <span class="badge bg-primary"><%= user.role.toUpperCase() %></span>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Add hover effects to cards
-        const cards = document.querySelectorAll('.card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-2px)';
-                this.style.transition = 'transform 0.3s ease';
-            });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-
-        // Add loading animation to buttons
-        const quickActionButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info');
-        quickActionButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1000);
-            });
-        });
-    });
-</script>

@@ -57,6 +57,17 @@ const appConfig = {
     maxLimit: 50,
   },
 
+  // Fine settings
+  fines: {
+    overduePerDay: (() => {
+      const parsed = parseInt(process.env.OVERDUE_FINE_PER_DAY, 10);
+      if (Number.isInteger(parsed) && parsed >= 0) {
+        return parsed;
+      }
+      return 5000;
+    })(),
+  },
+
   // Security settings
   security: {
     rateLimit: {

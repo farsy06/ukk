@@ -40,6 +40,31 @@ class AlatService {
   }
 
   /**
+   * Get paginated available alat for peminjam
+   * @param {Object} options - Pagination options
+   * @param {number} options.limit - Items per page
+   * @param {number} options.offset - Offset
+   * @returns {Promise<{rows: Array, count: number}>}
+   */
+  async getAvailablePaginated({ limit, offset }) {
+    return Alat.findAndCountAll({
+      where: {
+        status: "tersedia",
+      },
+      include: [
+        {
+          model: Kategori,
+          as: "kategori",
+        },
+      ],
+      order: [["nama_alat", "ASC"]],
+      limit,
+      offset,
+      distinct: true,
+    });
+  }
+
+  /**
    * Get all alat for admin (all statuses)
    * @returns {Promise<Array>} - Array of all alat
    */

@@ -80,7 +80,7 @@ peminjamRouter.get(
 
 peminjamRouter.get(
   "/alat",
-  standardCache.alat,
+  paginate(12, 48),
   asyncHandler(alatController.index),
 );
 

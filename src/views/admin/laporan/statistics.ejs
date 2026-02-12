@@ -1,136 +1,149 @@
+<style>
+    .stats-hero {
+        padding: 1.25rem 1.4rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border-color);
+        background: linear-gradient(125deg, rgba(37, 99, 235, 0.14), rgba(14, 165, 233, 0.1));
+        box-shadow: var(--shadow-soft);
+    }
+    .metric-card {
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+    }
+    .metric-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-2);
+        color: var(--primary-color);
+        border: 1px solid var(--border-color);
+    }
+    .stats-panel {
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+    }
+    .progress {
+        background: var(--surface-2);
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), #0ea5e9);
+    }
+</style>
+
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="stats-hero d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
-                <h2><i class="fas fa-chart-line"></i> Statistik Sistem</h2>
+                <h2 class="mb-1"><i class="fas fa-chart-line me-2"></i>Statistik Sistem</h2>
                 <p class="text-muted mb-0">Generated: <%= stats.generatedAt.toLocaleString('id-ID') %></p>
             </div>
-            <div class="text-end">
-                <div class="badge bg-warning">
-                    <i class="fas fa-chart-bar"></i> Statistik
+            <span class="badge bg-warning text-dark"><i class="fas fa-chart-bar me-1"></i>Statistik</span>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 g-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="metric-icon"><i class="fas fa-users"></i></span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">User</span>
                 </div>
+                <h3 class="mb-1"><%= stats.users.total %></h3>
+                <small class="text-muted d-block">Petugas: <%= stats.users.byRole.petugas || 0 %></small>
+                <small class="text-muted d-block">Peminjam: <%= stats.users.byRole.peminjam || 0 %></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="metric-icon"><i class="fas fa-tools"></i></span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Alat</span>
+                </div>
+                <h3 class="mb-1"><%= stats.alat.total %></h3>
+                <small class="text-muted d-block">Tersedia: <%= stats.alat.byStatus.tersedia || 0 %></small>
+                <small class="text-muted d-block">Dipinjam: <%= stats.alat.byStatus.dipinjam || 0 %></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="metric-icon"><i class="fas fa-hand-holding"></i></span>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle">Peminjaman</span>
+                </div>
+                <h3 class="mb-1"><%= stats.peminjaman.total %></h3>
+                <small class="text-muted d-block">Diproses: <%= stats.peminjaman.byStatus.diproses || 0 %></small>
+                <small class="text-muted d-block">Selesai: <%= stats.peminjaman.byStatus.selesai || 0 %></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card metric-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="metric-icon"><i class="fas fa-layer-group"></i></span>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Kategori</span>
+                </div>
+                <h3 class="mb-1"><%= stats.kategori.total %></h3>
+                <small class="text-muted d-block">
+                    Total Alat:
+                    <%= stats.kategori.alatPerKategori.reduce((sum, item) => sum + item.count, 0) %>
+                </small>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary">
-            <div class="card-body text-center">
-                <h6>User</h6>
-                <h3 class="mb-0"><%= stats.users.total %></h3>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <small class="text-white">Petugas: <%= stats.users.byRole.petugas || 0 %></small>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-white">Peminjam: <%= stats.users.byRole.peminjam || 0 %></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-success">
-            <div class="card-body text-center">
-                <h6>Alat</h6>
-                <h3 class="mb-0"><%= stats.alat.total %></h3>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <small class="text-white">Tersedia: <%= stats.alat.byStatus.tersedia || 0 %></small>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-white">Dipinjam: <%= stats.alat.byStatus.dipinjam || 0 %></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-info">
-            <div class="card-body text-center">
-                <h6>Peminjaman</h6>
-                <h3 class="mb-0"><%= stats.peminjaman.total %></h3>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <small class="text-white">Diproses: <%= stats.peminjaman.byStatus.diproses || 0 %></small>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-white">Selesai: <%= stats.peminjaman.byStatus.selesai || 0 %></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card text-white bg-secondary">
-            <div class="card-body text-center">
-                <h6>Kategori</h6>
-                <h3 class="mb-0"><%= stats.kategori.total %></h3>
-                <div class="row mt-2">
-                    <div class="col-12">
-                        <small class="text-white">Total Alat: <%= stats.kategori.alatPerKategori.reduce((sum, item) => sum + item.count, 0) %></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+<div class="row mt-4 g-3">
+    <div class="col-lg-6">
+        <div class="card stats-panel h-100">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Distribusi User</h6>
+                <h6 class="mb-0"><i class="fas fa-user-friends me-2"></i>Distribusi User</h6>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
-                            <h5 class="text-warning">Petugas</h5>
-                            <h3 class="text-warning"><%= stats.users.byRole.petugas || 0 %></h3>
-                            <small class="text-muted">(<%= stats.users.total > 0 ? Math.round(((stats.users.byRole.petugas || 0) / stats.users.total) * 100) : 0 %>% dari total)</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <i class="fas fa-user fa-3x text-success mb-3"></i>
-                            <h5 class="text-success">Peminjam</h5>
-                            <h3 class="text-success"><%= stats.users.byRole.peminjam || 0 %></h3>
-                            <small class="text-muted">(<%= stats.users.total > 0 ? Math.round(((stats.users.byRole.peminjam || 0) / stats.users.total) * 100) : 0 %>% dari total)</small>
-                        </div>
-                    </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Petugas</span>
+                    <strong><%= stats.users.byRole.petugas || 0 %></strong>
+                </div>
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar" style="width: <%= stats.users.total > 0 ? Math.round(((stats.users.byRole.petugas || 0) / stats.users.total) * 100) : 0 %>%"></div>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Peminjam</span>
+                    <strong><%= stats.users.byRole.peminjam || 0 %></strong>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar" style="width: <%= stats.users.total > 0 ? Math.round(((stats.users.byRole.peminjam || 0) / stats.users.total) * 100) : 0 %>%"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-lg-6">
+        <div class="card stats-panel h-100">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Status Alat</h6>
+                <h6 class="mb-0"><i class="fas fa-boxes-stacked me-2"></i>Status Alat</h6>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                        <h6 class="text-success">Tersedia</h6>
-                        <h4 class="text-success"><%= stats.alat.byStatus.tersedia || 0 %></h4>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5 class="mb-1 text-success"><%= stats.alat.byStatus.tersedia || 0 %></h5>
+                        <small class="text-muted">Tersedia</small>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-hand-holding fa-2x text-warning mb-2"></i>
-                        <h6 class="text-warning">Dipinjam</h6>
-                        <h4 class="text-warning"><%= stats.alat.byStatus.dipinjam || 0 %></h4>
+                    <div class="col-4">
+                        <h5 class="mb-1 text-warning"><%= stats.alat.byStatus.dipinjam || 0 %></h5>
+                        <small class="text-muted">Dipinjam</small>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
-                        <h6 class="text-danger">Rusak</h6>
-                        <h4 class="text-danger"><%= stats.alat.byStatus.rusak || 0 %></h4>
+                    <div class="col-4">
+                        <h5 class="mb-1 text-danger"><%= stats.alat.byStatus.rusak || 0 %></h5>
+                        <small class="text-muted">Rusak</small>
                     </div>
                 </div>
             </div>
@@ -138,109 +151,55 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+<div class="row mt-4 g-3">
+    <div class="col-lg-6">
+        <div class="card stats-panel h-100">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Status Peminjaman</h6>
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Alat Per Kategori</h6>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                        <h6 class="text-warning">Diproses</h6>
-                        <h4 class="text-warning"><%= stats.peminjaman.byStatus.diproses || 0 %></h4>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <i class="fas fa-hand-holding fa-2x text-success mb-2"></i>
-                        <h6 class="text-success">Dipinjam</h6>
-                        <h4 class="text-success"><%= stats.peminjaman.byStatus.dipinjam || 0 %></h4>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
-                        <h6 class="text-info">Selesai</h6>
-                        <h4 class="text-info"><%= stats.peminjaman.byStatus.selesai || 0 %></h4>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
-                        <h6 class="text-danger">Ditolak</h6>
-                        <h4 class="text-danger"><%= stats.peminjaman.byStatus.ditolak || 0 %></h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-list"></i> Kategori Alat</h6>
-            </div>
-            <div class="card-body">
+                <% const totalAlatKategori = stats.kategori.alatPerKategori.reduce((sum, i) => sum + i.count, 0); %>
                 <% stats.kategori.alatPerKategori.forEach(item => { %>
-                <div class="row mb-3">
-                    <div class="col-8">
-                        <h6>Kategori #<%= item.kategori_id %></h6>
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-primary" style="width: <%= Math.round((item.count / stats.kategori.alatPerKategori.reduce((sum, i) => sum + i.count, 0)) * 100) %>%">
-                                <%= item.count %>
-                            </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Kategori #<%= item.kategori_id %></small>
+                            <small><%= item.count %> alat</small>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar" style="width: <%= totalAlatKategori > 0 ? Math.round((item.count / totalAlatKategori) * 100) : 0 %>%"></div>
                         </div>
                     </div>
-                    <div class="col-4 text-end">
-                        <small class="text-muted"><%= item.count %> alat</small>
-                    </div>
-                </div>
                 <% }); %>
             </div>
         </div>
     </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-lg-6">
+        <div class="card stats-panel h-100">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-history"></i> Aktivitas Terkini</h6>
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Aktivitas Terkini</h6>
             </div>
             <div class="card-body">
-                <% stats.aktivitas.recent.slice(0, 5).forEach(log => { %>
-                <div class="d-flex justify-content-between mb-2">
-                    <div>
+                <% stats.aktivitas.recent.slice(0, 6).forEach(log => { %>
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
                         <small class="text-muted"><%= log.aktivitas %></small>
-                    </div>
-                    <div>
                         <small class="text-muted"><%= log.waktu.toLocaleString('id-ID') %></small>
                     </div>
-                </div>
                 <% }); %>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-md-6">
-        <div class="card">
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card stats-panel">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-download"></i> Aksi Statistik</h6>
+                <h6 class="mb-0"><i class="fas fa-download me-2"></i>Aksi Statistik</h6>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <a href="<%= reportBasePath %>" class="btn btn-primary w-100 mb-2">
-                            <i class="fas fa-chart-bar"></i> Laporan
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="/admin" class="btn btn-secondary w-100 mb-2">
-                            <i class="fas fa-arrow-left"></i> Dashboard
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <button onclick="window.print()" class="btn btn-info w-100 mb-2">
-                            <i class="fas fa-print"></i> Print
-                        </button>
-                    </div>
-                </div>
+            <div class="card-body d-flex flex-wrap gap-2">
+                <a href="<%= reportBasePath %>" class="btn btn-primary"><i class="fas fa-chart-bar me-1"></i>Laporan</a>
+                <a href="/admin" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+                <button onclick="window.print()" class="btn btn-outline-info"><i class="fas fa-print me-1"></i>Print</button>
             </div>
         </div>
     </div>

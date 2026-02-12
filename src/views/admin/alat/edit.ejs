@@ -140,6 +140,7 @@
         const maxFotoSize = 2 * 1024 * 1024;
         const allowedFotoTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+        // codeql[js/xss]=messages are inserted as text nodes, not HTML
         const createAlert = (messages, type, iconClass) => {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;

@@ -30,12 +30,30 @@ const deleteUploadedFile = (fotoPath) => {
 // Menampilkan daftar alat (untuk peminjam)
 const index = async (req, res) => {
   try {
-    const alat = await alatService.getAllAvailable();
+    const { page, limit, offset } = req.pagination || {
+      page: 1,
+      limit: 12,
+      offset: 0,
+    };
+
+    const { rows: alat, count } = await alatService.getAvailablePaginated({
+      limit,
+      offset,
+    });
+    const kategori = await alatService.getKategori();
+
+    const pagination = getPagination(page, limit, count);
+    pagination.offset = offset;
+    const start = count > 0 ? offset + 1 : 0;
+    const end = Math.min(offset + limit, count);
 
     res.render("alat/index", {
       title: "Daftar Alat",
       alat,
+      kategori,
       user: req.user,
+      pagination,
+      range: { start, end, total: count },
     });
   } catch (error) {
     logger.error("Error in alat index:", error);

@@ -1,169 +1,130 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %> - eSarpra</title>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css" rel="stylesheet">
-    <style>
-        html, body {
-            height: 100%;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-        main {
-            flex: 1;
-            padding-top: 70px; /* Add padding to prevent content from being hidden behind fixed navbar */
-            margin-top: 0 !important;
-        }
-        footer {
-            margin-top: auto;
-        }
-
-        /* Stylish Header Improvements */
-        .navbar {
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            padding: 0.5rem 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .navbar-brand {
-            font-weight: 600;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .navbar-brand i {
-            font-size: 1.3rem;
-            color: #0d6efd;
-        }
-
-        .navbar-nav .nav-link {
-            position: relative;
-            transition: all 0.3s ease;
-            padding: 0.5rem 0.8rem;
-            margin: 0 0.3rem;
-            border-radius: 0.25rem;
-        }
-
-        .navbar-nav .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .dropdown-menu {
-            border: none;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-            color: #0d6efd;
-        }
-
-        .navbar-toggler {
-            border: none;
-            outline: none;
-            box-shadow: none;
-        }
-
-        /* User dropdown styling */
-        .user-dropdown .dropdown-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-    </style>
+    <link href="/css/main.css" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-tools"></i> eSarpra
+                <i class="fas fa-boxes-stacked"></i> eSarpra
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center gap-2 d-lg-none">
+                <button class="theme-toggle position-relative" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon theme-icon-moon"></i>
+                    <i class="fas fa-sun theme-icon-sun"></i>
+                </button>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <% if (typeof user !== 'undefined' && user) { %>
                         <% if (user.role === 'peminjam') { %>
                             <li class="nav-item">
-                                <a class="nav-link" href="/alat">Daftar Alat</a>
+                                <a class="nav-link" href="/alat">
+                                    <i class="fas fa-box-open me-1"></i> Daftar Alat
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/peminjaman">Riwayat Peminjaman</a>
+                                <a class="nav-link" href="/peminjaman">
+                                    <i class="fas fa-history me-1"></i> Riwayat
+                                </a>
                             </li>
                         <% } else if (user.role === 'petugas') { %>
                             <li class="nav-item">
-                                <a class="nav-link" href="/petugas">Dashboard Petugas</a>
+                                <a class="nav-link" href="/petugas">
+                                    <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                                </a>
                             </li>
                         <% } else if (user.role === 'admin') { %>
                             <li class="nav-item">
-                                <a class="nav-link" href="/admin">Dashboard Admin</a>
+                                <a class="nav-link" href="/admin">
+                                    <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                                </a>
                             </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="kelolaDropdown" role="button" data-bs-toggle="dropdown">
-                                    Kelola Data
+                                    <i class="fas fa-cog me-1"></i> Kelola
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/admin/kategori">Kategori</a></li>
-                                    <li><a class="dropdown-item" href="/admin/alat">Alat</a></li>
-                                    <li><a class="dropdown-item" href="/admin/peminjaman">Peminjaman</a></li>
-                                    <li><a class="dropdown-item" href="/admin/user">User</a></li>
+                                    <li><a class="dropdown-item" href="/admin/kategori"><i class="fas fa-tags"></i> Kategori</a></li>
+                                    <li><a class="dropdown-item" href="/admin/alat"><i class="fas fa-tools"></i> Alat</a></li>
+                                    <li><a class="dropdown-item" href="/admin/peminjaman"><i class="fas fa-hand-holding"></i> Peminjaman</a></li>
+                                    <li><a class="dropdown-item" href="/admin/user"><i class="fas fa-users"></i> User</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/admin/catatan">Catatan Aktivitas</a></li>
+                                    <li><a class="dropdown-item" href="/admin/catatan"><i class="fas fa-history"></i> Aktivitas</a></li>
                                 </ul>
                             </li>
                         <% } %>
                     <% } %>
                 </ul>
                 
-<ul class="navbar-nav">
-    <% if (typeof user !== 'undefined' && user) { %>
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-user"></i> <%= user.nama %>
-            </a>
-            <ul class="dropdown-menu">
-                <li class="dropdown-item disabled">
-                    <small class="text-muted">@<%= user.username %></small>
-                </li>
-                <li class="dropdown-item disabled">
-                    <small class="text-muted"><%= user.email %></small>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form action="/logout" method="post" class="m-0">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit" class="dropdown-item">Logout</button>
-                    </form>
-                </li>
-            </ul>
-        </li>
-    <% } else { %>
-        <li class="nav-item">
-            <a class="nav-link" href="/login">Login</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="/register">Register</a>
-        </li>
-    <% } %>
-</ul>
+                <div class="d-none d-lg-flex align-items-center me-2">
+                    <button class="theme-toggle position-relative" title="Toggle Dark/Light Mode">
+                        <i class="fas fa-moon theme-icon-moon"></i>
+                        <i class="fas fa-sun theme-icon-sun"></i>
+                    </button>
+                </div>
+                
+                <ul class="navbar-nav">
+                    <% if (typeof user !== 'undefined' && user) { %>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <div class="user-avatar"><%= user.nama.charAt(0).toUpperCase() %></div>
+                                <span><%= user.nama %></span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li class="px-3 py-2 border-bottom">
+                                    <small class="text-muted d-block">@<%= user.username %></small>
+                                    <small class="text-muted"><%= user.email %></small>
+                                </li>
+                                <li class="mt-2"><hr class="dropdown-divider"></li>
+                                <li>
+                                    <span class="badge bg-primary ms-3"><%= user.role.toUpperCase() %></span>
+                                </li>
+                                <li class="mt-2"><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="/logout" method="post" class="m-0">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-sign-out-alt"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    <% } else { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-primary ms-2 text-white" href="/register" style="border-radius: 0.5rem;">
+                                <i class="fas fa-user-plus me-1"></i> Daftar
+                            </a>
+                        </li>
+                    <% } %>
+                </ul>
             </div>
         </div>
     </nav>
@@ -195,17 +156,50 @@
         
         <% if (typeof allowHtml !== 'undefined' && allowHtml) { %>
             <!-- codeql[js/xss]=trusted layout injection gated by allowHtml -->
-            <%- body %>
+            <%- body %><!-- codeql[js/xss] -->
         <% } else { %>
             <%= body %>
         <% } %>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white py-4 mt-5">
-            <div class="container text-center">
-                <p>&copy; 2026 eSarpra.</p>
+    <footer class="py-5 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5 class="mb-3">
+                        <i class="fas fa-boxes-stacked me-2"></i> eSarpra
+                    </h5>
+                    <p class="small mb-0 footer-muted">
+                        Sistem Informasi Peminjaman Alat<br>
+                        Management peralatan dengan mudah dan efisien
+                    </p>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h6 class="mb-3">Quick Links</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="/" class="d-block mb-2 footer-link">Beranda</a></li>
+                        <li><a href="/alat" class="d-block mb-2 footer-link">Daftar Alat</a></li>
+                        <li><a href="/login" class="d-block footer-link">Login</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-3">Kontak</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2 footer-muted"><i class="fas fa-envelope me-2"></i> admin@esarpra.com</li>
+                        <li class="footer-muted"><i class="fas fa-map-marker-alt me-2"></i> Sekolah Anda</li>
+                    </ul>
+                </div>
             </div>
+            <hr class="my-4" style="opacity: 0.1;">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <small class="footer-muted">
+                        &copy; 2026 eSarpra. All rights reserved.
+                    </small>
+                </div>
+            </div>
+        </div>
     </footer>
 
     <!-- Global delete confirmation modal -->
@@ -236,6 +230,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/js/all.min.js"></script>
     <script src="/js/password-utils.js"></script>
     <script>
+        // Theme Toggle Functionality
+        (function() {
+            const themeToggles = document.querySelectorAll('.theme-toggle');
+            const html = document.documentElement;
+
+            themeToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const currentTheme = html.getAttribute('data-bs-theme') || 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    html.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            });
+        })();
+        
         // Initialize Bootstrap tooltips
         document.addEventListener('DOMContentLoaded', function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
