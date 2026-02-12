@@ -12,6 +12,7 @@ if (Alat tersedia?) then (Ya)
   :Validasi required + tanggal + jumlah;
 
   if (Input valid?) then (Ya)
+    :Validasi durasi <= 7 hari\n(tanggal kembali boleh sama);
     :Cek stok mencukupi;
     if (Stok mencukupi?) then (Ya)
       :Create Peminjaman\nstatus = pending;
@@ -29,4 +30,3 @@ endif
 
 stop
 @enduml
-

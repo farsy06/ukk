@@ -6,6 +6,7 @@ start
 :POST /login;
 
 if (User ditemukan?) then (Ya)
+  if (User aktif?) then (Ya)
   :Validasi password\n(bcrypt compare);
   if (Password benar?) then (Ya)
     :Set session\nuserId & userRole;
@@ -20,6 +21,10 @@ if (User ditemukan?) then (Ya)
     :Flash error\n"Username atau password salah";
     :Redirect /login;
   endif
+  else (Tidak)
+    :Flash error\n"Akun dinonaktifkan";
+    :Redirect /login;
+  endif
 else (Tidak)
   :Flash error\n"Username atau password salah";
   :Redirect /login;
@@ -27,4 +32,3 @@ endif
 
 stop
 @enduml
-

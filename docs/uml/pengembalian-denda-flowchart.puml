@@ -8,17 +8,26 @@ start
 :Load data peminjaman\n(+ user & alat);
 
 if (Status disetujui/dipinjam?) then (Ya)
+  :Input petugas:\nkondisi_pengembalian,\ncatatan_insiden,\nbiaya_insiden;
   :Update peminjaman:\nstatus = dikembalikan;\ntanggal_pengembalian = hari ini;
-  :Update alat:\nstok += jumlah;
 
-  if (alat.status == dipinjam\nAND stok > 0) then (Ya)
-    :Set alat.status = tersedia;
+  if (Kondisi normal?) then (Ya)
+    :Update alat:\nstok += jumlah;\nstatus = tersedia;
   else (Tidak)
-    :Pertahankan status alat;
+    if (Kondisi rusak?) then (Ya)
+      :Update alat:\nstatus = maintenance;\nkondisi = rusak_ringan/rusak_berat;
+    else (Hilang)
+      :Update alat:\nstok tidak ditambah kembali;
+    endif
   endif
 
-  :Hitung keterlambatan:\ndaysOverdue = max(0, today - tanggal_kembali);
-  :Hitung denda:\nfine = daysOverdue * 5000;
+  :Hitung denda terlambat\n+ denda insiden;
+  :Simpan denda:\ndenda_terlambat,\ndenda_insiden,\ndenda;
+  if (Total denda > 0?) then (Ya)
+    :Set status_pembayaran_denda = belum_bayar;
+  else (Tidak)
+    :Set status_pembayaran_denda = lunas;
+  endif
   :LogAktivitas\n"Konfirmasi pengembalian...";
   :Redirect /petugas;
 else (Tidak)
@@ -27,4 +36,3 @@ endif
 
 stop
 @enduml
-
