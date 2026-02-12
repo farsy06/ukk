@@ -159,6 +159,111 @@ const Peminjaman = sequelize.define(
         },
       },
     },
+    denda_terlambat: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.0,
+      validate: {
+        isDecimal: {
+          msg: "Denda keterlambatan harus berupa angka desimal",
+        },
+        min: {
+          args: [0],
+          msg: "Denda keterlambatan tidak boleh negatif",
+        },
+      },
+    },
+    denda_insiden: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.0,
+      validate: {
+        isDecimal: {
+          msg: "Denda insiden harus berupa angka desimal",
+        },
+        min: {
+          args: [0],
+          msg: "Denda insiden tidak boleh negatif",
+        },
+      },
+    },
+    kondisi_pengembalian: {
+      type: DataTypes.ENUM("normal", "rusak", "hilang"),
+      allowNull: false,
+      defaultValue: "normal",
+      validate: {
+        isIn: {
+          args: [["normal", "rusak", "hilang"]],
+          msg: "Kondisi pengembalian tidak valid",
+        },
+      },
+    },
+    status_insiden: {
+      type: DataTypes.ENUM("none", "dilaporkan", "selesai"),
+      allowNull: false,
+      defaultValue: "none",
+      validate: {
+        isIn: {
+          args: [["none", "dilaporkan", "selesai"]],
+          msg: "Status insiden tidak valid",
+        },
+      },
+    },
+    catatan_insiden: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 1000],
+          msg: "Catatan insiden maksimal 1000 karakter",
+        },
+      },
+    },
+    status_pembayaran_denda: {
+      type: DataTypes.ENUM(
+        "belum_bayar",
+        "menunggu_verifikasi",
+        "lunas",
+        "ditolak",
+      ),
+      allowNull: false,
+      defaultValue: "belum_bayar",
+      validate: {
+        isIn: {
+          args: [["belum_bayar", "menunggu_verifikasi", "lunas", "ditolak"]],
+          msg: "Status pembayaran denda tidak valid",
+        },
+      },
+    },
+    bukti_pembayaran: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 255],
+          msg: "Path bukti pembayaran maksimal 255 karakter",
+        },
+      },
+    },
+    tanggal_pembayaran_denda: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      validate: {
+        isDate: {
+          msg: "Tanggal pembayaran denda harus berupa tanggal valid",
+        },
+      },
+    },
+    catatan_verifikasi_denda: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 1000],
+          msg: "Catatan verifikasi denda maksimal 1000 karakter",
+        },
+      },
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -195,6 +300,9 @@ const Peminjaman = sequelize.define(
       },
       {
         fields: ["status", "tanggal_kembali"],
+      },
+      {
+        fields: ["status_pembayaran_denda"],
       },
       // Compound indexes for better query performance
       {
@@ -266,9 +374,25 @@ Peminjaman.prototype.getDaysOverdue = function () {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-Peminjaman.prototype.calculateFine = function () {
+Peminjaman.prototype.calculateOverdueFine = function () {
+  if (this.status === "dikembalikan") {
+    const storedFine = Number(this.denda_terlambat || 0);
+    return Number.isFinite(storedFine) && storedFine > 0 ? storedFine : 0;
+  }
   const daysOverdue = this.getDaysOverdue();
   return daysOverdue * appConfig.fines.overduePerDay;
+};
+
+Peminjaman.prototype.calculateIncidentFine = function () {
+  const incidentFine = Number(this.denda_insiden || 0);
+  if (!Number.isFinite(incidentFine) || incidentFine < 0) {
+    return 0;
+  }
+  return incidentFine;
+};
+
+Peminjaman.prototype.calculateFine = function () {
+  return this.calculateOverdueFine() + this.calculateIncidentFine();
 };
 
 Peminjaman.prototype.toJSON = function () {
@@ -276,6 +400,8 @@ Peminjaman.prototype.toJSON = function () {
   // Add computed properties
   values.is_overdue = this.isOverdue();
   values.days_overdue = this.getDaysOverdue();
+  values.overdue_fine_amount = this.calculateOverdueFine();
+  values.incident_fine_amount = this.calculateIncidentFine();
   values.fine_amount = this.calculateFine();
   return values;
 };

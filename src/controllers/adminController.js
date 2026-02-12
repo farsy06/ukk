@@ -3,6 +3,7 @@ const reportService = require("../services/reportService");
 const reportExportService = require("../services/reportExportService");
 const logger = require("../config/logging");
 const { getPagination } = require("../utils/helpers");
+const { pushFlash } = require("../utils/flash");
 
 const getReportFilters = (req) => ({
   startDate: req.query.start_date,
@@ -161,7 +162,7 @@ const createUser = async (req, res) => {
     logger.info(
       `Admin ${req.user.id} successfully created user: ${newUser.id}`,
     );
-    req.flash("success", "User berhasil ditambahkan");
+    pushFlash(req, "success", "User berhasil ditambahkan");
 
     res.redirect("/admin/user");
   } catch (error) {
@@ -187,7 +188,7 @@ const destroyUser = async (req, res) => {
     await userService.delete(userId, req.user);
 
     logger.info(`Admin ${req.user.id} successfully deleted user: ${userId}`);
-    req.flash("success", "User berhasil dihapus");
+    pushFlash(req, "success", "User berhasil dihapus");
 
     res.redirect("/admin/user");
   } catch (error) {
@@ -210,7 +211,8 @@ const toggleUserActivation = async (req, res) => {
     );
 
     const result = await userService.toggleActive(userId, req.user);
-    req.flash(
+    pushFlash(
+      req,
       "success",
       result.is_active
         ? "User berhasil diaktifkan"

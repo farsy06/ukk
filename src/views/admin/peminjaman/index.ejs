@@ -16,7 +16,7 @@
 
         <div class="card table-card">
             <div class="card-body">
-                <table class="table table-striped table-hover" id="peminjamanTable">
+                <table class="table table-striped table-hover table-sm" id="peminjamanTable">
                         <thead class="table-light">
                             <tr>
                                 <th>No</th>
@@ -41,6 +41,7 @@
                                         const fineAmount = typeof item.calculateFine === 'function' 
                                             ? item.calculateFine() 
                                             : (item.fine_amount || 0);
+                                        const paymentStatus = item.status_pembayaran_denda || 'belum_bayar';
                                     %>
                                     <tr data-id="<%= item.id %>" data-peminjam="<%= item.user.nama %>" data-alat="<%= item.alat.nama_alat %>" data-status="<%= item.status %>">
                                         <td><%= (pagination && pagination.offset ? pagination.offset : 0) + index + 1 %></td>
@@ -103,6 +104,12 @@
                                                     <i class="fas fa-times-circle"></i> Ditolak
                                                 </span>
                                             <% } %>
+                                            <% if (item.kondisi_pengembalian && item.kondisi_pengembalian !== 'normal') { %>
+                                                <small class="d-block mt-1 text-danger">
+                                                    <i class="fas fa-triangle-exclamation"></i>
+                                                    Kondisi: <%= item.kondisi_pengembalian === 'rusak' ? 'Rusak' : 'Hilang' %>
+                                                </small>
+                                            <% } %>
                                             <% if (item.tanggal_pengembalian) { %>
                                                 <small class="text-muted d-block mt-1">
                                                     Kembali: <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %>
@@ -110,13 +117,35 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <% if (isOverdue) { %>
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-exclamation-triangle"></i> <%= daysOverdue %> hari
-                                                </span>
+                                            <% if (fineAmount > 0) { %>
+                                                <% if (daysOverdue > 0) { %>
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-exclamation-triangle"></i> <%= daysOverdue %> hari
+                                                    </span>
+                                                <% } else if (item.kondisi_pengembalian && item.kondisi_pengembalian !== 'normal') { %>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-triangle-exclamation"></i> Denda Insiden
+                                                    </span>
+                                                <% } %>
                                                 <div class="text-muted small mt-1">
                                                     Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %>
                                                 </div>
+                                                <% if (item.status === 'dikembalikan') { %>
+                                                    <div class="mt-1">
+                                                        <% if (paymentStatus === 'lunas') { %>
+                                                            <span class="badge bg-success">Lunas</span>
+                                                        <% } else if (paymentStatus === 'menunggu_verifikasi') { %>
+                                                            <span class="badge bg-info">Menunggu Verifikasi</span>
+                                                        <% } else if (paymentStatus === 'ditolak') { %>
+                                                            <span class="badge bg-danger">Bukti Ditolak</span>
+                                                        <% } else { %>
+                                                            <span class="badge bg-warning text-dark">Belum Bayar</span>
+                                                        <% } %>
+                                                    </div>
+                                                    <% if (item.bukti_pembayaran) { %>
+                                                        <a href="<%= item.bukti_pembayaran %>" target="_blank" class="small d-inline-block mt-1">Lihat bukti</a>
+                                                    <% } %>
+                                                <% } %>
                                             <% } else { %>
                                                 <span class="text-muted">-</span>
                                             <% } %>

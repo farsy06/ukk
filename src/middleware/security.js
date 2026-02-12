@@ -4,6 +4,7 @@ const csurf = require("@dr.pogodin/csurf");
 const xss = require("xss");
 const logger = require("../config/logging");
 const appConfig = require("../config/appConfig");
+const { pushFlash } = require("../utils/flash");
 
 /**
  * Rate limiting untuk login
@@ -187,9 +188,7 @@ const csrfToken = (req, res, next) => {
         `CSRF token validation failed for IP: ${req.ip} path: ${req.originalUrl}`,
       );
       if (req.accepts("html")) {
-        if (typeof req.flash === "function") {
-          req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
-        }
+        pushFlash(req, "error", "Sesi Anda telah berakhir. Silakan coba lagi.");
         return res.redirect(req.get("Referrer") || "/");
       }
 
@@ -227,9 +226,11 @@ module.exports = {
           `CSRF token validation failed for IP: ${req.ip} path: ${req.originalUrl}`,
         );
         if (req.accepts("html")) {
-          if (typeof req.flash === "function") {
-            req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
-          }
+          pushFlash(
+            req,
+            "error",
+            "Sesi Anda telah berakhir. Silakan coba lagi.",
+          );
           return res.redirect(req.get("Referrer") || "/");
         }
 

@@ -123,6 +123,21 @@
             border-color: var(--primary-color);
             box-shadow: var(--ring);
         }
+        /* Theme compatibility for legacy utility classes used in templates */
+        .bg-white {
+            background-color: var(--surface) !important;
+        }
+        .bg-light {
+            background-color: var(--surface-2) !important;
+            color: var(--text-color) !important;
+        }
+        .text-dark,
+        .text-black {
+            color: var(--text-color) !important;
+        }
+        .badge.bg-light {
+            border: 1px solid var(--border-color);
+        }
         .alert {
             border-radius: 0.85rem;
             border: 1px solid var(--border-color);
@@ -334,6 +349,14 @@
             margin-bottom: 0;
             color: var(--muted-color);
         }
+        .hero-theme {
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+            border-radius: 15px;
+            color: #f8fafc;
+        }
+        [data-bs-theme="dark"] .hero-theme {
+            background: linear-gradient(135deg, #1d4ed8 0%, #0369a1 100%);
+        }
         .table-toolbar {
             display: flex;
             justify-content: space-between;
@@ -358,9 +381,273 @@
         .table-actions .btn {
             border-radius: 0.65rem;
         }
+        body.admin-mode .page-head {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(37, 99, 235, 0.08));
+        }
+        body.admin-mode .table-toolbar {
+            padding: 0.7rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.85rem;
+            background: var(--surface-2);
+        }
+        body.admin-mode .table-card {
+            border: 1px solid var(--border-color);
+        }
+        body.admin-mode .table th {
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        body.admin-mode .table td {
+            vertical-align: middle;
+        }
+        body.admin-mode .table.table-sm th,
+        body.admin-mode .table.table-sm td {
+            padding-top: 0.58rem;
+            padding-bottom: 0.58rem;
+        }
+        body.admin-mode .table-actions .dropdown-menu {
+            min-width: 170px;
+        }
         .badge {
             border-radius: 999px;
             letter-spacing: 0.03em;
+        }
+        .auth-aside-card {
+            border: none !important;
+        }
+        .auth-aside-content {
+            color: #f8fafc;
+        }
+        .auth-aside-card-login {
+            background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 50%, #0ea5e9 100%);
+        }
+        .auth-aside-card-register {
+            background: linear-gradient(145deg, #0f766e 0%, #059669 52%, #10b981 100%);
+        }
+        .auth-form-card .card-header,
+        .auth-form-card .card-footer {
+            background: transparent;
+        }
+        .auth-password-box {
+            background: var(--surface-2);
+            border-color: var(--border-color) !important;
+        }
+        .home-hero {
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            background:
+                radial-gradient(900px 450px at 5% -20%, rgba(var(--bs-primary-rgb), 0.2), transparent 55%),
+                radial-gradient(850px 420px at 100% -15%, rgba(14, 165, 233, 0.15), transparent 60%),
+                var(--surface);
+            box-shadow: var(--shadow-soft);
+        }
+        .home-kicker {
+            font-size: 0.8rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        .home-hero-panel {
+            border: 1px solid var(--border-color);
+            border-radius: 0.85rem;
+            padding: 1rem;
+            background: var(--surface-2);
+        }
+        .home-metric {
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            background: var(--surface);
+            height: 100%;
+        }
+        .home-metric-label {
+            font-size: 0.75rem;
+            color: var(--muted-color);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .home-metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .home-metric-small {
+            font-size: 1rem;
+        }
+        .home-section-card .card-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+        .home-alat-card {
+            border: 1px solid var(--border-color);
+            border-radius: 0.85rem;
+            overflow: hidden;
+            background: var(--surface);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .home-alat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+        }
+        .home-alat-thumb {
+            height: 140px;
+            background: var(--surface-2);
+        }
+        .home-alat-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .home-alat-placeholder {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-color);
+            font-size: 2rem;
+        }
+        .home-alat-body {
+            padding: 0.85rem;
+        }
+        .home-userbox {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .home-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .home-info-card {
+            height: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.9rem;
+            background: var(--surface-2);
+        }
+        .peminjam-hero {
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.2rem;
+            background:
+                radial-gradient(720px 280px at 10% -30%, rgba(var(--bs-primary-rgb), 0.18), transparent 65%),
+                var(--surface);
+            box-shadow: var(--shadow-soft);
+        }
+        .peminjam-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: var(--surface-2);
+            color: var(--text-color);
+            padding: 0.45rem 0.85rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .peminjam-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.95rem;
+            padding: 0.9rem;
+            background: var(--surface);
+            box-shadow: var(--shadow-soft);
+        }
+        .peminjam-search {
+            width: min(420px, 100%);
+        }
+        .peminjam-kategori {
+            width: min(260px, 100%);
+        }
+        .peminjam-card {
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            background: var(--surface);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .peminjam-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+        }
+        .peminjam-card-media {
+            position: relative;
+            height: 190px;
+            background: var(--surface-2);
+        }
+        .peminjam-card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .peminjam-card-placeholder {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--muted-color);
+        }
+        .peminjam-card-status {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+        }
+        .peminjam-card-body {
+            padding: 1rem;
+        }
+        .peminjam-action-btn {
+            border-radius: 0.75rem;
+        }
+        .peminjam-detail-card {
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            box-shadow: var(--shadow-soft);
+        }
+        .peminjam-detail-media {
+            border-radius: 0.85rem;
+            overflow: hidden;
+            background: var(--surface-2);
+        }
+        .peminjam-detail-image {
+            width: 100%;
+            height: 260px;
+            object-fit: cover;
+            display: block;
+        }
+        .peminjam-detail-placeholder {
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-color);
+            font-size: 2.2rem;
+        }
+        .peminjam-rule-box {
+            background: rgba(var(--bs-primary-rgb), 0.08);
+            border-color: rgba(var(--bs-primary-rgb), 0.2);
+        }
+        [data-bs-theme="dark"] .auth-aside-card-login {
+            background: linear-gradient(145deg, #1e40af 0%, #1d4ed8 48%, #0369a1 100%);
+        }
+        [data-bs-theme="dark"] .auth-aside-card-register {
+            background: linear-gradient(145deg, #115e59 0%, #047857 50%, #0f766e 100%);
         }
         @media (max-width: 991.98px) {
             .navbar {
@@ -410,6 +697,19 @@
             }
             .page-head {
                 padding: 0.9rem 1rem;
+            }
+            .auth-aside-card .card-body {
+                min-height: 220px;
+            }
+            .peminjam-search,
+            .peminjam-kategori {
+                width: 100%;
+            }
+            .peminjam-card-media {
+                height: 170px;
+            }
+            .peminjam-detail-image {
+                height: 220px;
             }
         }
         

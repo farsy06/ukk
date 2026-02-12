@@ -10,10 +10,8 @@ const {
   validateJumlahPeminjaman,
 } = require("./validation");
 
-const { cacheMiddleware: cachingCacheMiddleware } = require("./caching");
 const { requireAnyRole } = require("./auth");
 const { AuthorizationError } = require("../utils/helpers");
-const { CACHE_TTL } = require("../utils/constants");
 
 /**
  * Route Helper Middleware
@@ -88,24 +86,6 @@ const validatePeminjaman = [
   validateTanggalPeminjaman(),
   validateJumlahPeminjaman(),
 ];
-
-/**
- * Middleware untuk cache dengan TTL standar berdasarkan jenis data
- */
-const standardCache = {
-  user: (req, res, next) =>
-    cachingCacheMiddleware("user", CACHE_TTL.USER)(req, res, next),
-  alat: (req, res, next) =>
-    cachingCacheMiddleware("alat", CACHE_TTL.ALAT)(req, res, next),
-  peminjaman: (req, res, next) =>
-    cachingCacheMiddleware("peminjaman", CACHE_TTL.PEMINJAMAN)(req, res, next),
-  kategori: (req, res, next) =>
-    cachingCacheMiddleware("kategori", CACHE_TTL.KATEGORI)(req, res, next),
-  log: (req, res, next) =>
-    cachingCacheMiddleware("log", CACHE_TTL.LOG)(req, res, next),
-  home: (req, res, next) =>
-    cachingCacheMiddleware("home", CACHE_TTL.HOME)(req, res, next),
-};
 
 /**
  * Middleware untuk role check yang lebih fleksibel
@@ -199,7 +179,6 @@ module.exports = {
   validateAlatUpdate,
   validateAlatManagement,
   validatePeminjaman,
-  standardCache,
   requireRoles,
   paginate,
   rateLimitEndpoint,

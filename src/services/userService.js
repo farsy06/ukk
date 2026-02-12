@@ -27,18 +27,23 @@ class UserService {
       return cachedData;
     }
 
-    const [kategori, alat, peminjaman, user] = await Promise.all([
-      this.getKategoriCount(),
-      this.getAlatCount(),
-      this.getPeminjamanCount(),
-      this.getUserCount(),
-    ]);
+    const [kategori, alat, peminjaman, user, peminjam, petugas] =
+      await Promise.all([
+        this.getKategoriCount(),
+        this.getAlatCount(),
+        this.getPeminjamanCount(),
+        this.getUserCount(),
+        this.getPeminjamCount(),
+        this.getPetugasCount(),
+      ]);
 
     const stats = {
       kategori,
       alat,
       peminjaman,
       user,
+      peminjam,
+      petugas,
     };
 
     // Cache for 5 minutes
@@ -268,7 +273,7 @@ class UserService {
   }
 
   /**
-   * Get peminjaman count (dipinjam + diproses)
+   * Get active peminjaman count
    * @returns {Promise<number>} - Peminjaman count
    */
   async getPeminjamanCount() {
@@ -276,7 +281,7 @@ class UserService {
     return await Peminjaman.count({
       where: {
         status: {
-          [require("sequelize").Op.in]: ["dipinjam", "diproses"],
+          [require("sequelize").Op.in]: ["pending", "disetujui", "dipinjam"],
         },
       },
     });
@@ -292,6 +297,30 @@ class UserService {
         role: {
           [require("sequelize").Op.ne]: ROLES.ADMIN,
         },
+      },
+    });
+  }
+
+  /**
+   * Get peminjam count
+   * @returns {Promise<number>} - Peminjam count
+   */
+  async getPeminjamCount() {
+    return await User.count({
+      where: {
+        role: ROLES.PEMINJAM,
+      },
+    });
+  }
+
+  /**
+   * Get petugas count
+   * @returns {Promise<number>} - Petugas count
+   */
+  async getPetugasCount() {
+    return await User.count({
+      where: {
+        role: ROLES.PETUGAS,
       },
     });
   }

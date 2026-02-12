@@ -42,8 +42,12 @@ Dokumen ini menyajikan metode pengembangan **Waterfall (sederhana/prototype)**, 
 - Autentikasi berbasis session + (opsional) “remember me”.
 - Otorisasi berbasis role.
 - Validasi input (tanggal peminjaman, jumlah, form required).
+- Validasi form sisi-klien untuk auth dan peminjaman (JavaScript di `public/js/`).
 - Pencatatan log aktivitas.
 - Cache untuk beberapa halaman indeks (alat/kategori/peminjaman/dashboard).
+- Manajemen denda pengembalian: denda keterlambatan + denda insiden (rusak/hilang).
+- Pembayaran denda: upload bukti, verifikasi petugas, atau pencatatan tunai.
+- Export laporan ke PDF dan Excel dari halaman laporan.
 
 #### Kebutuhan non-fungsional (ringkas)
 
@@ -76,6 +80,7 @@ Deliverable:
 - Service (business logic): `src/services/*.js`
 - Model (schema + validasi + relasi): `src/models/*.js`, `src/models/associations.js`
 - Middleware: `src/middleware/*.js`
+- Frontend behavior: `public/js/*.js` (auth, home, layout, alat, peminjaman)
 
 ### d. Pengujian
 
@@ -176,6 +181,15 @@ Sumber: `src/models/Peminjaman.js`
 | `tanggal_pengembalian` | DATE | nullable | Tanggal real kembali |
 | `catatan` | TEXT | nullable | Catatan peminjam |
 | `denda` | DECIMAL(10,2) | default 0 | Kolom denda (tersedia) |
+| `denda_terlambat` | DECIMAL(10,2) | default 0 | Denda keterlambatan |
+| `denda_insiden` | DECIMAL(10,2) | default 0 | Denda akibat insiden |
+| `kondisi_pengembalian` | ENUM | `normal/rusak/hilang` | Kondisi saat kembali |
+| `status_insiden` | ENUM | `none/dilaporkan/selesai` | Status proses insiden |
+| `catatan_insiden` | TEXT | nullable | Catatan kerusakan/kehilangan |
+| `status_pembayaran_denda` | ENUM | `belum_bayar/menunggu_verifikasi/lunas/ditolak` | Status pembayaran denda |
+| `bukti_pembayaran` | VARCHAR(255) | nullable | Path file bukti pembayaran |
+| `tanggal_pembayaran_denda` | DATETIME | nullable | Waktu input pembayaran denda |
+| `catatan_verifikasi_denda` | TEXT | nullable | Catatan verifikasi petugas |
 | `created_at` | DATETIME | default NOW | Waktu dibuat |
 | `updated_at` | DATETIME | default NOW | Waktu diubah |
 
@@ -211,7 +225,7 @@ Sumber: `src/models/associations.js`
 
 - Controller memanggil Service.
 - Service memanggil Model Sequelize (`findAll`, `findByPk`, `create`, `update`, `destroy`, `findAndCountAll`).
-- Beberapa Model memiliki **instance method** dan **class method** untuk query/komputasi (mis. `Peminjaman.prototype.calculateFine()`).
+- Beberapa Model memiliki **instance method** dan **class method** untuk query/komputasi (mis. `Peminjaman.prototype.calculateOverdueFine()`).
 
 Contoh titik akses (berdasarkan file):
 
@@ -220,6 +234,7 @@ Contoh titik akses (berdasarkan file):
 - Alat: `src/services/alatService.js` → `Alat.*`, `Kategori.findAll()`, `LogAktivitas.create()`
 - Peminjaman: `src/services/peminjamanService.js` → `Peminjaman.*`, `Alat.*`, `LogAktivitas.create()`
 - Report: `src/services/reportService.js` → agregasi dari model-model terkait
+- Report export: `src/services/reportExportService.js` → generator buffer PDF/XLSX
 
 ### 2.4 Control Program (Alur Kendali Aplikasi)
 
@@ -471,10 +486,10 @@ Catatan implementasi:
 
 - Pengembalian dikonfirmasi oleh **petugas** via `POST /petugas/kembali/:id` (`src/controllers/transaksiController.js#returnItem`).
 - Perhitungan denda tersedia sebagai **metode komputasi** di model `Peminjaman`:
-  - `Peminjaman.prototype.getDaysOverdue()`
-  - `Peminjaman.prototype.calculateFine()` (Rp 5000/hari)
-  - Nilai tersebut juga diekspos lewat `toJSON()` sebagai `fine_amount`.
-- Kolom `peminjaman.denda` tersedia, namun pada implementasi saat ini denda **belum disimpan** saat pengembalian (denda dihitung sebagai nilai turunan/computed).
+  - `Peminjaman.prototype.calculateOverdueFine()`
+  - `Peminjaman.prototype.calculateTotalFine()`
+  - `Peminjaman.prototype.getFineBreakdown()`
+- Saat pengembalian, denda disimpan ke `denda`, `denda_terlambat`, dan `denda_insiden`.
 
 #### Flowchart Pengembalian
 
@@ -486,12 +501,17 @@ flowchart TD
   R3 --> R4{Status disetujui/dipinjam?}
   R4 -- Tidak --> Rerr[Error: status tidak valid] --> Rend([Selesai])
   R4 -- Ya --> R5[Set status=dikembalikan, tanggal_pengembalian=hari ini]
-  R5 --> R6["Tambah stok alat + update status alat<br/>(tersedia atau dipinjam)"]
-  R6 --> R7["Hitung keterlambatan<br/>daysOverdue = max(0, today - tanggal_kembali)"]
-  R7 --> R8["Hitung denda<br/>fine = daysOverdue * 5000"]
-  R8 --> R9[LogAktivitas: konfirmasi pengembalian]
-  R9 --> R10[Redirect /petugas]
-  R10 --> Rend
+  R5 --> R6{Kondisi pengembalian}
+  R6 -- Normal --> R7[Tambah stok alat]
+  R6 -- Rusak --> R8[Set status alat maintenance]
+  R6 -- Hilang --> R9[Stok tidak dikembalikan]
+  R7 --> R10[Hitung denda terlambat + denda insiden]
+  R8 --> R10
+  R9 --> R10
+  R10 --> R11[Simpan denda & status pembayaran]
+  R11 --> R12[LogAktivitas: konfirmasi pengembalian]
+  R12 --> R13[Redirect /petugas]
+  R13 --> Rend
 ```
 
 #### Pseudocode Pengembalian
@@ -505,20 +525,27 @@ function konfirmasiPengembalian(petugas, peminjaman_id):
   peminjaman.status = "dikembalikan"
   peminjaman.tanggal_pengembalian = today()
 
-  // Update stok alat
+  // Update stok/status alat sesuai kondisi pengembalian
   alat = load Alat(peminjaman.alat_id)
-  alat.stok += peminjaman.jumlah
-  if alat.status == "dipinjam" and alat.stok > 0:
+  if kondisi_pengembalian == "normal":
+    alat.stok += peminjaman.jumlah
     alat.status = "tersedia"
+  else if kondisi_pengembalian == "rusak":
+    alat.status = "maintenance"
+  else:
+    // hilang: stok tidak dikembalikan
+    keep stock
   save(alat)
 
-  // Denda (computed)
-  daysOverdue = peminjaman.getDaysOverdue()
-  fine = peminjaman.calculateFine()     // daysOverdue * 5000
+  dendaTerlambat = peminjaman.calculateOverdueFine()
+  dendaInsiden = biaya_insiden
+  totalDenda = dendaTerlambat + dendaInsiden
+  simpan ke: denda_terlambat, denda_insiden, denda
+  status_pembayaran_denda = totalDenda > 0 ? "belum_bayar" : "lunas"
 
   log(petugas.id, "Mengkonfirmasi pengembalian ...")
   save(peminjaman)
-  return { peminjaman, fine }
+  return { peminjaman, totalDenda }
 ```
 
 Sumber implementasi: `src/services/peminjamanService.js` (`returnItem`) + `src/models/Peminjaman.js` (fine computation).
@@ -622,10 +649,12 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `GET /peminjaman/ajukan/:id` (form)
 - `POST /peminjaman/ajukan` (submit)
 - `POST /peminjaman/batal/:id` (batal)
+- `POST /peminjaman/bayar-denda/:id` (upload bukti pembayaran denda)
 
 #### Input Peminjaman
 
 - `alat_id`, `tanggal_pinjam`, `tanggal_kembali`, `jumlah`, `catatan` (opsional)
+- `bukti_pembayaran` (file opsional, khusus pembayaran denda)
 
 #### Proses Peminjaman
 
@@ -635,15 +664,17 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - Cache invalidation (alat/peminjaman/home).
 - Log aktivitas peminjam.
   - Catatan: tanggal kembali boleh sama dengan tanggal pinjam (peminjaman 1 hari).
+- Jika ada denda setelah pengembalian, peminjam dapat unggah bukti pembayaran.
 
 #### Output Peminjaman
 
 - Riwayat peminjaman (tabel) dan status transaksi.
+- Informasi denda, status pembayaran denda, dan tautan bukti pembayaran (jika ada).
 
 #### Fungsi/Method terkait Peminjaman
 
-- `src/controllers/transaksiController.js`: `userIndex()`, `showCreate()`, `create()`, `cancel()`
-- `src/services/peminjamanService.js`: `checkAlatAvailability()`, `create()`, `cancel()`
+- `src/controllers/transaksiController.js`: `userIndex()`, `showCreate()`, `create()`, `cancel()`, `submitFineProof()`
+- `src/services/peminjamanService.js`: `checkAlatAvailability()`, `create()`, `cancel()`, `submitFineProof()`
 
 ### 5.5 Modul Persetujuan & Pengembalian (Petugas)
 
@@ -653,10 +684,15 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `POST /petugas/setujui/:id`
 - `POST /petugas/tolak/:id`
 - `POST /petugas/kembali/:id`
+- `POST /petugas/denda/verifikasi/:id`
+- `POST /petugas/denda/tolak/:id`
+- `POST /petugas/denda/cash/:id`
 
 #### Input Persetujuan & Pengembalian
 
 - `id` peminjaman dari parameter route
+- Saat pengembalian: `kondisi_pengembalian`, `catatan_insiden`, `biaya_insiden`
+- Saat verifikasi denda: `catatan_verifikasi_denda`
 
 #### Proses Persetujuan & Pengembalian
 
@@ -670,24 +706,30 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - Return:
   - Status harus `disetujui` atau `dipinjam`.
   - Update status peminjaman → `dikembalikan` dan set `tanggal_pengembalian`.
-  - Tambah stok alat; bila sebelumnya `dipinjam` dan stok > 0 maka status alat → `tersedia`.
+  - Hitung total denda: `denda_terlambat + denda_insiden`.
+  - Kondisi `normal`: stok kembali bertambah.
+  - Kondisi `rusak`: status alat diarahkan ke `maintenance`.
+  - Kondisi `hilang`: stok tidak dikembalikan.
+- Verifikasi denda:
+  - Petugas dapat meluluskan bukti (`lunas`), menolak bukti (`ditolak`), atau mencatat pembayaran tunai (`lunas`).
 
 #### Output Persetujuan & Pengembalian
 
 - Dashboard petugas diperbarui (termasuk stok alat pada tabel); flash message sukses/gagal.
+- Status insiden dan status pembayaran denda ikut diperbarui.
 
 #### Fungsi/Method terkait Persetujuan & Pengembalian
 
-- `src/controllers/transaksiController.js`: `petugasIndex()`, `approve()`, `reject()`, `returnItem()`
-- `src/services/peminjamanService.js`: `getForPetugas()`, `approve()`, `reject()`, `returnItem()`
-- `src/models/Peminjaman.js`: `isOverdue()`, `getDaysOverdue()`, `calculateFine()`
+- `src/controllers/transaksiController.js`: `petugasIndex()`, `approve()`, `reject()`, `returnItem()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
+- `src/services/peminjamanService.js`: `getForPetugas()`, `approve()`, `reject()`, `returnItem()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
+- `src/models/Peminjaman.js`: `calculateOverdueFine()`, `calculateTotalFine()`, `getFineBreakdown()`
 
 ### 5.6 Modul Admin Dashboard, User, Log Aktivitas, dan Laporan
 
 #### Rute utama Dashboard, User, Log & Laporan
 
 - Dashboard admin: `GET /admin`
-- Manajemen user: `GET /admin/user`, `GET/POST /admin/user/tambah`, `POST /admin/user/hapus/:id`
+- Manajemen user: `GET /admin/user`, `GET/POST /admin/user/tambah`, `POST /admin/user/hapus/:id`, `POST /admin/user/toggle/:id`
 - Log aktivitas: `GET /admin/catatan`
 - Laporan admin: `GET /admin/laporan/*`
 - Laporan petugas: `GET /laporan/*`
@@ -701,7 +743,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 #### Proses Dashboard, User, Log & Laporan
 
 - Dashboard: ambil statistik dari service (dengan cache).
-- User: create/delete non-admin, log aktivitas.
+- User: create/delete non-admin, toggle aktif/nonaktif, log aktivitas.
 - Log: tampilkan `log_aktivitas` join `users`.
 - Laporan: generate agregasi dari service report, render view laporan.
 - Jika `format` diisi: generate file export (PDF/XLSX) lalu kirim sebagai attachment download.
@@ -714,8 +756,8 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 
 #### Fungsi/Method terkait Dashboard, User, Log & Laporan
 
-- `src/controllers/adminController.js`: `dashboard()`, `userIndex()`, `createUser()`, `destroyUser()`, `logIndex()`, `reportIndex()`, `petugasReportIndex()`, `generate*()`
-- `src/services/userService.js`: `getDashboardStats()`, `getAllUsersPaginated()`, `create()`, `delete()`, `getActivityLogs()`
+- `src/controllers/adminController.js`: `dashboard()`, `userIndex()`, `createUser()`, `destroyUser()`, `toggleUserActivation()`, `logIndex()`, `reportIndex()`, `petugasReportIndex()`, `generate*()`
+- `src/services/userService.js`: `getDashboardStats()`, `getAllUsersPaginated()`, `create()`, `delete()`, `toggleActive()`, `getActivityLogs()`
 - `src/services/reportService.js`: `generateReportDashboard()`, `generateUserReport()`, `generateInventoryReport()`, `generatePeminjamanReport()`, `generateActivityReport()`, `generateStatistics()`
 - `src/services/reportExportService.js`: `build*Pdf()`, `build*Excel()` (export laporan PDF/XLSX)
 
@@ -728,6 +770,7 @@ Sumber: `src/routes/web.js`
 ### Public
 
 - `GET /`, `GET /home`
+- `GET /tos`
 - `GET /login`, `POST /login`
 - `GET /register`, `POST /register`
 - `POST /logout`
@@ -740,6 +783,7 @@ Sumber: `src/routes/web.js`
 - `GET /peminjaman/ajukan/:id`
 - `POST /peminjaman/ajukan`
 - `POST /peminjaman/batal/:id`
+- `POST /peminjaman/bayar-denda/:id`
 
 ### Petugas (auth + role petugas)
 
@@ -747,6 +791,9 @@ Sumber: `src/routes/web.js`
 - `POST /petugas/setujui/:id`
 - `POST /petugas/tolak/:id`
 - `POST /petugas/kembali/:id`
+- `POST /petugas/denda/verifikasi/:id`
+- `POST /petugas/denda/tolak/:id`
+- `POST /petugas/denda/cash/:id`
 
 ### Admin (auth + role admin)
 
@@ -755,5 +802,6 @@ Sumber: `src/routes/web.js`
 - Alat: `/admin/alat*`
 - Peminjaman: `GET /admin/peminjaman`
 - User: `/admin/user*`
+- User activation: `POST /admin/user/toggle/:id`
 - Catatan: `GET /admin/catatan`
 - Laporan admin: `GET /admin/laporan*`

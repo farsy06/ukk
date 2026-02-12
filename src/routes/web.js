@@ -35,7 +35,10 @@ const {
 
 // Import async handler
 const { asyncHandler } = require("../middleware/asyncHandler");
-const { uploadAlatImageSingle } = require("../middleware/upload");
+const {
+  uploadAlatImageSingle,
+  uploadPaymentProofSingle,
+} = require("../middleware/upload");
 
 // Import caching middleware
 const { invalidateCache } = require("../middleware/caching");
@@ -47,13 +50,13 @@ const {
   validateKategori,
   validateAlatCreate,
   validateAlatUpdate,
-  standardCache,
   paginate,
 } = require("../middleware/routeHelpers");
 
 // Rute public (tidak perlu login)
-router.get("/", standardCache.home, asyncHandler(homeController.index)); // Halaman home public
-router.get("/home", standardCache.home, asyncHandler(homeController.index)); // Route alternatif
+router.get("/", asyncHandler(homeController.index)); // Halaman home public
+router.get("/home", asyncHandler(homeController.index)); // Route alternatif
+router.get("/tos", asyncHandler(homeController.tos)); // Terms of Service
 
 router.get("/login", asyncHandler(userController.showLogin));
 router.post("/login", loginLimiter, asyncHandler(userController.login));
@@ -84,11 +87,7 @@ peminjamRouter.get(
   asyncHandler(alatController.index),
 );
 
-peminjamRouter.get(
-  "/peminjaman",
-  standardCache.peminjaman,
-  asyncHandler(peminjamanController.userIndex),
-);
+peminjamRouter.get("/peminjaman", asyncHandler(peminjamanController.userIndex));
 
 peminjamRouter.get(
   "/peminjaman/ajukan/:id",
@@ -107,6 +106,12 @@ peminjamRouter.post(
   "/peminjaman/batal/:id",
   invalidateCache(["peminjaman", "alat", "home"]),
   asyncHandler(peminjamanController.cancel),
+);
+peminjamRouter.post(
+  "/peminjaman/bayar-denda/:id",
+  uploadPaymentProofSingle,
+  invalidateCache(["peminjaman", "home"]),
+  asyncHandler(peminjamanController.submitFineProof),
 );
 
 router.use("/", peminjamRouter);
@@ -132,6 +137,21 @@ petugasRouter.post(
   invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat dan home
   asyncHandler(peminjamanController.returnItem),
 );
+petugasRouter.post(
+  "/petugas/denda/verifikasi/:id",
+  invalidateCache(["peminjaman", "home"]),
+  asyncHandler(peminjamanController.verifyFinePayment),
+);
+petugasRouter.post(
+  "/petugas/denda/tolak/:id",
+  invalidateCache(["peminjaman", "home"]),
+  asyncHandler(peminjamanController.rejectFinePayment),
+);
+petugasRouter.post(
+  "/petugas/denda/cash/:id",
+  invalidateCache(["peminjaman", "home"]),
+  asyncHandler(peminjamanController.markFinePaidCash),
+);
 
 router.use("/", petugasRouter);
 
@@ -139,18 +159,10 @@ router.use("/", petugasRouter);
 const adminRouter = express.Router();
 adminRouter.use(isAuthenticated, requireAdmin);
 
-adminRouter.get(
-  "/",
-  standardCache.peminjaman,
-  asyncHandler(adminController.dashboard),
-);
+adminRouter.get("/", asyncHandler(adminController.dashboard));
 
 // Kelola kategori
-adminRouter.get(
-  "/kategori",
-  standardCache.kategori,
-  asyncHandler(kategoriController.index),
-);
+adminRouter.get("/kategori", asyncHandler(kategoriController.index));
 adminRouter.get(
   "/kategori/tambah",
   asyncHandler(kategoriController.showCreate),
@@ -181,7 +193,6 @@ adminRouter.post(
 adminRouter.get(
   "/alat",
   paginate(10, 100),
-  standardCache.alat,
   asyncHandler(alatController.adminIndex),
 );
 adminRouter.get("/alat/tambah", asyncHandler(alatController.showCreate));
@@ -212,7 +223,6 @@ adminRouter.post(
 adminRouter.get(
   "/peminjaman",
   paginate(10, 100),
-  standardCache.peminjaman,
   asyncHandler(peminjamanController.adminIndex),
 );
 
@@ -241,11 +251,7 @@ adminRouter.post(
 );
 
 // Catatan aktivitas
-adminRouter.get(
-  "/catatan",
-  standardCache.log,
-  asyncHandler(adminController.logIndex),
-);
+adminRouter.get("/catatan", asyncHandler(adminController.logIndex));
 
 router.use("/admin", adminRouter);
 
@@ -267,7 +273,6 @@ const registerReportRoutes = ({ basePath, auth, indexHandler }) => {
       `${basePath}${path}`,
       isAuthenticated,
       auth,
-      standardCache.log,
       asyncHandler(resolvedHandler),
     );
   });

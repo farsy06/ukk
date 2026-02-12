@@ -3,6 +3,7 @@ const User = require("../models/User");
 const logger = require("../config/logging");
 const { ROLES } = require("../utils/constants");
 const appConfig = require("../config/appConfig");
+const { pushFlash } = require("../utils/flash");
 
 // Import cache helper
 const { cacheHelper } = require("../middleware/caching");
@@ -18,8 +19,6 @@ const showRegister = (req, res) => {
 
   res.render("auth/register", {
     title: "Daftar Akun",
-    error: res.locals.error,
-    success: res.locals.success,
     data: req.flash("data")[0] || {}, // Get preserved form data
   });
 };
@@ -48,7 +47,7 @@ const register = async (req, res) => {
     );
 
     logger.info(`User registered successfully: ${newUser.id}`);
-    req.flash("success", "Registrasi berhasil, silakan login");
+    pushFlash(req, "success", "Registrasi berhasil, silakan login");
 
     // Invalidate cache
     cacheHelper.del("alat_user_index");
@@ -63,22 +62,22 @@ const register = async (req, res) => {
     if (error.name === "SequelizeValidationError") {
       // Handle Sequelize validation errors
       const messages = error.errors.map((e) => e.message);
-      req.flash("error", messages);
+      pushFlash(req, "error", messages);
       req.flash("data", formData);
     } else if (error.name === "SequelizeUniqueConstraintError") {
       // Handle unique constraint violations
       const fields = error.fields || [];
       if (fields.includes("username")) {
-        req.flash("error", "Username sudah digunakan");
+        pushFlash(req, "error", "Username sudah digunakan");
       } else if (fields.includes("email")) {
-        req.flash("error", "Email sudah digunakan");
+        pushFlash(req, "error", "Email sudah digunakan");
       } else {
-        req.flash("error", "Data sudah ada");
+        pushFlash(req, "error", "Data sudah ada");
       }
       req.flash("data", formData);
     } else {
       // Generic error
-      req.flash("error", "Terjadi kesalahan saat pendaftaran");
+      pushFlash(req, "error", "Terjadi kesalahan saat pendaftaran");
       req.flash("data", formData);
     }
 
@@ -97,9 +96,6 @@ const showLogin = (req, res) => {
 
   res.render("auth/login", {
     title: "Login",
-    error: res.locals.error,
-    success: res.locals.success,
-    message: req.query.message,
   });
 };
 
@@ -117,13 +113,13 @@ const login = async (req, res) => {
   const user = await User.findOne({ where: { username } });
   if (!user) {
     logger.warn(`Login failed: user ${username} not found`);
-    req.flash("error", "Username atau password salah");
+    pushFlash(req, "error", "Username atau password salah");
     return res.redirect("/login");
   }
 
   if (!user.is_active) {
     logger.warn(`Login blocked: inactive user ${username}`);
-    req.flash("error", "Akun tidak aktif");
+    pushFlash(req, "error", "Akun tidak aktif");
     return res.redirect("/login");
   }
 
@@ -131,7 +127,7 @@ const login = async (req, res) => {
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     logger.warn(`Login failed: invalid password for user ${username}`);
-    req.flash("error", "Username atau password salah");
+    pushFlash(req, "error", "Username atau password salah");
     return res.redirect("/login");
   }
 
@@ -203,15 +199,15 @@ const logout = async (req, res) => {
     if (err) {
       logger.error("Session destruction error:", err);
       // Handle the error gracefully without throwing
-      return res.redirect(
-        `/login?message=${encodeURIComponent(logoutMessage)}`,
-      );
+      pushFlash(req, "info", logoutMessage);
+      return res.redirect("/login");
     }
 
     // Invalidate cache
     cacheHelper.del("alat_user_index");
 
-    res.redirect(`/login?message=${encodeURIComponent(logoutMessage)}`);
+    pushFlash(req, "info", logoutMessage);
+    res.redirect("/login");
   });
 };
 

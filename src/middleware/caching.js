@@ -1,6 +1,39 @@
 const NodeCache = require("node-cache");
 const logger = require("../config/logging");
 
+const PUBLIC_CACHEABLE_ROUTES = new Set(["/", "/home", "/tos"]);
+
+const setNoStoreHeaders = (res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+};
+
+const setHttpCachePolicy = (req, res, next) => {
+  // Only GET/HEAD are cacheable by HTTP semantics.
+  if (!["GET", "HEAD"].includes(req.method)) {
+    setNoStoreHeaders(res);
+    return next();
+  }
+
+  // Never allow browser/proxy caching for authenticated sessions.
+  if (req.user) {
+    setNoStoreHeaders(res);
+    res.set("Vary", "Cookie");
+    return next();
+  }
+
+  // Public landing pages can be cached briefly.
+  if (PUBLIC_CACHEABLE_ROUTES.has(req.path)) {
+    res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    return next();
+  }
+
+  // Default deny browser/proxy cache for dynamic HTML.
+  setNoStoreHeaders(res);
+  return next();
+};
+
 // In-memory cache dengan TTL default 5 menit (300 detik)
 const cache = new NodeCache({
   stdTTL: 300,
@@ -276,6 +309,7 @@ const invalidateCache = (patterns) => {
 };
 
 module.exports = {
+  setHttpCachePolicy,
   cacheMiddleware,
   cacheHelper,
   invalidateCache,

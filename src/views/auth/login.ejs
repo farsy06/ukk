@@ -1,185 +1,92 @@
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card border-0 shadow">
-            <div class="card-header bg-primary text-white text-center py-4">
-                <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Login</h4>
-                <p class="mb-0 mt-2 small">Masuk ke akun Anda untuk meminjam alat</p>
+<div class="row g-4 align-items-stretch auth-layout">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden auth-aside-card auth-aside-card-login">
+            <div class="card-body p-4 p-md-5 d-flex flex-column justify-content-between auth-aside-content">
+                <div>
+                    <div class="small text-uppercase fw-semibold opacity-75 mb-3">Portal eSarpra</div>
+                    <h2 class="fw-bold mb-3">Masuk untuk kelola peminjaman alat</h2>
+                    <p class="mb-4 opacity-75">
+                        Pantau status alat, ajukan peminjaman, dan cek riwayat transaksi dalam satu dashboard.
+                    </p>
+                </div>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2"><i class="fas fa-circle-check me-2"></i> Proses cepat dan terstruktur</li>
+                    <li class="mb-2"><i class="fas fa-circle-check me-2"></i> Keamanan berbasis sesi dan CSRF</li>
+                    <li><i class="fas fa-circle-check me-2"></i> Riwayat aktivitas tersimpan otomatis</li>
+                </ul>
             </div>
-            <div class="card-body p-4">
-                <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <% if (Array.isArray(error)) { %>
-                            <% error.forEach(function(err) { %>
-                                <div><i class="fas fa-exclamation-circle"></i> <%= err %></div>
-                            <% }); %>
-                        <% } else { %>
-                            <i class="fas fa-exclamation-circle"></i> <%= error %>
-                        <% } %>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <% } %>
+        </div>
+    </div>
 
-                <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <% if (Array.isArray(success)) { %>
-                            <% success.forEach(function(msg) { %>
-                                <div><i class="fas fa-check-circle"></i> <%= msg %></div>
-                            <% }); %>
-                        <% } else { %>
-                            <i class="fas fa-check-circle"></i> <%= success %>
-                        <% } %>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <% } %>
-                
-                <form action="/login" method="POST" id="loginForm">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow h-100 auth-form-card">
+            <div class="card-header border-0 pt-4 px-4 px-md-5">
+                <h4 class="mb-1"><i class="fas fa-sign-in-alt me-2 text-primary"></i>Login</h4>
+                <p class="text-muted mb-0">Gunakan akun Anda untuk melanjutkan.</p>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <form action="/login" method="POST" id="loginForm" novalidate>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                     <div class="mb-3">
                         <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-user"></i></span>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="username"
+                                name="username"
+                                autocomplete="username"
+                                required
+                            >
                         </div>
-                        <div class="form-text">Masukkan username Anda</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="password"
+                                name="password"
+                                autocomplete="current-password"
+                                required
+                            >
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Tampilkan password">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <div class="form-text">Masukkan password Anda</div>
                     </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
-                        <label class="form-check-label" for="rememberMe">
-                            Ingat saya
-                        </label>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Ingat saya</label>
+                        </div>
+                        <a href="/tos" class="small text-decoration-none">Syarat & ketentuan</a>
                     </div>
-                    
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-sign-in-alt"></i> Login
+                        <button type="submit" class="btn btn-primary btn-lg" id="loginSubmitButton">
+                            <i class="fas fa-right-to-bracket me-2"></i>Masuk
                         </button>
                     </div>
                 </form>
+            </div>
 
-                <hr class="my-4">
-                
+            <div class="card-footer border-0 pb-4 px-4 px-md-5">
                 <div class="text-center">
-                    <p class="mb-0">Belum punya akun?</p>
-                    <a href="/register" class="btn btn-outline-success mt-2">
-                        <i class="fas fa-user-plus"></i> Daftar disini
-                    </a>
+                    <span class="text-muted">Belum punya akun?</span>
+                    <a href="/register" class="text-decoration-none fw-semibold ms-1">Daftar sekarang</a>
                 </div>
-
-                <div class="text-center mt-3">
-                    <a href="/forgot-password" class="text-decoration-none small text-muted">
-                        <i class="fas fa-key"></i> Lupa password?
-                    </a>
-                </div>
-            </hr>
-        </div>
-
-        <div class="text-center mt-3">
-            <small class="text-muted">
-                <i class="fas fa-shield-alt"></i> Sistem peminjaman alat yang aman dan terpercaya
-            </small>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('loginForm');
-        const password = document.getElementById('password');
-        const username = document.getElementById('username');
-        const submitButton = form.querySelector('button[type="submit"]');
-
-        // Form validation
-        form.addEventListener('submit', function(e) {
-            let isValid = true;
-            const errors = [];
-
-            // Validate username
-            if (!username.value.trim()) {
-                errors.push('Username harus diisi');
-                isValid = false;
-            } else if (username.value.trim().length < 3) {
-                errors.push('Username minimal 3 karakter');
-                isValid = false;
-            }
-
-            // Validate password
-            if (!password.value) {
-                errors.push('Password harus diisi');
-                isValid = false;
-            } else if (password.value.length < 6) {
-                errors.push('Password minimal 6 karakter');
-                isValid = false;
-            }
-
-            // Show errors if any
-            if (!isValid) {
-                e.preventDefault();
-                const errorHtml = errors.map(err => `<div><i class="fas fa-exclamation-circle"></i> ${err}</div>`).join('');
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'alert alert-danger alert-dismissible fade show';
-                errorDiv.innerHTML = errorHtml + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                
-                // Remove existing error messages
-                const existingErrors = document.querySelectorAll('.alert-danger');
-                existingErrors.forEach(err => err.remove());
-                
-                form.insertBefore(errorDiv, form.firstChild);
-            }
-        });
-
-        // Real-time validation for username
-        username.addEventListener('input', function() {
-            if (this.value.trim().length < 3 && this.value.trim().length > 0) {
-                this.classList.add('is-invalid');
-            } else {
-                this.classList.remove('is-invalid');
-            }
-        });
-
-        // Real-time validation for password
-        password.addEventListener('input', function() {
-            if (this.value.length < 6 && this.value.length > 0) {
-                this.classList.add('is-invalid');
-            } else {
-                this.classList.remove('is-invalid');
-            }
-        });
-
-        // Add loading state for submit button
-        form.addEventListener('submit', function() {
-            const originalText = submitButton.innerHTML;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-            submitButton.disabled = true;
-            
-            setTimeout(() => {
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-            }, 2000);
-        });
-
-        // Auto-focus username field
-        username.focus();
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && document.activeElement !== submitButton) {
-                e.preventDefault();
-                form.querySelector('button[type="submit"]').click();
-            }
-        });
-    });
-</script>
+<script src="/js/auth-common.js"></script>
+<script src="/js/auth-login.js"></script>

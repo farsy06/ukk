@@ -5,6 +5,7 @@ const flash = require("connect-flash");
 const { sequelize, initializeDatabase } = require("./config/database");
 const logger = require("./config/logging");
 const { appConfig } = require("./utils/helpers");
+const { buildAlerts, attachFlashHelpers } = require("./utils/flash");
 
 // Import middleware security
 const {
@@ -19,6 +20,7 @@ const { errorHandler, notFoundHandler } = require("./middleware/asyncHandler");
 
 // Import routes
 const webRoutes = require("./routes/web");
+const { setHttpCachePolicy } = require("./middleware/caching");
 
 // Import models dan associations
 const { defineAssociations } = require("./models/associations");
@@ -153,11 +155,30 @@ async function startServer() {
 
     // Flash messages (after session)
     app.use(flash());
+    app.use(attachFlashHelpers);
 
     // Global variables untuk flash messages
     app.use((req, res, next) => {
-      res.locals.success = req.flash("success");
-      res.locals.error = req.flash("error");
+      const { alerts, grouped } = buildAlerts(req);
+      const queryMessage =
+        typeof req.query.message === "string" ? req.query.message.trim() : "";
+      if (queryMessage) {
+        alerts.push({
+          type: "info",
+          text: queryMessage.slice(0, 500),
+          icon: "fas fa-info-circle",
+          className: "alert-info",
+        });
+      }
+
+      // Primary flash interface for views.
+      res.locals.alerts = alerts;
+
+      // Backward compatibility for existing templates/controllers.
+      res.locals.success = grouped.success;
+      res.locals.error = grouped.error;
+      res.locals.info = grouped.info;
+      res.locals.warning = grouped.warning;
       res.locals.overdueFinePerDay = appConfig.fines.overduePerDay;
       res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat(
         "id-ID",
@@ -196,6 +217,9 @@ async function startServer() {
         next();
       }
     });
+
+    // HTTP cache policy for web pages and session-aware responses
+    app.use(setHttpCachePolicy);
 
     // Health check endpoint
     app.get("/health", (req, res) => {

@@ -16,79 +16,52 @@ document.addEventListener("DOMContentLoaded", function () {
     "toggleConfirmPassword",
   );
 
-  const isStrong = (value) => {
-    return (
-      value.length >= 8 &&
-      /[A-Z]/.test(value) &&
-      /[a-z]/.test(value) &&
-      /\d/.test(value) &&
-      /[!@#$%^&*(),.?":{}|<>]/.test(value)
-    );
+  const isStrong = (value) =>
+    value.length >= 8 &&
+    /[A-Z]/.test(value) &&
+    /[a-z]/.test(value) &&
+    /\d/.test(value) &&
+    /[!@#$%^&*(),.?":{}|<>]/.test(value);
+
+  const setRuleState = (element, passed, successText, defaultText) => {
+    if (!element) return;
+
+    element.innerHTML = passed
+      ? `<i class="fas fa-check text-success"></i> ${successText}`
+      : `<i class="fas fa-times text-danger"></i> ${defaultText}`;
+    element.classList.toggle("text-success", passed);
+    element.classList.toggle("text-danger", !passed);
   };
 
   const updateStrengthIndicators = () => {
     if (!password) return;
     const pwd = password.value;
 
-    if (lengthCheck) {
-      if (pwd.length >= 8) {
-        lengthCheck.innerHTML =
-          '<i class="fas fa-check text-success"></i> Minimal 8 karakter';
-        lengthCheck.className = "text-success";
-      } else {
-        lengthCheck.innerHTML =
-          '<i class="fas fa-times text-danger"></i> Minimal 8 karakter';
-        lengthCheck.className = "text-danger";
-      }
-    }
-
-    if (uppercaseCheck) {
-      if (/[A-Z]/.test(pwd)) {
-        uppercaseCheck.innerHTML =
-          '<i class="fas fa-check text-success"></i> Huruf besar (A-Z)';
-        uppercaseCheck.className = "text-success";
-      } else {
-        uppercaseCheck.innerHTML =
-          '<i class="fas fa-times text-danger"></i> Huruf besar (A-Z)';
-        uppercaseCheck.className = "text-danger";
-      }
-    }
-
-    if (lowercaseCheck) {
-      if (/[a-z]/.test(pwd)) {
-        lowercaseCheck.innerHTML =
-          '<i class="fas fa-check text-success"></i> Huruf kecil (a-z)';
-        lowercaseCheck.className = "text-success";
-      } else {
-        lowercaseCheck.innerHTML =
-          '<i class="fas fa-times text-danger"></i> Huruf kecil (a-z)';
-        lowercaseCheck.className = "text-danger";
-      }
-    }
-
-    if (numberCheck) {
-      if (/\d/.test(pwd)) {
-        numberCheck.innerHTML =
-          '<i class="fas fa-check text-success"></i> Angka (0-9)';
-        numberCheck.className = "text-success";
-      } else {
-        numberCheck.innerHTML =
-          '<i class="fas fa-times text-danger"></i> Angka (0-9)';
-        numberCheck.className = "text-danger";
-      }
-    }
-
-    if (specialCheck) {
-      if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
-        specialCheck.innerHTML =
-          '<i class="fas fa-check text-success"></i> Karakter spesial (!@#$%^&*)';
-        specialCheck.className = "text-success";
-      } else {
-        specialCheck.innerHTML =
-          '<i class="fas fa-times text-danger"></i> Karakter spesial (!@#$%^&*)';
-        specialCheck.className = "text-danger";
-      }
-    }
+    setRuleState(
+      lengthCheck,
+      pwd.length >= 8,
+      "Minimal 8 karakter",
+      "Minimal 8 karakter",
+    );
+    setRuleState(
+      uppercaseCheck,
+      /[A-Z]/.test(pwd),
+      "Huruf besar (A-Z)",
+      "Huruf besar (A-Z)",
+    );
+    setRuleState(
+      lowercaseCheck,
+      /[a-z]/.test(pwd),
+      "Huruf kecil (a-z)",
+      "Huruf kecil (a-z)",
+    );
+    setRuleState(numberCheck, /\d/.test(pwd), "Angka (0-9)", "Angka (0-9)");
+    setRuleState(
+      specialCheck,
+      /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
+      "Karakter spesial (!@#$%^&*)",
+      "Karakter spesial (!@#$%^&*)",
+    );
   };
 
   const updateMatchMessage = () => {
@@ -100,14 +73,17 @@ document.addEventListener("DOMContentLoaded", function () {
     ) {
       passwordMatchMessage.innerHTML =
         '<i class="fas fa-check text-success"></i> Password cocok';
-      passwordMatchMessage.className = "text-success";
+      passwordMatchMessage.classList.remove("text-danger");
+      passwordMatchMessage.classList.add("form-text", "text-success");
     } else if (confirmPassword.value !== "") {
       passwordMatchMessage.innerHTML =
         '<i class="fas fa-times text-danger"></i> Password tidak cocok';
-      passwordMatchMessage.className = "text-danger";
+      passwordMatchMessage.classList.remove("text-success");
+      passwordMatchMessage.classList.add("form-text", "text-danger");
     } else {
       passwordMatchMessage.innerHTML = "";
-      passwordMatchMessage.className = "form-text";
+      passwordMatchMessage.classList.remove("text-success", "text-danger");
+      passwordMatchMessage.classList.add("form-text");
     }
   };
 

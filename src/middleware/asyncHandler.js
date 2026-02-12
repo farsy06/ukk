@@ -1,4 +1,5 @@
 const ValidationError = require("../utils/helpers").ValidationError;
+const { pushFlash } = require("../utils/flash");
 
 /**
  * Async Handler Middleware
@@ -79,7 +80,7 @@ const errorHandler = (err, req, res, next) => {
   if (err.code === "EBADCSRFTOKEN") {
     logger.warn(`CSRF token validation failed for ${req.originalUrl}`);
     if (req.accepts("html")) {
-      req.flash("error", "Sesi Anda telah berakhir. Silakan coba lagi.");
+      pushFlash(req, "error", "Sesi Anda telah berakhir. Silakan coba lagi.");
       return res.redirect(req.get("Referrer") || "/");
     }
 
@@ -107,7 +108,7 @@ const errorHandler = (err, req, res, next) => {
   if (err instanceof ValidationError) {
     // Redirect kembali ke form dengan flash message
     if (req.originalUrl.includes("/register")) {
-      req.flash("error", err.message);
+      pushFlash(req, "error", err.message);
       // Preserve all form data except passwords for security
       req.flash("data", {
         nama: req.body.nama,
@@ -116,7 +117,7 @@ const errorHandler = (err, req, res, next) => {
       });
       return res.redirect("/register");
     } else if (req.originalUrl.includes("/login")) {
-      req.flash("error", err.message);
+      pushFlash(req, "error", err.message);
       return res.redirect("/login");
     } else {
       return res.status(400).json({
@@ -133,7 +134,7 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === "AuthenticationError") {
     // Handle authentication errors - redirect to login for web routes
     if (req.originalUrl.includes("/login")) {
-      req.flash("error", err.message);
+      pushFlash(req, "error", err.message);
       return res.redirect("/login");
     }
     // For API routes, return JSON response

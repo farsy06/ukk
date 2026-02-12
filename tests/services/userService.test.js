@@ -96,6 +96,8 @@ describe("UserService", () => {
         alat: 10,
         peminjaman: 3,
         user: 8,
+        peminjam: 6,
+        petugas: 2,
       };
 
       mockCacheHelper.get.mockReturnValue(cachedStats);
@@ -115,6 +117,8 @@ describe("UserService", () => {
       jest.spyOn(userService, "getAlatCount").mockResolvedValue(10);
       jest.spyOn(userService, "getPeminjamanCount").mockResolvedValue(3);
       jest.spyOn(userService, "getUserCount").mockResolvedValue(8);
+      jest.spyOn(userService, "getPeminjamCount").mockResolvedValue(6);
+      jest.spyOn(userService, "getPetugasCount").mockResolvedValue(2);
 
       const result = await userService.getDashboardStats();
 
@@ -123,6 +127,8 @@ describe("UserService", () => {
         alat: 10,
         peminjaman: 3,
         user: 8,
+        peminjam: 6,
+        petugas: 2,
       });
       expect(mockCacheHelper.set).toHaveBeenCalledWith(
         "admin_dashboard_stats",
@@ -428,6 +434,22 @@ describe("UserService", () => {
 
       const result = await userService.getUserCount();
       expect(result).toBe(7);
+    });
+
+    it("should fetch peminjam count", async () => {
+      const User = require("../../src/models/User");
+      jest.spyOn(User, "count").mockResolvedValue(5);
+
+      const result = await userService.getPeminjamCount();
+      expect(result).toBe(5);
+    });
+
+    it("should fetch petugas count", async () => {
+      const User = require("../../src/models/User");
+      jest.spyOn(User, "count").mockResolvedValue(2);
+
+      const result = await userService.getPetugasCount();
+      expect(result).toBe(2);
     });
 
     it("should check username uniqueness", async () => {

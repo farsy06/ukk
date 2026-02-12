@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const Peminjaman = require("../models/Peminjaman");
 const Alat = require("../models/Alat");
 const User = require("../models/User");
@@ -5,6 +7,7 @@ const Kategori = require("../models/Kategori");
 const LogAktivitas = require("../models/LogAktivitas");
 const { cacheHelper } = require("../middleware/caching");
 const logger = require("../config/logging");
+const appConfig = require("../config/appConfig");
 const { Op } = require("sequelize");
 
 /**
@@ -12,6 +15,53 @@ const { Op } = require("sequelize");
  * Service layer for peminjaman business logic
  */
 class PeminjamanService {
+  removePaymentProofFile(filePath) {
+    if (!filePath || typeof filePath !== "string") return;
+
+    const normalizedPath = filePath.replace(/\\/g, "/");
+    if (!normalizedPath.startsWith("/uploads/pembayaran/")) return;
+
+    const absolutePath = path.join(__dirname, "../../public", normalizedPath);
+
+    if (fs.existsSync(absolutePath)) {
+      try {
+        fs.unlinkSync(absolutePath);
+      } catch (error) {
+        logger.warn(`Gagal menghapus bukti pembayaran lama: ${error.message}`);
+      }
+    }
+  }
+
+  getOverdueFineForReturn(peminjaman, today) {
+    if (typeof peminjaman.calculateOverdueFine === "function") {
+      return peminjaman.calculateOverdueFine();
+    }
+
+    const storedFine = Number(peminjaman.denda_terlambat || 0);
+    if (Number.isFinite(storedFine) && storedFine > 0) {
+      return storedFine;
+    }
+
+    if (!peminjaman.tanggal_kembali) {
+      return 0;
+    }
+
+    const dueDate = new Date(peminjaman.tanggal_kembali);
+    dueDate.setHours(0, 0, 0, 0);
+
+    const returnDate = new Date(today);
+    returnDate.setHours(0, 0, 0, 0);
+
+    if (returnDate <= dueDate) {
+      return 0;
+    }
+
+    const diffTime = returnDate.getTime() - dueDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays * appConfig.fines.overduePerDay;
+  }
+
   /**
    * Get peminjaman by ID with relations
    * @param {number} id - Peminjaman ID
@@ -419,7 +469,7 @@ class PeminjamanService {
    * @param {Object} user - User object (petugas)
    * @returns {Promise<Object>} - Updated peminjaman
    */
-  async returnItem(id, user) {
+  async returnItem(id, user, returnData = {}) {
     const peminjaman = await this.getById(id);
 
     if (peminjaman.status !== "disetujui" && peminjaman.status !== "dipinjam") {
@@ -428,47 +478,245 @@ class PeminjamanService {
 
     const jumlah = peminjaman.jumlah || 1;
     const today = new Date();
+    const returnConditionRaw = returnData.kondisi_pengembalian || "normal";
+    const returnCondition = String(returnConditionRaw).toLowerCase().trim();
+    const validReturnCondition = ["normal", "rusak", "hilang"].includes(
+      returnCondition,
+    )
+      ? returnCondition
+      : "normal";
+    const incidentNotes = (returnData.catatan_insiden || "").trim() || null;
+    const incidentCostInput = Number(returnData.biaya_insiden || 0);
+    const incidentCost =
+      Number.isFinite(incidentCostInput) && incidentCostInput > 0
+        ? incidentCostInput
+        : 0;
+    const hasIncident = validReturnCondition !== "normal";
+    if (hasIncident && !incidentNotes) {
+      throw new Error("Catatan insiden wajib diisi untuk kondisi rusak/hilang");
+    }
 
-    // Calculate fine for overdue items
-    const fine = peminjaman.calculateFine();
+    // Calculate fine for overdue items and incident charge
+    const overdueFine = this.getOverdueFineForReturn(peminjaman, today);
+    const incidentFine = hasIncident ? incidentCost : 0;
+    const totalFine = overdueFine + incidentFine;
+    const incidentStatus = hasIncident
+      ? incidentFine > 0
+        ? "dilaporkan"
+        : "selesai"
+      : "none";
 
     // Update peminjaman status
     await peminjaman.update({
       status: "dikembalikan",
       tanggal_pengembalian: today,
-      denda: fine,
+      denda_terlambat: overdueFine,
+      denda_insiden: incidentFine,
+      denda: totalFine,
+      kondisi_pengembalian: validReturnCondition,
+      status_insiden: incidentStatus,
+      catatan_insiden: incidentNotes,
+      status_pembayaran_denda: totalFine > 0 ? "belum_bayar" : "lunas",
+      tanggal_pembayaran_denda: totalFine > 0 ? null : today,
+      catatan_verifikasi_denda: null,
     });
 
     // Add stock back
     const alat = await Alat.findByPk(peminjaman.alat_id);
     if (alat) {
-      const newStock = alat.stok + jumlah;
-
-      // If stock was 0 and now available, change status back to "tersedia"
+      const shouldRestoreStock = validReturnCondition !== "hilang";
+      const newStock = shouldRestoreStock ? alat.stok + jumlah : alat.stok;
       let newStatus = alat.status;
-      if (alat.status === "dipinjam" && newStock > 0) {
-        newStatus = "tersedia";
+      let newKondisi = alat.kondisi;
+
+      if (validReturnCondition === "normal") {
+        if (newStock > 0) {
+          newStatus = "tersedia";
+        }
+      }
+      if (validReturnCondition === "rusak") {
+        newStatus = "maintenance";
+        newKondisi =
+          alat.kondisi === "rusak_berat" ? "rusak_berat" : "rusak_ringan";
+      }
+      if (validReturnCondition === "hilang") {
+        newStatus = newStock > 0 ? "tersedia" : "maintenance";
       }
 
-      await alat.update({
+      const alatPayload = {
         stok: newStock,
         status: newStatus,
-      });
+      };
+
+      if (typeof newKondisi !== "undefined") {
+        alatPayload.kondisi = newKondisi;
+      }
+
+      await alat.update(alatPayload);
 
       logger.info(
-        `Item returned: ${alat.nama_alat}, stock increased from ${alat.stok} to ${newStock}`,
+        `Item returned: ${alat.nama_alat}, condition: ${validReturnCondition}, stock ${alat.stok} -> ${newStock}`,
       );
     }
 
     // Log activity
     await LogAktivitas.create({
       user_id: user.id,
-      aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama} (jumlah: ${jumlah})`,
+      aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama} (jumlah: ${jumlah}, kondisi: ${validReturnCondition}, denda: Rp ${totalFine})`,
     });
 
     // Invalidate cache
     this.invalidateCache();
 
+    return peminjaman;
+  }
+
+  async submitFineProof(id, user, file) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.user_id !== user.id) {
+      throw new Error(
+        "Anda tidak memiliki akses untuk mengunggah bukti pada peminjaman ini",
+      );
+    }
+
+    if (peminjaman.status !== "dikembalikan") {
+      throw new Error(
+        "Bukti pembayaran hanya dapat diunggah setelah pengembalian",
+      );
+    }
+
+    const totalFine = Number(peminjaman.denda || 0);
+    if (!Number.isFinite(totalFine) || totalFine <= 0) {
+      throw new Error("Peminjaman ini tidak memiliki denda");
+    }
+
+    if (
+      !["belum_bayar", "ditolak"].includes(peminjaman.status_pembayaran_denda)
+    ) {
+      throw new Error("Status pembayaran tidak dapat diunggah ulang");
+    }
+
+    if (!file || !file.filename) {
+      throw new Error("File bukti pembayaran wajib diunggah");
+    }
+
+    const previousProof = peminjaman.bukti_pembayaran;
+    const proofPath = `/uploads/pembayaran/${file.filename}`;
+
+    await peminjaman.update({
+      bukti_pembayaran: proofPath,
+      status_pembayaran_denda: "menunggu_verifikasi",
+      tanggal_pembayaran_denda: new Date(),
+      catatan_verifikasi_denda: null,
+    });
+
+    this.removePaymentProofFile(previousProof);
+
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Mengunggah bukti pembayaran denda untuk peminjaman #${peminjaman.id}`,
+    });
+
+    this.invalidateCache();
+    return peminjaman;
+  }
+
+  async verifyFinePayment(id, user, notes = null) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.status !== "dikembalikan") {
+      throw new Error("Peminjaman belum berada pada status dikembalikan");
+    }
+
+    const totalFine = Number(peminjaman.denda || 0);
+    if (!Number.isFinite(totalFine) || totalFine <= 0) {
+      throw new Error("Peminjaman ini tidak memiliki denda");
+    }
+
+    if (peminjaman.status_pembayaran_denda !== "menunggu_verifikasi") {
+      throw new Error("Tidak ada pembayaran yang menunggu verifikasi");
+    }
+
+    await peminjaman.update({
+      status_pembayaran_denda: "lunas",
+      catatan_verifikasi_denda:
+        (typeof notes === "string" && notes.trim()) || null,
+    });
+
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Memverifikasi pembayaran denda untuk peminjaman #${peminjaman.id}`,
+    });
+
+    this.invalidateCache();
+    return peminjaman;
+  }
+
+  async rejectFinePayment(id, user, notes = null) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.status !== "dikembalikan") {
+      throw new Error("Peminjaman belum berada pada status dikembalikan");
+    }
+
+    const totalFine = Number(peminjaman.denda || 0);
+    if (!Number.isFinite(totalFine) || totalFine <= 0) {
+      throw new Error("Peminjaman ini tidak memiliki denda");
+    }
+
+    if (peminjaman.status_pembayaran_denda !== "menunggu_verifikasi") {
+      throw new Error("Tidak ada pembayaran yang menunggu verifikasi");
+    }
+
+    await peminjaman.update({
+      status_pembayaran_denda: "ditolak",
+      catatan_verifikasi_denda:
+        (typeof notes === "string" && notes.trim()) || null,
+    });
+
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Menolak bukti pembayaran denda untuk peminjaman #${peminjaman.id}`,
+    });
+
+    this.invalidateCache();
+    return peminjaman;
+  }
+
+  async markFinePaidCash(id, user, notes) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.status !== "dikembalikan") {
+      throw new Error("Peminjaman belum berada pada status dikembalikan");
+    }
+
+    const totalFine = Number(peminjaman.denda || 0);
+    if (!Number.isFinite(totalFine) || totalFine <= 0) {
+      throw new Error("Peminjaman ini tidak memiliki denda");
+    }
+
+    if (peminjaman.status_pembayaran_denda === "lunas") {
+      throw new Error("Denda sudah berstatus lunas");
+    }
+
+    const cashNotes = typeof notes === "string" ? notes.trim() : "";
+    if (!cashNotes) {
+      throw new Error("Catatan pembayaran tunai wajib diisi");
+    }
+
+    await peminjaman.update({
+      status_pembayaran_denda: "lunas",
+      tanggal_pembayaran_denda: new Date(),
+      catatan_verifikasi_denda: `Pembayaran tunai: ${cashNotes}`,
+    });
+
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: `Menandai pembayaran tunai denda untuk peminjaman #${peminjaman.id}`,
+    });
+
+    this.invalidateCache();
     return peminjaman;
   }
 

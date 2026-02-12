@@ -17,12 +17,12 @@ const db = require("../src/config/database");
 const logger = require("../src/config/logging");
 const { defineAssociations } = require("../src/models/associations");
 const session = require("express-session");
+const appConfig = require("../src/config/appConfig");
 
 // Create test app outside of beforeAll
 const express = require("express");
 const path = require("path");
 const flash = require("connect-flash");
-const expressLayouts = require("express-ejs-layouts");
 
 // Import middleware security
 const {
@@ -51,8 +51,48 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../src/views"));
 app.set("trust proxy", 1);
 
-// Gunakan express-ejs-layouts
-app.use(expressLayouts);
+// Custom layout renderer (replacement for express-ejs-layouts)
+app.use((req, res, next) => {
+  const rawRender = res.render.bind(res);
+  res.render = (view, options, callback) => {
+    let opts = options || {};
+    let cb = callback;
+
+    if (typeof options === "function") {
+      cb = options;
+      opts = {};
+    }
+
+    if (view === "layout" || opts.layout === false) {
+      return rawRender(view, opts, cb);
+    }
+
+    return rawRender(view, opts, (viewErr, html) => {
+      if (viewErr) {
+        if (cb) return cb(viewErr);
+        return next(viewErr);
+      }
+
+      const layoutData = {
+        ...res.locals,
+        ...opts,
+        body: html,
+        allowHtml: true,
+      };
+
+      return rawRender("layout", layoutData, (layoutErr, finalHtml) => {
+        if (layoutErr) {
+          if (cb) return cb(layoutErr);
+          return next(layoutErr);
+        }
+
+        if (cb) return cb(null, finalHtml);
+        return res.send(finalHtml);
+      });
+    });
+  };
+  next();
+});
 
 // Security middleware (harus dijalankan pertama)
 app.use(generalLimiter);
@@ -84,6 +124,10 @@ app.use(flash());
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
+  res.locals.overdueFinePerDay = appConfig.fines.overduePerDay;
+  res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat("id-ID").format(
+    appConfig.fines.overduePerDay,
+  );
   next();
 });
 

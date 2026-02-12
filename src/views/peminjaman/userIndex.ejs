@@ -1,153 +1,149 @@
-<div class="row">
+<section class="row">
     <div class="col-12">
         <%- include('../_partials/page-head', {
             title: 'Riwayat Peminjaman',
-            subtitle: 'Berikut adalah riwayat pengajuan peminjaman alat Anda.',
+            subtitle: 'Pantau seluruh status pengajuan, pengembalian, dan pembayaran denda Anda.',
             actions: '<a href=\"/alat\" class=\"btn btn-primary\"><i class=\"fas fa-plus\"></i> Ajukan Peminjaman</a>'
         }) %>
     </div>
-</div>
+</section>
 
-<div class="row">
+<section class="row mt-3">
     <div class="col-12">
-        <div class="card shadow-sm table-card">
+        <%
+            const paymentStatusLabel = (status) => {
+                if (status === 'lunas') return { className: 'bg-success', text: 'Lunas' };
+                if (status === 'menunggu_verifikasi') return { className: 'bg-info', text: 'Menunggu Verifikasi' };
+                if (status === 'ditolak') return { className: 'bg-danger', text: 'Bukti Ditolak' };
+                return { className: 'bg-warning text-dark', text: 'Belum Bayar' };
+            };
+        %>
+
+        <div class="card table-card">
             <div class="card-body">
-                <% if (typeof peminjaman !== 'undefined' && peminjaman && peminjaman.length > 0) { %>
-                        <table class="table table-hover align-middle">
+                <% if (peminjaman && peminjaman.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col" class="text-center">#</th>
-                                    <th scope="col">Alat</th>
-                                    <th scope="col">Periode</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Late/Fine</th>
-                                    <th scope="col" class="table-actions">Aksi</th>
+                                    <th class="text-center">#</th>
+                                    <th>Alat</th>
+                                    <th>Periode</th>
+                                    <th>Status Peminjaman</th>
+                                    <th>Denda & Pembayaran</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% peminjaman.forEach(function(item, index) { %>
-                                    <% 
-                                        const isOverdue = typeof item.isOverdue === 'function' 
-                                            ? item.isOverdue() 
-                                            : !!item.is_overdue;
-                                        const daysOverdue = typeof item.getDaysOverdue === 'function' 
-                                            ? item.getDaysOverdue() 
+                                <% peminjaman.forEach((item, index) => { %>
+                                    <%
+                                        const daysOverdue = typeof item.getDaysOverdue === 'function'
+                                            ? item.getDaysOverdue()
                                             : (item.days_overdue || 0);
-                                        const fineAmount = typeof item.calculateFine === 'function' 
-                                            ? item.calculateFine() 
+                                        const fineAmount = typeof item.calculateFine === 'function'
+                                            ? item.calculateFine()
                                             : (item.fine_amount || 0);
+                                        const paymentStatus = item.status_pembayaran_denda || 'belum_bayar';
+                                        const paymentMeta = paymentStatusLabel(paymentStatus);
+                                        const canUploadProof =
+                                            item.status === 'dikembalikan' &&
+                                            fineAmount > 0 &&
+                                            (paymentStatus === 'belum_bayar' || paymentStatus === 'ditolak');
                                     %>
                                     <tr>
                                         <td class="text-center"><%= index + 1 %></td>
-                                        <td class="table-actions">
-                                            <div>
-                                                <h6 class="mb-1 fw-semibold">
-                                                    <%= item.alat ? item.alat.nama_alat : 'Alat tidak ditemukan' %>
-                                                </h6>
-                                                <small class="text-muted">
-                                                    Kategori: <%= item.alat && item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %>
-                                                </small>
-                                                <small class="text-muted d-block">
-                                                    Jumlah: <%= item.jumlah || 1 %>
-                                                </small>
+                                        <td>
+                                            <div class="fw-semibold"><%= item.alat ? item.alat.nama_alat : 'Alat tidak ditemukan' %></div>
+                                            <small class="text-muted d-block">Kategori: <%= item.alat && item.alat.kategori ? item.alat.kategori.nama_kategori : 'Tidak ada kategori' %></small>
+                                            <small class="text-muted d-block">Jumlah: <%= item.jumlah || 1 %></small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                                <span class="badge bg-light text-dark"><%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID') : '-' %></span>
+                                                <span class="text-muted">s/d</span>
+                                                <span class="badge bg-light text-dark"><%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID') : '-' %></span>
                                             </div>
+                                            <% if (item.tanggal_pengembalian) { %>
+                                                <small class="text-muted d-block mt-1">Kembali: <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID') %></small>
+                                            <% } %>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark">
-                                                <%= item.tanggal_pinjam ? new Date(item.tanggal_pinjam).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
-                                            </span>
-                                            <span class="text-muted">→</span>
-                                            <span class="badge bg-light text-dark">
-                                                <%= item.tanggal_kembali ? new Date(item.tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak tersedia' %>
-                                            </span>
-                                            <% if (item.tanggal_pengembalian) { %>
-                                                <small class="text-muted d-block mt-1">
-                                                    Kembali: <%= new Date(item.tanggal_pengembalian).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                                            <% if (item.status === 'pending') { %>
+                                                <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Menunggu</span>
+                                            <% } else if (item.status === 'disetujui') { %>
+                                                <span class="badge bg-info"><i class="fas fa-check-circle me-1"></i>Disetujui</span>
+                                            <% } else if (item.status === 'dipinjam') { %>
+                                                <span class="badge bg-primary"><i class="fas fa-handshake me-1"></i>Dipinjam</span>
+                                            <% } else if (item.status === 'dikembalikan') { %>
+                                                <span class="badge bg-success"><i class="fas fa-undo me-1"></i>Dikembalikan</span>
+                                            <% } else if (item.status === 'ditolak') { %>
+                                                <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Ditolak</span>
+                                            <% } else { %>
+                                                <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Dibatalkan</span>
+                                            <% } %>
+
+                                            <% if (item.kondisi_pengembalian && item.kondisi_pengembalian !== 'normal') { %>
+                                                <small class="d-block text-danger mt-1">
+                                                    <i class="fas fa-triangle-exclamation me-1"></i>
+                                                    Kondisi: <%= item.kondisi_pengembalian === 'rusak' ? 'Rusak' : 'Hilang' %>
                                                 </small>
                                             <% } %>
                                         </td>
                                         <td>
-                                            <% if (item.status === 'pending') { %>
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-clock"></i> Menunggu
-                                                </span>
-                                            <% } else if (item.status === 'disetujui') { %>
-                                                <span class="badge bg-info">
-                                                    <i class="fas fa-check-circle"></i> Disetujui
-                                                </span>
-                                            <% } else if (item.status === 'dipinjam') { %>
-                                                <span class="badge bg-primary">
-                                                    <i class="fas fa-handshake"></i> Dipinjam
-                                                </span>
-                                            <% } else if (item.status === 'dikembalikan') { %>
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-undo"></i> Kembali
-                                                </span>
-                                            <% } else if (item.status === 'ditolak') { %>
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-times-circle"></i> Ditolak
-                                                </span>
-                                            <% } else if (item.status === 'dibatalkan') { %>
-                                                <span class="badge bg-secondary">
-                                                    <i class="fas fa-ban"></i> Dibatalkan
-                                                </span>
+                                            <% if (fineAmount > 0) { %>
+                                                <% if (daysOverdue > 0) { %>
+                                                    <span class="badge bg-danger mb-1"><i class="fas fa-exclamation-triangle me-1"></i><%= daysOverdue %> hari telat</span>
+                                                <% } %>
+                                                <div class="small text-muted">Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %></div>
+                                                <div class="mt-2"><span class="badge <%= paymentMeta.className %>"><%= paymentMeta.text %></span></div>
+                                                <% if (item.bukti_pembayaran) { %>
+                                                    <a href="<%= item.bukti_pembayaran %>" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">
+                                                        <i class="fas fa-file-invoice me-1"></i>Lihat Bukti
+                                                    </a>
+                                                <% } %>
+                                                <% if (item.catatan_verifikasi_denda) { %>
+                                                    <small class="d-block text-muted mt-2"><%= item.catatan_verifikasi_denda %></small>
+                                                <% } %>
                                             <% } else { %>
-                                                <span class="badge bg-secondary">
-                                                    <i class="fas fa-question-circle"></i> Tidak Diketahui
-                                                </span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <% if (isOverdue) { %>
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-exclamation-triangle"></i> <%= daysOverdue %> hari
-                                                </span>
-                                                <div class="text-muted small mt-1">
-                                                    Rp <%= new Intl.NumberFormat('id-ID').format(fineAmount) %>
-                                                </div>
-                                            <% } else { %>
-                                                <span class="text-muted fst-italic">-</span>
+                                                <span class="text-muted">-</span>
                                             <% } %>
                                         </td>
                                         <td>
                                             <% if (item.status === 'pending') { %>
-                                                <form action="/peminjaman/batal/<%= item.id %>" method="post" class="d-inline" onsubmit="return confirm('Yakin ingin membatalkan peminjaman ini?');">
+                                                <form action="/peminjaman/batal/<%= item.id %>" method="post" class="d-inline" data-confirm-cancel>
                                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Batalkan">
-                                                        <i class="fas fa-times"></i> Batal
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-times me-1"></i>Batal
+                                                    </button>
+                                                </form>
+                                            <% } else if (canUploadProof) { %>
+                                                <form action="/peminjaman/bayar-denda/<%= item.id %>" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <input type="file" name="bukti_pembayaran" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-upload me-1"></i>Upload Bukti
                                                     </button>
                                                 </form>
                                             <% } else { %>
-                                                <span class="text-muted fst-italic">-</span>
+                                                <span class="text-muted">-</span>
                                             <% } %>
                                         </td>
                                     </tr>
                                 <% }); %>
                             </tbody>
                         </table>
+                    </div>
                 <% } else { %>
                     <div class="text-center py-5">
-                        <div class="mb-4">
-                            <i class="fas fa-history fa-3x text-muted"></i>
-                        </div>
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted mb-2">Belum Ada Riwayat Peminjaman</h5>
-                        <p class="text-muted mb-4">Anda belum pernah mengajukan peminjaman alat. Silakan ajukan peminjaman untuk melihat riwayat di sini.</p>
-                        <a href="/alat" class="btn btn-primary btn-lg">
-                            <i class="fas fa-plus"></i> Ajukan Peminjaman Sekarang
-                        </a>
+                        <p class="text-muted mb-4">Mulai ajukan peminjaman untuk melihat riwayat Anda di halaman ini.</p>
+                        <a href="/alat" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Ajukan Sekarang</a>
                     </div>
                 <% } %>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<style>
-    .badge {
-        font-size: 0.85rem;
-        padding: 6px 12px;
-    }
-    .fw-semibold {
-        font-weight: 600;
-    }
-</style>
+<script src="/js/peminjaman-user-index.js"></script>

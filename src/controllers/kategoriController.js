@@ -1,5 +1,6 @@
 const kategoriService = require("../services/kategoriService");
 const logger = require("../config/logging");
+const { pushFlash } = require("../utils/flash");
 
 // Menampilkan daftar kategori (untuk admin)
 const index = async (req, res) => {
@@ -84,7 +85,7 @@ const destroy = async (req, res) => {
     res.redirect("/admin/kategori");
   } catch (error) {
     logger.error("Error in kategori delete:", error);
-    req.flash("error", error.message || "Terjadi kesalahan");
+    pushFlash(req, "error", error.message || "Terjadi kesalahan");
     res.redirect("/admin/kategori");
   }
 };

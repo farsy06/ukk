@@ -105,10 +105,11 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <span class="icon"><i class="fas fa-users"></i></span>
-                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">User</span>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Peminjam</span>
                 </div>
-                <h3 class="mb-1"><%= stats.user %></h3>
-                <p class="text-muted small mb-3">Pengguna terdaftar</p>
+                <h3 class="mb-1"><%= typeof stats.peminjam !== 'undefined' ? stats.peminjam : stats.user %></h3>
+                <p class="text-muted small mb-1">Akun peminjam</p>
+                <p class="text-muted small mb-3">Petugas: <%= typeof stats.petugas !== 'undefined' ? stats.petugas : '-' %></p>
                 <a href="/admin/user" class="btn btn-sm btn-outline-warning">Kelola</a>
             </div>
         </div>

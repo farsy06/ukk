@@ -1,20 +1,25 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const { pushFlash } = require("../utils/flash");
 
-const uploadDir = path.join(__dirname, "../../public/uploads/alat");
+const alatUploadDir = path.join(__dirname, "../../public/uploads/alat");
+const paymentProofUploadDir = path.join(
+  __dirname,
+  "../../public/uploads/pembayaran",
+);
 
-const ensureUploadDir = () => {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+const ensureUploadDir = (dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 };
 
-const storage = multer.diskStorage({
+const alatStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     try {
-      ensureUploadDir();
-      cb(null, uploadDir);
+      ensureUploadDir(alatUploadDir);
+      cb(null, alatUploadDir);
     } catch (err) {
       cb(err);
     }
@@ -31,7 +36,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (_req, file, cb) => {
+const imageFileFilter = (_req, file, cb) => {
   if (file.mimetype && file.mimetype.startsWith("image/")) {
     return cb(null, true);
   }
@@ -39,9 +44,52 @@ const fileFilter = (_req, file, cb) => {
 };
 
 const uploadAlatImage = multer({
-  storage,
-  fileFilter,
+  storage: alatStorage,
+  fileFilter: imageFileFilter,
   limits: { fileSize: 2 * 1024 * 1024 },
+});
+
+const paymentProofStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      ensureUploadDir(paymentProofUploadDir);
+      cb(null, paymentProofUploadDir);
+    } catch (err) {
+      cb(err);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExt = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+    const safeExt = allowedExt.includes(ext) ? ext : ".jpg";
+    const uniqueName = `payment-${Date.now()}-${Math.round(
+      Math.random() * 1e9,
+    )}${safeExt}`;
+    cb(null, uniqueName);
+  },
+});
+
+const paymentProofFilter = (_req, file, cb) => {
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+  ];
+
+  if (file.mimetype && allowedMimeTypes.includes(file.mimetype)) {
+    return cb(null, true);
+  }
+
+  return cb(
+    new Error("Bukti pembayaran harus berupa JPG, PNG, WEBP, atau PDF"),
+  );
+};
+
+const uploadPaymentProof = multer({
+  storage: paymentProofStorage,
+  fileFilter: paymentProofFilter,
+  limits: { fileSize: 3 * 1024 * 1024 },
 });
 
 module.exports = {
@@ -56,10 +104,28 @@ module.exports = {
           : err.message || "Upload foto gagal";
 
       if (req.accepts("html")) {
-        if (typeof req.flash === "function") {
-          req.flash("error", message);
-        }
+        pushFlash(req, "error", message);
         return res.redirect(req.get("Referrer") || "/admin/alat");
+      }
+
+      return res.status(400).json({
+        error: "UPLOAD_ERROR",
+        message,
+      });
+    });
+  },
+  uploadPaymentProofSingle: (req, res, next) => {
+    uploadPaymentProof.single("bukti_pembayaran")(req, res, (err) => {
+      if (!err) return next();
+
+      const message =
+        err.code === "LIMIT_FILE_SIZE"
+          ? "Ukuran bukti pembayaran maksimal 3MB"
+          : err.message || "Upload bukti pembayaran gagal";
+
+      if (req.accepts("html")) {
+        pushFlash(req, "error", message);
+        return res.redirect(req.get("Referrer") || "/peminjaman");
       }
 
       return res.status(400).json({
