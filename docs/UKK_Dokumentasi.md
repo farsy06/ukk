@@ -297,6 +297,8 @@ erDiagram
     DATETIME last_login
     VARCHAR remember_token
     DATETIME remember_expires
+    VARCHAR reset_password_token
+    DATETIME reset_password_expires
     DATETIME created_at
     DATETIME updated_at
   }
@@ -334,6 +336,15 @@ erDiagram
     DATE tanggal_pengembalian
     TEXT catatan
     DECIMAL denda
+    DECIMAL denda_terlambat
+    DECIMAL denda_insiden
+    ENUM kondisi_pengembalian
+    ENUM status_insiden
+    TEXT catatan_insiden
+    ENUM status_pembayaran_denda
+    VARCHAR bukti_pembayaran
+    DATETIME tanggal_pembayaran_denda
+    TEXT catatan_verifikasi_denda
     DATETIME created_at
     DATETIME updated_at
   }
@@ -398,10 +409,26 @@ flowchart TD
   L0([Mulai]) --> L1[User isi username & password]
   L1 --> L2[POST /login]
   L2 --> L3{User ada?}
-  L3 -- Tidak --> Lx[Flash error: username/password salah] --> Lend([Selesai])
+  L3 -- Tidak --> Lx[Flash error: username/password salah]
+  Lx --> LF{Lupa password?}
+  LF -- Tidak --> Lend([Selesai])
+  LF -- Ya --> F1[GET /forgot-password]
+  F1 --> F2[Input username/email]
+  F2 --> F3[POST /forgot-password]
+  F3 --> F4[Generate token reset + expire]
+  F4 --> F5[Kirim email reset link]
+  F5 --> F6[GET /reset-password/:token]
+  F6 --> F7[Input password baru + konfirmasi]
+  F7 --> F8[POST /reset-password/:token]
+  F8 --> F9{Token valid?}
+  F9 -- Ya --> F10[Update password + clear token]
+  F10 --> F11[Redirect /login]
+  F11 --> Lend
+  F9 -- Tidak --> F12[Flash error token invalid/expired]
+  F12 --> F1
   L3 -- Ya --> L4[Validasi password bcrypt]
   L4 --> L5{Password benar?}
-  L5 -- Tidak --> Lx --> Lend
+  L5 -- Tidak --> Lx
   L5 -- Ya --> L6[Set session: userId, userRole]
   L6 --> L7[Update last_login]
   L7 --> L8{rememberMe?}
@@ -417,8 +444,21 @@ flowchart TD
 ```text
 function login(username, password, rememberMe):
   user = find User where username
-  if user not found: return error
-  if !bcryptCompare(password, user.password): return error
+  if user not found:
+    show error("Username atau password salah")
+    if user memilih "Lupa password?":
+      return forgotPasswordFlow()
+    return
+
+  if !user.is_active:
+    show error("Akun tidak aktif")
+    return
+
+  if !bcryptCompare(password, user.password):
+    show error("Username atau password salah")
+    if user memilih "Lupa password?":
+      return forgotPasswordFlow()
+    return
 
   session.userId = user.id
   session.userRole = user.role
@@ -430,9 +470,25 @@ function login(username, password, rememberMe):
 
   save(user)
   redirectByRole(user.role)
+
+function forgotPasswordFlow():
+  input identifier (username/email)
+  token = generateResetToken()
+  store hash(token) + reset_expiry
+  send reset email with /reset-password/:token
+
+  user opens reset link and submits new password
+  if token invalid or expired:
+    show error("Token tidak valid/kedaluwarsa")
+    return
+
+  update password (bcrypt hash)
+  clear reset token
+  clear remember token lama
+  redirect /login
 ```
 
-Sumber implementasi: `src/controllers/userController.js` (`showLogin`, `login`, `logout`).
+Sumber implementasi: `src/controllers/userController.js` (`showLogin`, `login`, `showForgotPassword`, `requestPasswordReset`, `showResetPassword`, `resetPassword`, `logout`).
 
 ### 4.2 Proses Peminjaman Alat (Pengajuan oleh Peminjam)
 
