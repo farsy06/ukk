@@ -114,6 +114,14 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    reset_password_token: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    reset_password_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -246,28 +254,60 @@ User.prototype.clearRememberToken = function () {
 User.findByUsername = function (username) {
   return this.findOne({
     where: { username },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+    attributes: {
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
+    },
   });
 };
 
 User.findByEmail = function (email) {
   return this.findOne({
     where: { email },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+    attributes: {
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
+    },
   });
 };
 
 User.getActiveUsers = function () {
   return this.findAll({
     where: { is_active: true },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+    attributes: {
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
+    },
   });
 };
 
 User.getUsersByRole = function (role) {
   return this.findAll({
     where: { role, is_active: true },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+    attributes: {
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
+    },
   });
 };
 
@@ -282,7 +322,15 @@ User.findByRememberToken = async function (token) {
       },
       is_active: true,
     },
-    attributes: { exclude: ["password", "remember_token", "remember_expires"] },
+    attributes: {
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
+    },
   });
 
   // Validate each candidate's token using bcrypt
@@ -292,7 +340,13 @@ User.findByRememberToken = async function (token) {
     if (fullUser && fullUser.validateRememberToken(token)) {
       return this.findByPk(fullUser.id, {
         attributes: {
-          exclude: ["password", "remember_token", "remember_expires"],
+          exclude: [
+            "password",
+            "remember_token",
+            "remember_expires",
+            "reset_password_token",
+            "reset_password_expires",
+          ],
         },
       });
     }

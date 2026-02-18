@@ -60,7 +60,13 @@ const { ROLES } = require("../../src/utils/constants");
 describe("UserService", () => {
   let userService;
   const safeAttributes = {
-    exclude: ["password", "remember_token", "remember_expires"],
+    exclude: [
+      "password",
+      "remember_token",
+      "remember_expires",
+      "reset_password_token",
+      "reset_password_expires",
+    ],
   };
 
   const mockUser = {
@@ -214,6 +220,53 @@ describe("UserService", () => {
       expect(User.findByPk).toHaveBeenCalledWith(999, {
         attributes: safeAttributes,
       });
+    });
+  });
+
+  describe("authentication/session helpers", () => {
+    it("recordLogin should update last_login and save user", async () => {
+      const loginUser = {
+        ...mockUser,
+        save: jest.fn(),
+        generateRememberToken: jest.fn(() => "remember-token"),
+      };
+
+      const token = await userService.recordLogin(loginUser, false);
+
+      expect(token).toBeNull();
+      expect(loginUser.last_login).toBeInstanceOf(Date);
+      expect(loginUser.generateRememberToken).not.toHaveBeenCalled();
+      expect(loginUser.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("recordLogin should issue remember token when rememberMe is true", async () => {
+      const loginUser = {
+        ...mockUser,
+        save: jest.fn(),
+        generateRememberToken: jest.fn(() => "remember-token"),
+      };
+
+      const token = await userService.recordLogin(loginUser, true);
+
+      expect(token).toBe("remember-token");
+      expect(loginUser.last_login).toBeInstanceOf(Date);
+      expect(loginUser.generateRememberToken).toHaveBeenCalledTimes(1);
+      expect(loginUser.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("rotateRememberToken should issue new token and persist user", async () => {
+      const rememberUser = {
+        ...mockUser,
+        save: jest.fn(),
+        generateRememberToken: jest.fn(() => "rotated-token"),
+      };
+
+      const token = await userService.rotateRememberToken(rememberUser);
+
+      expect(token).toBe("rotated-token");
+      expect(rememberUser.last_login).toBeInstanceOf(Date);
+      expect(rememberUser.generateRememberToken).toHaveBeenCalledTimes(1);
+      expect(rememberUser.save).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -7,8 +7,14 @@ class users {
   nama : VARCHAR(100)
   username : VARCHAR(50)
   email : VARCHAR(100)
+  password : VARCHAR(255)
   role : ENUM
   is_active : BOOLEAN
+  last_login : DATETIME
+  remember_token : VARCHAR(255)
+  remember_expires : DATETIME
+  reset_password_token : VARCHAR(255)
+  reset_password_expires : DATETIME
 }
 
 class kategori {

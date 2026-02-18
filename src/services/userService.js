@@ -2,7 +2,10 @@ const User = require("../models/User");
 const LogAktivitas = require("../models/LogAktivitas");
 const { cacheHelper } = require("../middleware/caching");
 const logger = require("../config/logging");
+const appConfig = require("../config/appConfig");
 const { ROLES } = require("../utils/constants");
+const crypto = require("crypto");
+const { Op } = require("sequelize");
 
 /**
  * User Service
@@ -11,7 +14,13 @@ const { ROLES } = require("../utils/constants");
 class UserService {
   constructor() {
     this.safeUserAttributes = {
-      exclude: ["password", "remember_token", "remember_expires"],
+      exclude: [
+        "password",
+        "remember_token",
+        "remember_expires",
+        "reset_password_token",
+        "reset_password_expires",
+      ],
     };
   }
   /**
@@ -365,6 +374,203 @@ class UserService {
 
     const existing = await User.findOne({ where });
     return !existing;
+  }
+
+  /**
+   * Authenticate login by username and password
+   * @param {string} username - Username
+   * @param {string} password - Plain password
+   * @returns {Promise<Object>} - Authenticated user instance
+   */
+  async authenticate(username, password) {
+    const normalizedUsername = String(username || "").trim();
+    const user = await User.findOne({
+      where: { username: normalizedUsername },
+    });
+
+    if (!user) {
+      const error = new Error("Username atau password salah");
+      error.code = "INVALID_CREDENTIALS";
+      throw error;
+    }
+
+    if (!user.is_active) {
+      const error = new Error("Akun tidak aktif");
+      error.code = "ACCOUNT_INACTIVE";
+      throw error;
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      const error = new Error("Username atau password salah");
+      error.code = "INVALID_CREDENTIALS";
+      throw error;
+    }
+
+    return user;
+  }
+
+  /**
+   * Clear remember-me token for user
+   * @param {number} userId - User ID
+   * @returns {Promise<void>}
+   */
+  async clearRememberToken(userId) {
+    await User.update(
+      { remember_token: null, remember_expires: null },
+      { where: { id: userId } },
+    );
+  }
+
+  /**
+   * Find user by remember-me token
+   * @param {string} token - Plain remember token
+   * @returns {Promise<Object|null>}
+   */
+  async findByRememberToken(token) {
+    return User.findByRememberToken(token);
+  }
+
+  /**
+   * Find user by ID with safe attributes
+   * @param {number} userId - User ID
+   * @returns {Promise<Object|null>}
+   */
+  async getSafeById(userId) {
+    return User.findByPk(userId, {
+      attributes: this.safeUserAttributes,
+    });
+  }
+
+  /**
+   * Rotate remember token and update last login timestamp
+   * @param {Object} user - Sequelize user instance
+   * @returns {Promise<string>} - New plain remember token
+   */
+  async rotateRememberToken(user) {
+    user.last_login = new Date();
+    const newToken = user.generateRememberToken();
+    await user.save();
+    return newToken;
+  }
+
+  /**
+   * Record successful login and optionally issue remember token
+   * @param {Object} user - Sequelize user instance
+   * @param {boolean} rememberMe - Whether remember-me is requested
+   * @returns {Promise<string|null>} - Remember token when requested
+   */
+  async recordLogin(user, rememberMe = false) {
+    user.last_login = new Date();
+
+    let token = null;
+    if (rememberMe) {
+      token = user.generateRememberToken();
+    }
+
+    await user.save();
+    return token;
+  }
+
+  /**
+   * Request password reset token by username or email
+   * @param {string} identifier - Username or email
+   * @returns {Promise<{requested: boolean, resetUrl?: string, email?: string}>}
+   */
+  async requestPasswordReset(identifier) {
+    const normalized = String(identifier || "").trim();
+    if (!normalized) {
+      return { requested: false };
+    }
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [{ username: normalized }, { email: normalized }],
+      },
+    });
+
+    // Do not reveal whether an account exists
+    if (!user || !user.is_active) {
+      return { requested: true };
+    }
+
+    const plainToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(plainToken)
+      .digest("hex");
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    await User.update(
+      {
+        reset_password_token: hashedToken,
+        reset_password_expires: expiresAt,
+      },
+      { where: { id: user.id } },
+    );
+
+    const baseUrl = appConfig.app.url;
+    const resetUrl = `${baseUrl}/reset-password/${plainToken}`;
+
+    logger.info(`Password reset requested for user ${user.id}`);
+
+    return { requested: true, resetUrl, email: user.email };
+  }
+
+  /**
+   * Validate password reset token and return user
+   * @param {string} token - Plain reset token from URL
+   * @returns {Promise<Object|null>}
+   */
+  async findByResetPasswordToken(token) {
+    const normalizedToken = String(token || "").trim();
+    if (!normalizedToken) {
+      return null;
+    }
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(normalizedToken)
+      .digest("hex");
+
+    return User.findOne({
+      where: {
+        reset_password_token: hashedToken,
+        reset_password_expires: {
+          [Op.gt]: new Date(),
+        },
+        is_active: true,
+      },
+    });
+  }
+
+  /**
+   * Reset password by valid reset token
+   * @param {string} token - Plain reset token
+   * @param {string} newPassword - New password
+   * @returns {Promise<boolean>}
+   */
+  async resetPasswordByToken(token, newPassword) {
+    const user = await this.findByResetPasswordToken(token);
+    if (!user) {
+      return false;
+    }
+
+    user.password = newPassword;
+    user.reset_password_token = null;
+    user.reset_password_expires = null;
+    user.remember_token = null;
+    user.remember_expires = null;
+
+    await user.save();
+
+    await LogAktivitas.create({
+      user_id: user.id,
+      aktivitas: "Melakukan reset password akun",
+    });
+
+    logger.info(`Password reset completed for user ${user.id}`);
+    return true;
   }
 }
 

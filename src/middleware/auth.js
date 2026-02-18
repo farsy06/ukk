@@ -1,10 +1,7 @@
-const User = require("../models/User");
+const userService = require("../services/userService");
 const logger = require("../config/logging");
 const { AuthenticationError, AuthorizationError } = require("../utils/helpers");
 const constants = require("../utils/constants");
-const safeUserAttributes = {
-  attributes: { exclude: ["password", "remember_token", "remember_expires"] },
-};
 
 /**
  * Middleware untuk mengecek apakah user sudah login
@@ -22,13 +19,10 @@ const isAuthenticated = async (req, res, next) => {
         (req.cookies && req.cookies.remember_token) ||
         (req.signedCookies && req.signedCookies.remember_token);
       if (token) {
-        const user = await User.findByRememberToken(token);
+        const user = await userService.findByRememberToken(token);
         if (user) {
-          user.last_login = new Date();
-
           // Token rotation: generate new token and invalidate old one
-          const newToken = user.generateRememberToken();
-          await user.save();
+          const newToken = await userService.rotateRememberToken(user);
 
           // Restore session
           req.session.userId = user.id;
@@ -56,7 +50,7 @@ const isAuthenticated = async (req, res, next) => {
     }
 
     // Ambil data user dari database
-    const user = await User.findByPk(req.session.userId, safeUserAttributes);
+    const user = await userService.getSafeById(req.session.userId);
     if (!user) {
       logger.warn(`Invalid session for userId: ${req.session.userId}`);
       req.session.destroy();
@@ -65,6 +59,11 @@ const isAuthenticated = async (req, res, next) => {
     }
     if (!user.is_active) {
       logger.warn(`Inactive user session blocked: ${user.id}`);
+      try {
+        await userService.clearRememberToken(user.id);
+      } catch {
+        logger.warn(`Failed to clear remember token for user ${user.id}`);
+      }
       req.session.destroy();
       res.clearCookie("remember_token");
       return res.redirect("/login");

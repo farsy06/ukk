@@ -19,7 +19,27 @@ if (User ditemukan?) then (Ya)
     :Redirect sesuai role\n(admin/petugas/peminjam);
   else (Tidak)
     :Flash error\n"Username atau password salah";
-    :Redirect /login;
+    :Tampilkan opsi\n"Lupa password?";
+    if (Lupa password?) then (Ya)
+      :GET /forgot-password;
+      :Input username/email;
+      :POST /forgot-password;
+      :Generate reset token + expire;
+      :Kirim email reset link;
+      :Buka link /reset-password/:token;
+      :Input password baru\n+ konfirmasi;
+      :POST /reset-password/:token;
+      if (Token valid & belum expired?) then (Ya)
+        :Update password (bcrypt hash);\nclear reset token;
+        :Flash sukses;
+        :Redirect /login;
+      else (Tidak)
+        :Flash error\n"Token tidak valid/kedaluwarsa";
+        :Redirect /forgot-password;
+      endif
+    else (Tidak)
+      :Redirect /login;
+    endif
   endif
   else (Tidak)
     :Flash error\n"Akun dinonaktifkan";
@@ -27,7 +47,27 @@ if (User ditemukan?) then (Ya)
   endif
 else (Tidak)
   :Flash error\n"Username atau password salah";
-  :Redirect /login;
+  :Tampilkan opsi\n"Lupa password?";
+  if (Lupa password?) then (Ya)
+    :GET /forgot-password;
+    :Input username/email;
+    :POST /forgot-password;
+    :Generate reset token + expire;
+    :Kirim email reset link;
+    :Buka link /reset-password/:token;
+    :Input password baru\n+ konfirmasi;
+    :POST /reset-password/:token;
+    if (Token valid & belum expired?) then (Ya)
+      :Update password (bcrypt hash);\nclear reset token;
+      :Flash sukses;
+      :Redirect /login;
+    else (Tidak)
+      :Flash error\n"Token tidak valid/kedaluwarsa";
+      :Redirect /forgot-password;
+    endif
+  else (Tidak)
+    :Redirect /login;
+  endif
 endif
 
 stop

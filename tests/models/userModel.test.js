@@ -76,13 +76,25 @@ describe("User model security", () => {
         is_active: true,
       },
       attributes: {
-        exclude: ["password", "remember_token", "remember_expires"],
+        exclude: [
+          "password",
+          "remember_token",
+          "remember_expires",
+          "reset_password_token",
+          "reset_password_expires",
+        ],
       },
     });
     expect(User.findByPk).toHaveBeenCalledWith(123);
     expect(User.findByPk).toHaveBeenCalledWith(123, {
       attributes: {
-        exclude: ["password", "remember_token", "remember_expires"],
+        exclude: [
+          "password",
+          "remember_token",
+          "remember_expires",
+          "reset_password_token",
+          "reset_password_expires",
+        ],
       },
     });
     expect(fullUser.validateRememberToken).toHaveBeenCalledWith(token);

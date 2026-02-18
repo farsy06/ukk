@@ -21,10 +21,10 @@ const { errorHandler, notFoundHandler } = require("./middleware/asyncHandler");
 // Import routes
 const webRoutes = require("./routes/web");
 const { setHttpCachePolicy } = require("./middleware/caching");
+const userService = require("./services/userService");
 
 // Import models dan associations
 const { defineAssociations } = require("./models/associations");
-const User = require("./models/User"); // Import User model at the top
 
 const app = express();
 const PORT = appConfig.app.port;
@@ -206,7 +206,7 @@ async function startServer() {
     app.use(async (req, res, next) => {
       try {
         if (req.session.userId) {
-          const user = await User.findByPk(req.session.userId);
+          const user = await userService.getSafeById(req.session.userId);
           if (user) {
             req.user = user;
             res.locals.user = user;

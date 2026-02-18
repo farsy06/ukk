@@ -1,9 +1,9 @@
 const userService = require("../services/userService");
-const User = require("../models/User");
 const logger = require("../config/logging");
 const { ROLES } = require("../utils/constants");
 const appConfig = require("../config/appConfig");
 const { pushFlash } = require("../utils/flash");
+const mailService = require("../services/mailService");
 
 // Import cache helper
 const { cacheHelper } = require("../middleware/caching");
@@ -100,6 +100,137 @@ const showLogin = (req, res) => {
 };
 
 /**
+ * Display forgot password form
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered forgot password view
+ */
+const showForgotPassword = (req, res) => {
+  logger.info("Displaying forgot password form");
+
+  res.render("auth/forgot-password", {
+    title: "Lupa Password",
+    data: req.flash("data")[0] || {},
+  });
+};
+
+/**
+ * Process forgot password request
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Redirect to forgot password page
+ */
+const requestPasswordReset = async (req, res) => {
+  const identifier = String(req.body.identifier || "").trim();
+
+  if (!identifier) {
+    pushFlash(req, "error", "Username atau email harus diisi");
+    req.flash("data", { identifier });
+    return res.redirect("/forgot-password");
+  }
+
+  try {
+    const result = await userService.requestPasswordReset(identifier);
+    if (result && result.resetUrl && result.email) {
+      try {
+        await mailService.sendPasswordResetEmail({
+          to: result.email,
+          resetUrl: result.resetUrl,
+          expiresMinutes: 30,
+        });
+      } catch (mailError) {
+        logger.error("Failed to send password reset email:", mailError);
+      }
+    }
+
+    pushFlash(
+      req,
+      "success",
+      "Jika akun ditemukan, tautan reset password telah dibuat.",
+    );
+
+    // Expose reset URL only in development to support local testing without email service.
+    if (process.env.NODE_ENV !== "production" && result?.resetUrl) {
+      pushFlash(req, "info", `Tautan reset (dev): ${result.resetUrl}`);
+    }
+
+    return res.redirect("/forgot-password");
+  } catch (error) {
+    logger.error("Forgot password request failed:", error);
+    pushFlash(req, "error", "Terjadi kesalahan saat memproses permintaan");
+    req.flash("data", { identifier });
+    return res.redirect("/forgot-password");
+  }
+};
+
+/**
+ * Display reset password form
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Rendered reset password view
+ */
+const showResetPassword = async (req, res) => {
+  const token = req.params.token;
+  const user = await userService.findByResetPasswordToken(token);
+
+  if (!user) {
+    pushFlash(
+      req,
+      "error",
+      "Token reset password tidak valid atau kedaluwarsa",
+    );
+    return res.redirect("/forgot-password");
+  }
+
+  return res.render("auth/reset-password", {
+    title: "Reset Password",
+    token,
+  });
+};
+
+/**
+ * Process reset password
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} - Redirect to login page on success
+ */
+const resetPassword = async (req, res) => {
+  const token = req.params.token;
+  const password = String(req.body.password || "");
+  const confirmPassword = String(req.body.confirmPassword || "");
+
+  if (!password || !confirmPassword) {
+    pushFlash(req, "error", "Password dan konfirmasi password harus diisi");
+    return res.redirect(`/reset-password/${token}`);
+  }
+
+  if (password !== confirmPassword) {
+    pushFlash(req, "error", "Password dan konfirmasi password tidak sesuai");
+    return res.redirect(`/reset-password/${token}`);
+  }
+
+  try {
+    const success = await userService.resetPasswordByToken(token, password);
+
+    if (!success) {
+      pushFlash(
+        req,
+        "error",
+        "Token reset password tidak valid atau sudah kedaluwarsa",
+      );
+      return res.redirect("/forgot-password");
+    }
+
+    pushFlash(req, "success", "Password berhasil direset. Silakan login.");
+    return res.redirect("/login");
+  } catch (error) {
+    logger.error("Reset password failed:", error);
+    pushFlash(req, "error", error.message || "Gagal mereset password");
+    return res.redirect(`/reset-password/${token}`);
+  }
+};
+
+/**
  * Process user login
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -109,25 +240,24 @@ const login = async (req, res) => {
   const { username, password, rememberMe } = req.body;
   logger.info(`Login attempt for username: ${username}`);
 
-  // Find user by username
-  const user = await User.findOne({ where: { username } });
-  if (!user) {
-    logger.warn(`Login failed: user ${username} not found`);
-    pushFlash(req, "error", "Username atau password salah");
-    return res.redirect("/login");
-  }
+  let user;
+  try {
+    user = await userService.authenticate(username, password);
+  } catch (error) {
+    if (error.code === "ACCOUNT_INACTIVE") {
+      logger.warn(`Login blocked: inactive user ${username}`);
+      pushFlash(req, "error", "Akun tidak aktif");
+      return res.redirect("/login");
+    }
 
-  if (!user.is_active) {
-    logger.warn(`Login blocked: inactive user ${username}`);
-    pushFlash(req, "error", "Akun tidak aktif");
-    return res.redirect("/login");
-  }
+    if (error.code === "INVALID_CREDENTIALS") {
+      logger.warn(`Login failed: invalid credentials for user ${username}`);
+      pushFlash(req, "error", "Username atau password salah");
+      return res.redirect("/login");
+    }
 
-  // Verify password
-  const isPasswordValid = await user.comparePassword(password);
-  if (!isPasswordValid) {
-    logger.warn(`Login failed: invalid password for user ${username}`);
-    pushFlash(req, "error", "Username atau password salah");
+    logger.error("Login failed:", error);
+    pushFlash(req, "error", "Terjadi kesalahan saat login");
     return res.redirect("/login");
   }
 
@@ -136,13 +266,13 @@ const login = async (req, res) => {
   req.session.userRole = user.role;
   logger.info(`User logged in successfully: ${user.id} (${user.role})`);
 
-  // Update last login time
-  user.last_login = new Date();
-
-  // Handle remember me functionality
+  // Persist login metadata and optionally issue remember-me token
+  const rememberToken = await userService.recordLogin(
+    user,
+    Boolean(rememberMe),
+  );
   if (rememberMe) {
-    const token = user.generateRememberToken();
-    res.cookie("remember_token", token, {
+    res.cookie("remember_token", rememberToken, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: appConfig.security.rememberMe.cookie.secure,
@@ -150,8 +280,6 @@ const login = async (req, res) => {
     });
     logger.info(`Remember token generated for user ${user.id}`);
   }
-
-  await user.save();
 
   // Redirect based on role
   if (user.role === ROLES.ADMIN) {
@@ -176,10 +304,7 @@ const logout = async (req, res) => {
   // Clear remember token if exists
   if (req.user) {
     try {
-      await User.update(
-        { remember_token: null, remember_expires: null },
-        { where: { id: req.user.id } },
-      );
+      await userService.clearRememberToken(req.user.id);
       logger.info(`Remember token cleared for user ${userId}`);
     } catch (error) {
       logger.error(`Failed to clear remember token for user ${userId}:`, error);
@@ -215,6 +340,10 @@ module.exports = {
   showRegister,
   register,
   showLogin,
+  showForgotPassword,
+  requestPasswordReset,
+  showResetPassword,
+  resetPassword,
   login,
   logout,
 };

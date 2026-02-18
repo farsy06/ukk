@@ -40,6 +40,7 @@ Dokumen ini menyajikan metode pengembangan **Waterfall (sederhana/prototype)**, 
 #### Kebutuhan fungsional (ringkas)
 
 - Autentikasi berbasis session + (opsional) “remember me”.
+- Fitur lupa password dan reset password berbasis token.
 - Otorisasi berbasis role.
 - Validasi input (tanggal peminjaman, jumlah, form required).
 - Validasi form sisi-klien untuk auth dan peminjaman (JavaScript di `public/js/`).
@@ -92,6 +93,7 @@ Pengujian dilakukan menggunakan Jest (lihat script `npm run test`) dengan fokus:
 Contoh skenario uji inti (minimal):
 
 - Login: username tidak ditemukan, password salah, sukses login dan redirect sesuai role.
+- Forgot/Reset password: request reset via username/email, token invalid/kedaluwarsa ditolak, token valid berhasil ubah password.
 - Pengajuan peminjaman: tanggal tidak valid, stok tidak cukup, sukses membuat `pending`.
 - Persetujuan petugas: hanya `pending` yang bisa disetujui; stok berkurang.
 - Pengembalian: status valid untuk return; stok bertambah; status menjadi `dikembalikan`.
@@ -132,6 +134,8 @@ Sumber: `src/models/User.js`
 | `last_login` | DATETIME | nullable | Terakhir login |
 | `remember_token` | VARCHAR(255) | nullable | Token (hash) remember-me |
 | `remember_expires` | DATETIME | nullable | Expire token |
+| `reset_password_token` | VARCHAR(255) | nullable | Token (hash) reset password |
+| `reset_password_expires` | DATETIME | nullable | Expire token reset password |
 | `created_at` | DATETIME | default NOW | Waktu dibuat |
 | `updated_at` | DATETIME | default NOW | Waktu diubah |
 
@@ -561,10 +565,14 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 #### Rute utama Autentikasi
 
 - `GET /login`, `POST /login`, `POST /logout` (`src/routes/web.js`)
+- `GET /forgot-password`, `POST /forgot-password`
+- `GET /reset-password/:token`, `POST /reset-password/:token`
 
 #### Input Autentikasi
 
 - `username`, `password`, `rememberMe` (opsional)
+- Forgot password: `identifier` (username atau email)
+- Reset password: `token` (route param), `password`, `confirmPassword`
 
 #### Proses Autentikasi
 
@@ -572,16 +580,34 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - Set session (`req.session.userId`, `req.session.userRole`).
 - Redirect berdasarkan role.
 - Logout: hapus session + clear cookie remember token.
+- Forgot password:
+  - User memasukkan username/email.
+  - Sistem generate token reset (hash disimpan di DB, token plain dikirim lewat email).
+  - Email reset dikirim via SMTP (Mailpit untuk environment lokal).
+- Reset password:
+  - Validasi token (harus cocok dan belum kedaluwarsa).
+  - Password baru disimpan (hash bcrypt), token reset dihapus (single-use).
+  - Remember token lama dibersihkan.
 
 #### Output Autentikasi
 
 - Redirect ke dashboard sesuai role (admin/petugas/peminjam) atau kembali ke login dengan error.
+- Forgot password: tampil pesan generik (tidak membocorkan apakah akun ada) dan email reset jika akun valid.
+- Reset password: redirect ke login dengan notifikasi sukses jika token valid.
 
 #### Fungsi/Method terkait Autentikasi
 
-- `src/controllers/userController.js`: `showLogin()`, `login()`, `logout()`
+- `src/controllers/userController.js`: `showLogin()`, `login()`, `logout()`, `showForgotPassword()`, `requestPasswordReset()`, `showResetPassword()`, `resetPassword()`
+- `src/services/userService.js`: `authenticate()`, `recordLogin()`, `requestPasswordReset()`, `findByResetPasswordToken()`, `resetPasswordByToken()`
+- `src/services/mailService.js`: `sendPasswordResetEmail()`
 - `src/models/User.js`: `comparePassword()`, `generateRememberToken()`, `validateRememberToken()`
 - `src/middleware/auth.js`: `isAuthenticated`, `requireAdmin`, `requirePetugas`, `requirePeminjam`
+
+#### Catatan Konfigurasi Email Lokal (Mailpit)
+
+- SMTP aplikasi: `MAIL_HOST=localhost`, `MAIL_PORT=1025`, `MAIL_SECURE=false`.
+- Inbox viewer Mailpit: `http://localhost:8025`.
+- Domain tautan reset mengikuti `APP_URL` pada file `.env`.
 
 ### 5.2 Modul Manajemen Kategori (Admin)
 
@@ -772,6 +798,8 @@ Sumber: `src/routes/web.js`
 - `GET /`, `GET /home`
 - `GET /tos`
 - `GET /login`, `POST /login`
+- `GET /forgot-password`, `POST /forgot-password`
+- `GET /reset-password/:token`, `POST /reset-password/:token`
 - `GET /register`, `POST /register`
 - `POST /logout`
 

@@ -60,6 +60,21 @@ router.get("/tos", asyncHandler(homeController.tos)); // Terms of Service
 
 router.get("/login", asyncHandler(userController.showLogin));
 router.post("/login", loginLimiter, asyncHandler(userController.login));
+router.get("/forgot-password", asyncHandler(userController.showForgotPassword));
+router.post(
+  "/forgot-password",
+  loginLimiter,
+  asyncHandler(userController.requestPasswordReset),
+);
+router.get(
+  "/reset-password/:token",
+  asyncHandler(userController.showResetPassword),
+);
+router.post(
+  "/reset-password/:token",
+  loginLimiter,
+  asyncHandler(userController.resetPassword),
+);
 
 router.get("/register", asyncHandler(userController.showRegister));
 router.post(

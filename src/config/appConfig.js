@@ -38,7 +38,10 @@ const appConfig = {
     name: "eSarpra",
     port: process.env.PORT || 3000,
     environment: process.env.NODE_ENV || "development",
-    baseUrl: process.env.BASE_URL || "http://localhost:3000",
+    url: process.env.APP_URL || process.env.BASE_URL || "http://localhost:3000",
+    // Backward compatibility for existing code paths that still read baseUrl.
+    baseUrl:
+      process.env.APP_URL || process.env.BASE_URL || "http://localhost:3000",
   },
 
   // Password settings

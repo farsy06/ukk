@@ -3,6 +3,18 @@ const logger = require("./logging");
 const path = require("path");
 const mysql = require("mysql2/promise");
 
+const resolveDbPassword = () => {
+  if (typeof process.env.DB_PASS !== "undefined") {
+    return process.env.DB_PASS;
+  }
+
+  if (typeof process.env.DB_PASSWORD !== "undefined") {
+    return process.env.DB_PASSWORD;
+  }
+
+  return "";
+};
+
 // Load appropriate .env file based on NODE_ENV
 const env = process.env.NODE_ENV || "development";
 
@@ -37,7 +49,7 @@ if (env === "test") {
 async function createDatabaseIfNotExists() {
   const dbName = process.env.DB_NAME || "ukk";
   const dbUser = process.env.DB_USER || "root";
-  const dbPassword = process.env.DB_PASSWORD || "";
+  const dbPassword = resolveDbPassword();
   const dbHost = process.env.DB_HOST || "localhost";
   const dbPort = process.env.DB_PORT || 3306;
 
@@ -76,7 +88,7 @@ async function createDatabaseIfNotExists() {
 // Initialize Sequelize immediately to ensure it's available when models are imported
 const dbName = process.env.DB_NAME || "ukk";
 const dbUser = process.env.DB_USER || "root";
-const dbPassword = process.env.DB_PASSWORD || "";
+const dbPassword = resolveDbPassword();
 const dbHost = process.env.DB_HOST || "localhost";
 const dbPort = process.env.DB_PORT || 3306;
 
