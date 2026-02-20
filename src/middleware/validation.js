@@ -1,7 +1,48 @@
 const logger = require("../config/logging");
 const { ValidationError } = require("../utils/helpers");
 const appConfig = require("../config/appConfig");
+const { ROLES } = require("../utils/constants");
 const validator = require("validator");
+
+const isMissingValue = (value) =>
+  value === undefined || value === null || value === "";
+
+const parseDateValue = (value) => {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const startOfDay = (date) => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+};
+
+const createEnumValidator = ({
+  field,
+  values,
+  messagePrefix,
+  logLabel,
+  normalizeValue = (value) => value,
+}) => {
+  return () => {
+    return (req, res, next) => {
+      const rawValue = req.body[field];
+      if (isMissingValue(rawValue)) return next();
+
+      const value = normalizeValue(rawValue);
+      if (!values.includes(value)) {
+        logger.warn(`Validation failed: invalid ${logLabel} ${value}`);
+        throw new ValidationError(
+          `${messagePrefix}. Pilih salah satu: ${values.join(", ")}`,
+          field,
+        );
+      }
+
+      return next();
+    };
+  };
+};
 
 /**
  * Validation middleware untuk field yang wajib diisi
@@ -12,7 +53,7 @@ const validateRequired = (fields) => {
   return (req, res, next) => {
     const missing = fields.filter((field) => {
       const value = req.body[field];
-      return value === undefined || value === null || value === "";
+      return isMissingValue(value);
     });
 
     if (missing.length > 0) {
@@ -141,10 +182,12 @@ const validatePasswordMatch = (
  * @param {Array} validRoles - Array role yang valid
  * @returns {Function} - Express middleware function
  */
-const validateRole = (validRoles = ["admin", "petugas", "peminjam"]) => {
+const validateRole = (
+  validRoles = [ROLES.ADMIN, ROLES.PETUGAS, ROLES.PEMINJAM],
+) => {
   return (req, res, next) => {
     const role = req.body.role;
-    if (!role) return next();
+    if (isMissingValue(role)) return next();
 
     if (!validRoles.includes(role)) {
       logger.warn(`Validation failed: invalid role ${role}`);
@@ -161,73 +204,34 @@ const validateRole = (validRoles = ["admin", "petugas", "peminjam"]) => {
  * Validation middleware untuk status alat
  * @returns {Function} - Express middleware function
  */
-const validateAlatStatus = () => {
-  return (req, res, next) => {
-    const status = req.body.status;
-    const validStatus = ["tersedia", "dipinjam", "maintenance"];
-
-    if (!status) return next();
-
-    if (!validStatus.includes(status)) {
-      logger.warn(`Validation failed: invalid alat status ${status}`);
-      throw new ValidationError(
-        `Status alat tidak valid. Pilih salah satu: ${validStatus.join(", ")}`,
-        "status",
-      );
-    }
-    next();
-  };
-};
+const validateAlatStatus = createEnumValidator({
+  field: "status",
+  values: ["tersedia", "dipinjam", "maintenance"],
+  messagePrefix: "Status alat tidak valid",
+  logLabel: "alat status",
+});
 
 /**
  * Validation middleware untuk kondisi alat
  * @returns {Function} - Express middleware function
  */
-const validateAlatKondisi = () => {
-  return (req, res, next) => {
-    const kondisi = req.body.kondisi;
-    const validKondisi = ["baik", "rusak_ringan", "rusak_berat"];
-
-    if (!kondisi) return next();
-
-    if (!validKondisi.includes(kondisi)) {
-      logger.warn(`Validation failed: invalid alat kondisi ${kondisi}`);
-      throw new ValidationError(
-        `Kondisi alat tidak valid. Pilih salah satu: ${validKondisi.join(", ")}`,
-        "kondisi",
-      );
-    }
-    next();
-  };
-};
+const validateAlatKondisi = createEnumValidator({
+  field: "kondisi",
+  values: ["baik", "rusak_ringan", "rusak_berat"],
+  messagePrefix: "Kondisi alat tidak valid",
+  logLabel: "alat kondisi",
+});
 
 /**
  * Validation middleware untuk status peminjaman
  * @returns {Function} - Express middleware function
  */
-const validatePeminjamanStatus = () => {
-  return (req, res, next) => {
-    const status = req.body.status;
-    const validStatus = [
-      "pending",
-      "disetujui",
-      "dipinjam",
-      "dikembalikan",
-      "ditolak",
-    ];
-
-    if (!status) return next();
-
-    if (!validStatus.includes(status)) {
-      logger.warn(`Validation failed: invalid peminjaman status ${status}`);
-      throw new ValidationError(
-        `Status peminjaman tidak valid. Pilih salah satu: ${validStatus.join(", ")}`,
-        "status",
-      );
-    }
-    next();
-  };
-};
+const validatePeminjamanStatus = createEnumValidator({
+  field: "status",
+  values: ["pending", "disetujui", "dipinjam", "dikembalikan", "ditolak"],
+  messagePrefix: "Status peminjaman tidak valid",
+  logLabel: "peminjaman status",
+});
 
 /**
  * Validation middleware untuk tanggal peminjaman
@@ -238,12 +242,14 @@ const validateTanggalPeminjaman = () => {
     const tanggalPinjam = req.body.tanggal_pinjam;
     const tanggalKembali = req.body.tanggal_kembali;
 
-    if (!tanggalPinjam || !tanggalKembali) return next();
+    if (isMissingValue(tanggalPinjam) || isMissingValue(tanggalKembali)) {
+      return next();
+    }
 
-    const pinjam = new Date(tanggalPinjam);
-    const kembali = new Date(tanggalKembali);
+    const pinjam = parseDateValue(tanggalPinjam);
+    const kembali = parseDateValue(tanggalKembali);
 
-    if (isNaN(pinjam.getTime()) || isNaN(kembali.getTime())) {
+    if (!pinjam || !kembali) {
       logger.warn(`Validation failed: invalid date format`);
       throw new ValidationError("Format tanggal tidak valid", "tanggal_pinjam");
     }
@@ -259,11 +265,10 @@ const validateTanggalPeminjaman = () => {
     }
 
     // Cek apakah tanggal pinjam minimal hari ini
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    pinjam.setHours(0, 0, 0, 0);
+    const today = startOfDay(new Date());
+    const pinjamDate = startOfDay(pinjam);
 
-    if (pinjam < today) {
+    if (pinjamDate < today) {
       logger.warn(
         `Validation failed: tanggal pinjam tidak boleh sebelum hari ini`,
       );
@@ -284,9 +289,9 @@ const validateTanggalPeminjaman = () => {
 const validateJumlahPeminjaman = () => {
   return (req, res, next) => {
     const jumlah = req.body.jumlah;
-    if (jumlah === undefined || jumlah === null || jumlah === "") return next();
+    if (isMissingValue(jumlah)) return next();
 
-    const parsed = parseInt(jumlah, 10);
+    const parsed = Number.parseInt(jumlah, 10);
     if (Number.isNaN(parsed) || parsed < 1) {
       logger.warn(`Validation failed: invalid jumlah peminjaman`);
       throw new ValidationError("Jumlah peminjaman harus minimal 1", "jumlah");

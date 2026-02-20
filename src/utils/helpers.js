@@ -77,60 +77,6 @@ class NotFoundError extends Error {
 }
 
 /**
- * Error Handler Middleware
- * @param {Error} err - The error object
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-function errorHandler(err, req, res) {
-  logger.error(`Unhandled Error: ${err.message}`, err.stack);
-
-  // Set default status code if not provided
-  const statusCode = err.statusCode || 500;
-
-  // Log the error details
-  logger.error(`Error Details:`, {
-    statusCode,
-    message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-    url: req.originalUrl,
-    method: req.method,
-    user: req.user ? req.user.id : "anonymous",
-  });
-
-  // Render appropriate error response
-  if (req.accepts("html")) {
-    res.status(statusCode).render("error", {
-      title: `Error ${statusCode}`,
-      message:
-        process.env.NODE_ENV === "development"
-          ? err.message
-          : "Terjadi kesalahan",
-      error: process.env.NODE_ENV === "development" ? err : null,
-    });
-  } else if (req.accepts("json")) {
-    res.status(statusCode).json({
-      error: {
-        message:
-          process.env.NODE_ENV === "development"
-            ? err.message
-            : "Terjadi kesalahan",
-        code: statusCode,
-        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-      },
-    });
-  } else {
-    res
-      .status(statusCode)
-      .send(
-        process.env.NODE_ENV === "development"
-          ? err.message
-          : "Terjadi kesalahan",
-      );
-  }
-}
-
-/**
  * Validate email format
  * @param {string} email - Email to validate
  * @returns {boolean} - True if email is valid
@@ -150,6 +96,10 @@ function isValidEmail(email) {
  * @returns {boolean} - True if password meets requirements
  */
 function isValidPassword(password) {
+  if (typeof password !== "string") {
+    return false;
+  }
+
   if (password.length < appConfig.password.minLength) {
     return false;
   }
@@ -184,18 +134,28 @@ function getPagination(
   limit = appConfig.pagination.defaultLimit,
   total = 0,
 ) {
-  const pageInt = parseInt(page) || 1;
-  const limitInt = parseInt(limit) || appConfig.pagination.defaultLimit;
+  const parsedPage = Number.parseInt(page, 10);
+  const parsedLimit = Number.parseInt(limit, 10);
+  const pageInt =
+    Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const limitInt =
+    Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? parsedLimit
+      : appConfig.pagination.defaultLimit;
+  const safeTotal = Number.isFinite(Number(total))
+    ? Math.max(0, Number(total))
+    : 0;
+  const totalPages = Math.ceil(safeTotal / limitInt);
 
   return {
     currentPage: pageInt,
     perPage: limitInt,
-    totalItems: total,
-    totalPages: Math.ceil(total / limitInt),
+    totalItems: safeTotal,
+    totalPages,
     hasPrevious: pageInt > 1,
-    hasNext: pageInt < Math.ceil(total / limitInt),
+    hasNext: pageInt < totalPages,
     previousPage: pageInt > 1 ? pageInt - 1 : null,
-    nextPage: pageInt < Math.ceil(total / limitInt) ? pageInt + 1 : null,
+    nextPage: pageInt < totalPages ? pageInt + 1 : null,
   };
 }
 
@@ -250,13 +210,9 @@ module.exports = {
   NotFoundError,
 
   // Utility functions
-  errorHandler,
   isValidEmail,
   isValidPassword,
   getPagination,
   formatDate,
   sanitizeInput,
-
-  // Config access
-  appConfig,
 };

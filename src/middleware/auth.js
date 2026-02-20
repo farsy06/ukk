@@ -1,7 +1,7 @@
 const userService = require("../services/userService");
 const logger = require("../config/logging");
 const { AuthenticationError, AuthorizationError } = require("../utils/helpers");
-const constants = require("../utils/constants");
+const { ROLES } = require("../utils/constants");
 
 /**
  * Middleware untuk mengecek apakah user sudah login
@@ -134,13 +134,9 @@ const checkRole = (roles) => {
  * Middleware khusus untuk role tertentu
  * @description Fungsi helper untuk memudahkan penggunaan checkRole
  */
-const isAdmin = checkRole([constants.ROLES.ADMIN]);
-const isPetugas = checkRole([constants.ROLES.ADMIN, constants.ROLES.PETUGAS]);
-const isPeminjam = checkRole([
-  constants.ROLES.ADMIN,
-  constants.ROLES.PETUGAS,
-  constants.ROLES.PEMINJAM,
-]);
+const isAdmin = checkRole([ROLES.ADMIN]);
+const isPetugas = checkRole([ROLES.ADMIN, ROLES.PETUGAS]);
+const isPeminjam = checkRole([ROLES.ADMIN, ROLES.PETUGAS, ROLES.PEMINJAM]);
 
 /**
  * Middleware untuk cek apakah user adalah admin

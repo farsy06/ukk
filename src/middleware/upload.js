@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const { pushFlash } = require("../utils/flash");
+const { sendWebOrJson } = require("./responseHelpers");
 
 const alatUploadDir = path.join(__dirname, "../../public/uploads/alat");
 const paymentProofUploadDir = path.join(
@@ -103,14 +103,20 @@ module.exports = {
           ? "Ukuran foto maksimal 2MB"
           : err.message || "Upload foto gagal";
 
-      if (req.accepts("html")) {
-        pushFlash(req, "error", message);
-        return res.redirect(req.get("Referrer") || "/admin/alat");
-      }
-
-      return res.status(400).json({
-        error: "UPLOAD_ERROR",
-        message,
+      return sendWebOrJson({
+        req,
+        res,
+        status: 400,
+        web: {
+          mode: "redirect",
+          type: "error",
+          message,
+          fallback: "/admin/alat",
+        },
+        api: {
+          error: "UPLOAD_ERROR",
+          message,
+        },
       });
     });
   },
@@ -123,14 +129,20 @@ module.exports = {
           ? "Ukuran bukti pembayaran maksimal 3MB"
           : err.message || "Upload bukti pembayaran gagal";
 
-      if (req.accepts("html")) {
-        pushFlash(req, "error", message);
-        return res.redirect(req.get("Referrer") || "/peminjaman");
-      }
-
-      return res.status(400).json({
-        error: "UPLOAD_ERROR",
-        message,
+      return sendWebOrJson({
+        req,
+        res,
+        status: 400,
+        web: {
+          mode: "redirect",
+          type: "error",
+          message,
+          fallback: "/peminjaman",
+        },
+        api: {
+          error: "UPLOAD_ERROR",
+          message,
+        },
       });
     });
   },

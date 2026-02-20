@@ -2,16 +2,15 @@
 require("dotenv").config({
   path: "./.env.test.local",
   override: true, // Override any existing environment variables
+  quiet: true,
 });
 process.env.NODE_ENV = "test";
 
 const appConfig = require("../src/config/appConfig");
-const constants = require("../src/utils/constants");
 
 // Test configuration
 const testConfig = {
   ...appConfig,
-  constants,
   app: {
     ...appConfig.app,
     port: 3001,

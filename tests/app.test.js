@@ -2,6 +2,7 @@
 require("dotenv").config({
   path: "./.env.test.local",
   override: true, // Override any existing environment variables
+  quiet: true,
 });
 
 jest.mock("../src/config/logging", () => ({
@@ -132,9 +133,9 @@ const createTestApp = () => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
     res.locals.overdueFinePerDay = appConfig.fines.overduePerDay;
-    res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat("id-ID").format(
-      appConfig.fines.overduePerDay,
-    );
+    res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat(
+      "id-ID",
+    ).format(appConfig.fines.overduePerDay);
     next();
   });
 

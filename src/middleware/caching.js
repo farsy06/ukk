@@ -2,6 +2,104 @@ const NodeCache = require("node-cache");
 const logger = require("../config/logging");
 
 const PUBLIC_CACHEABLE_ROUTES = new Set(["/", "/home", "/tos"]);
+const CACHE_VERSION = "v1";
+const CACHE_TYPE_HTML = "html";
+
+const isSuccessStatus = (statusCode) => statusCode >= 200 && statusCode < 300;
+
+const normalizeQuery = (query) => {
+  return Object.keys(query)
+    .sort()
+    .reduce((obj, key) => {
+      const value = query[key];
+      obj[key] = Array.isArray(value) ? [...value].sort() : value;
+      return obj;
+    }, {});
+};
+
+const toQueryPart = (req, key) => {
+  if (typeof key === "function") {
+    return key(req);
+  }
+
+  return `${req.originalUrl}:${JSON.stringify(normalizeQuery(req.query || {}))}`;
+};
+
+const createCacheKey = (key, req) => {
+  const userKey = req.user && req.user.id ? `user:${req.user.id}` : "user:anon";
+  const baseKey =
+    typeof key === "function" ? key.name || "dynamic" : String(key);
+  const queryPart = toQueryPart(req, key);
+  return `${CACHE_VERSION}:${baseKey}:${userKey}:${queryPart}`;
+};
+
+const sendCachedResponse = (res, cachedData) => {
+  if (cachedData && cachedData.__type === CACHE_TYPE_HTML) {
+    res.setHeader("X-Cache", "HIT");
+    return res.send(cachedData.html);
+  }
+
+  return res.json({
+    ...cachedData,
+    cached: true,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+const hookResponseCaching = ({ res, cacheKey, ttl, resolve, reject }) => {
+  // Override res.json untuk menyimpan ke cache
+  const originalJson = res.json;
+  res.json = function (data) {
+    if (isSuccessStatus(this.statusCode)) {
+      cache.set(cacheKey, data, ttl);
+      logger.info(`Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`);
+      resolve(data);
+    } else {
+      reject(new Error(`Request failed with status ${this.statusCode}`));
+    }
+
+    return originalJson.call(this, data);
+  };
+
+  // Override res.render untuk menyimpan HTML ke cache
+  const originalRender = res.render;
+  res.render = function (view, options, callback) {
+    const renderCallback =
+      typeof options === "function"
+        ? options
+        : typeof callback === "function"
+          ? callback
+          : null;
+    const renderOptions = typeof options === "object" ? options : undefined;
+
+    const done = (err, html) => {
+      if (!err && isSuccessStatus(this.statusCode)) {
+        const payload = { __type: CACHE_TYPE_HTML, html };
+        cache.set(cacheKey, payload, ttl);
+        logger.info(
+          `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
+        );
+        resolve(payload);
+      } else {
+        reject(
+          err || new Error(`Render failed with status ${this.statusCode}`),
+        );
+      }
+
+      if (renderCallback) {
+        return renderCallback(err, html);
+      }
+
+      if (err) {
+        return this.status(500).send(err.message || "Render error");
+      }
+
+      return this.send(html);
+    };
+
+    return originalRender.call(this, view, renderOptions, done);
+  };
+};
 
 const setNoStoreHeaders = (res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
@@ -69,49 +167,13 @@ const inFlightRequests = new Map();
 const cacheMiddleware = (key, ttl = 300) => {
   return (req, res, next) => {
     try {
-      // Generate cache key yang unik
-      const userKey =
-        req.user && req.user.id ? `user:${req.user.id}` : "user:anon";
-
-      let queryPart;
-      if (typeof key === "function") {
-        // For function keys, use the result directly (dynamic key generation)
-        queryPart = key(req);
-      } else {
-        // Normalize query parameters: sort keys and normalize arrays
-        const normalizedQuery = Object.keys(req.query)
-          .sort()
-          .reduce((obj, k) => {
-            const value = req.query[k];
-            // Normalize arrays: sort array values for consistent keys
-            if (Array.isArray(value)) {
-              obj[k] = [...value].sort();
-            } else {
-              obj[k] = value;
-            }
-            return obj;
-          }, {});
-        // Build query string with version prefix
-        queryPart = `${req.originalUrl}:${JSON.stringify(normalizedQuery)}`;
-      }
-
-      // Version prefix allows bulk invalidation on structural changes
-      const cacheKey = `v1:${key}:${userKey}:${queryPart}`;
+      const cacheKey = createCacheKey(key, req);
 
       // Cek cache terlebih dahulu
       const cachedData = cache.get(cacheKey);
       if (cachedData) {
         logger.info(`Cache hit: ${cacheKey.substring(0, 60)}...`);
-        if (cachedData.__type === "html") {
-          res.setHeader("X-Cache", "HIT");
-          return res.send(cachedData.html);
-        }
-
-        return res.json({
-          ...cachedData,
-          cached: true,
-          timestamp: new Date().toISOString(),
-        });
+        return sendCachedResponse(res, cachedData);
       }
 
       // Single-flight: if a request is already in progress for this key, wait for it
@@ -121,94 +183,37 @@ const cacheMiddleware = (key, ttl = 300) => {
           `Single-flight: waiting for in-flight request: ${cacheKey.substring(0, 40)}...`,
         );
         return existingPromise
-          .then((data) => {
-            if (data.__type === "html") {
-              res.setHeader("X-Cache", "HIT");
-              return res.send(data.html);
-            }
-            return res.json({
-              ...data,
-              cached: true,
-              timestamp: new Date().toISOString(),
-            });
-          })
+          .then((data) => sendCachedResponse(res, data))
           .catch((err) => {
             logger.error("Single-flight promise rejected:", err);
             next(err);
           });
       }
 
-      // Create a promise that will be resolved when the cache is populated
+      let resolvePromise;
+      let rejectPromise;
       const promise = new Promise((resolve, reject) => {
-        // Store the promise to prevent duplicate fetches
-        inFlightRequests.set(cacheKey, promise);
+        resolvePromise = resolve;
+        rejectPromise = reject;
+      });
+      inFlightRequests.set(cacheKey, promise);
 
-        // Override res.json untuk menyimpan ke cache
-        const originalJson = res.json;
-        res.json = function (data) {
-          // Simpan ke cache jika response sukses
-          if (this.statusCode >= 200 && this.statusCode < 300) {
-            cache.set(cacheKey, data, ttl);
-            logger.info(
-              `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
-            );
-            resolve(data);
-          } else {
-            reject(new Error(`Request failed with status ${this.statusCode}`));
-          }
-          return originalJson.call(this, data);
-        };
-
-        // Override res.render untuk menyimpan HTML ke cache
-        const originalRender = res.render;
-        res.render = function (view, options, callback) {
-          const renderCallback =
-            typeof options === "function"
-              ? options
-              : typeof callback === "function"
-                ? callback
-                : null;
-          const renderOptions =
-            typeof options === "object" ? options : undefined;
-
-          const done = (err, html) => {
-            if (!err && this.statusCode >= 200 && this.statusCode < 300) {
-              cache.set(cacheKey, { __type: "html", html }, ttl);
-              logger.info(
-                `Cache set: ${cacheKey.substring(0, 60)}... (TTL: ${ttl}s)`,
-              );
-              resolve({ __type: "html", html });
-            } else {
-              const error =
-                err ||
-                new Error(`Render failed with status ${this.statusCode}`);
-              reject(error);
-            }
-
-            if (renderCallback) {
-              return renderCallback(err, html);
-            }
-
-            if (err) {
-              return this.status(500).send(err.message || "Render error");
-            }
-
-            return this.send(html);
-          };
-
-          return originalRender.call(this, view, renderOptions, done);
-        };
-
-        // Also clean up the in-flight map when response finishes (in case middleware chain breaks)
-        res.on("finish", () => {
-          inFlightRequests.delete(cacheKey);
-        });
-        res.on("close", () => {
-          inFlightRequests.delete(cacheKey);
-        });
+      hookResponseCaching({
+        res,
+        cacheKey,
+        ttl,
+        resolve: resolvePromise,
+        reject: rejectPromise,
       });
 
-      promise.catch(() => {});
+      // Ensure cleanup if middleware chain exits unexpectedly.
+      const cleanupInFlight = () => {
+        inFlightRequests.delete(cacheKey);
+      };
+      res.on("finish", cleanupInFlight);
+      res.on("close", cleanupInFlight);
+
+      promise.catch(() => {}).finally(cleanupInFlight);
       next();
     } catch (error) {
       logger.error("Cache middleware error:", error);
@@ -277,7 +282,12 @@ const cacheHelper = {
  */
 const invalidateCache = (patterns) => {
   return (req, res, next) => {
+    let invalidated = false;
+
     const invalidateMatchingKeys = () => {
+      if (invalidated) return;
+      invalidated = true;
+
       patterns.forEach((pattern) => {
         const keys = cache.keys().filter((key) => key.includes(pattern));
         keys.forEach((key) => cache.del(key));
@@ -292,7 +302,7 @@ const invalidateCache = (patterns) => {
     // Override res.json untuk invalidasi cache setelah operasi sukses
     const originalJson = res.json;
     res.json = function (data) {
-      if (this.statusCode >= 200 && this.statusCode < 300) {
+      if (isSuccessStatus(this.statusCode)) {
         invalidateMatchingKeys();
       }
       return originalJson.call(this, data);
@@ -301,7 +311,7 @@ const invalidateCache = (patterns) => {
     // Override res.render untuk invalidasi cache setelah operasi sukses
     const originalRender = res.render;
     res.render = function (view, options, callback) {
-      if (this.statusCode >= 200 && this.statusCode < 300) {
+      if (isSuccessStatus(this.statusCode)) {
         invalidateMatchingKeys();
       }
       return originalRender.call(this, view, options, callback);

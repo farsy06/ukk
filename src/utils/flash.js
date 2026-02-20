@@ -1,11 +1,11 @@
-const FLASH_TYPES = ["success", "error", "info", "warning"];
+const FLASH_TYPES = Object.freeze(["success", "error", "info", "warning"]);
 
-const FLASH_CONFIG = {
+const FLASH_CONFIG = Object.freeze({
   success: { icon: "fas fa-check-circle", className: "alert-success" },
   error: { icon: "fas fa-exclamation-circle", className: "alert-danger" },
   info: { icon: "fas fa-info-circle", className: "alert-info" },
   warning: { icon: "fas fa-triangle-exclamation", className: "alert-warning" },
-};
+});
 
 const toArray = (value) => {
   if (Array.isArray(value)) return value;
@@ -18,6 +18,14 @@ const sanitizeMessage = (message) => {
   return message.trim().slice(0, 500);
 };
 
+const toMessageString = (value) => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return "";
+};
+
 const canUseFlash = (req) => {
   return Boolean(req && typeof req.flash === "function" && req.session);
 };
@@ -27,7 +35,7 @@ const pushFlash = (req, type, message) => {
   if (!FLASH_TYPES.includes(type)) return;
 
   toArray(message).forEach((entry) => {
-    const safeMessage = sanitizeMessage(String(entry));
+    const safeMessage = sanitizeMessage(toMessageString(entry));
     if (!safeMessage) return;
     try {
       req.flash(type, safeMessage);
@@ -58,7 +66,9 @@ const buildAlerts = (req) => {
         return [];
       }
     })();
-    const messages = rawMessages.map((m) => sanitizeMessage(String(m)));
+    const messages = rawMessages.map((m) =>
+      sanitizeMessage(toMessageString(m)),
+    );
     grouped[type] = messages.filter(Boolean);
 
     grouped[type].forEach((text) => {

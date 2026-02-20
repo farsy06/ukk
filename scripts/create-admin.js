@@ -1,3 +1,12 @@
+const path = require("path");
+const dotenv = require("dotenv");
+
+dotenv.config({
+  path: path.resolve(__dirname, "../.env"),
+  override: true,
+  quiet: true,
+});
+
 const { sequelize } = require("../src/config/database");
 const User = require("../src/models/User");
 const { Op } = require("sequelize");

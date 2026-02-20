@@ -1,11 +1,26 @@
+const path = require("path");
+const dotenv = require("dotenv");
+
+const runtimeEnv = process.env.NODE_ENV || "development";
+const envPath =
+  runtimeEnv === "test"
+    ? path.resolve(__dirname, "../.env.test.local")
+    : path.resolve(__dirname, "../.env");
+
+dotenv.config({
+  path: envPath,
+  override: true,
+  quiet: true,
+});
+
 const express = require("express");
 const session = require("express-session");
-const path = require("path");
 const flash = require("connect-flash");
 const { sequelize, initializeDatabase } = require("./config/database");
 const logger = require("./config/logging");
-const { appConfig } = require("./utils/helpers");
+const appConfig = require("./config/appConfig");
 const { buildAlerts, attachFlashHelpers } = require("./utils/flash");
+const mailService = require("./services/mailService");
 
 // Import middleware security
 const {
@@ -28,6 +43,13 @@ const { defineAssociations } = require("./models/associations");
 
 const app = express();
 const PORT = appConfig.app.port;
+const startupState = {
+  ready: false,
+  checks: {
+    database: false,
+    mail: null,
+  },
+};
 
 // Environment validation
 const requiredEnvVars = ["DB_HOST", "DB_NAME", "DB_USER", "SESSION_SECRET"];
@@ -45,17 +67,28 @@ if (missingEnvVars.length > 0) {
 async function startServer() {
   try {
     logger.info("Starting application...");
+    logger.info(`Environment variables loaded from ${envPath}`);
 
     // Initialize database
-    await initializeDatabase();
+    await initializeDatabase({
+      autoCreateDatabase: appConfig.database.autoCreateOnStartup,
+    });
+    startupState.checks.database = true;
 
-    // Sync database
-    await sequelize.sync({ alter: true });
-    logger.info("Database synced");
-
-    // Define model associations after database sync
+    // Define model associations before schema sync
     defineAssociations();
-    logger.info("Model associations defined");
+    logger.debug("Model associations defined");
+
+    // Sync schema automatically only for development/test environments
+    if (appConfig.startup.dbSyncMode === "alter") {
+      await sequelize.sync({ alter: true });
+      logger.info("Database synced (alter mode)");
+    } else if (appConfig.startup.dbSyncMode === "safe") {
+      await sequelize.sync();
+      logger.info("Database synced (safe mode)");
+    } else {
+      logger.info("Skipping automatic database sync in this environment");
+    }
 
     // Konfigurasi view engine
     app.set("view engine", "ejs");
@@ -130,6 +163,12 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
 
+    // Expose current request path for conditional view assets.
+    app.use((req, res, next) => {
+      res.locals.requestPath = req.path;
+      next();
+    });
+
     // Session configuration
     const sessionConfig = {
       ...appConfig.session,
@@ -194,6 +233,8 @@ async function startServer() {
     const enableCsrf = appConfig.security.csrf !== false;
     app.use((req, res, next) => {
       if (!enableCsrf) {
+        // Keep view rendering stable when CSRF is intentionally disabled.
+        res.locals.csrfToken = "";
         return next();
       }
       return csrfToken(req, res, next);
@@ -229,6 +270,7 @@ async function startServer() {
     app.get("/health", (req, res) => {
       res.status(200).json({
         status: "ok",
+        ready: startupState.ready,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: appConfig.app.environment,
@@ -238,9 +280,11 @@ async function startServer() {
 
     // API health check
     app.get("/api/health", (req, res) => {
-      res.status(200).json({
-        status: "ok",
-        database: "connected",
+      const isReady = startupState.ready;
+      const statusCode = isReady ? 200 : 503;
+      res.status(statusCode).json({
+        status: isReady ? "ok" : "degraded",
+        checks: startupState.checks,
         timestamp: new Date().toISOString(),
       });
     });
@@ -256,14 +300,35 @@ async function startServer() {
 
     // Start server
     const server = app.listen(PORT, () => {
+      startupState.ready = true;
       logger.info(`Server running on ${appConfig.app.baseUrl}`);
       logger.info(`Environment: ${appConfig.app.environment}`);
       logger.info(`Process ID: ${process.pid}`);
+
+      // Non-critical warmups should not block startup.
+      if (appConfig.startup.warmupMail) {
+        Promise.resolve()
+          .then(async () => {
+            const warmed = await mailService.warmup();
+            startupState.checks.mail = warmed;
+            if (!warmed) {
+              logger.warn("Mail service warmup did not complete successfully");
+            }
+          })
+          .catch((warmupError) => {
+            startupState.checks.mail = false;
+            logger.warn("Mail service warmup failed:", warmupError);
+          });
+      } else {
+        startupState.checks.mail = null;
+        logger.info("Mail warmup skipped by configuration");
+      }
     });
 
     // Graceful shutdown handling
     const shutdown = (signal) => {
       logger.info(`Received ${signal}. Starting graceful shutdown...`);
+      startupState.ready = false;
 
       server.close((err) => {
         if (err) {

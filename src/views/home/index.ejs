@@ -1,33 +1,37 @@
 <section class="home-hero mb-4">
-    <div class="row g-4 align-items-center">
+    <div class="row g-4 align-items-stretch">
         <div class="col-lg-7">
-            <span class="home-kicker"><i class="fas fa-bolt me-2"></i>Sistem Peminjaman Digital</span>
-            <h1 class="display-5 fw-bold mt-3 mb-3">Kelola Peminjaman Alat Tanpa Proses Rumit</h1>
-            <p class="lead text-muted mb-4">
-                eSarpra memudahkan pencatatan inventori, pengajuan pinjam, dan pelacakan status dalam satu alur kerja yang rapi.
-            </p>
+            <div class="h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <span class="home-kicker"><i class="fas fa-bolt me-2"></i>Sistem Peminjaman Digital</span>
+                    <h1 class="display-5 fw-bold mt-3 mb-3">Alur Inventori yang Lebih Cepat, Rapi, dan Terukur</h1>
+                    <p class="lead text-muted mb-4">
+                        Kelola alat, pantau status, dan proses peminjaman dalam satu dashboard yang ringan untuk admin, petugas, dan peminjam.
+                    </p>
+                </div>
 
-            <div class="d-flex flex-wrap gap-2">
-                <% if (typeof user !== 'undefined' && user) { %>
-                    <% if (user.role === 'admin') { %>
-                        <a href="/admin" class="btn btn-primary btn-lg"><i class="fas fa-tachometer-alt me-2"></i>Dashboard Admin</a>
-                    <% } else if (user.role === 'petugas') { %>
-                        <a href="/petugas" class="btn btn-primary btn-lg"><i class="fas fa-tachometer-alt me-2"></i>Dashboard Petugas</a>
+                <div class="d-flex flex-wrap gap-2">
+                    <% if (typeof user !== "undefined" && user) { %>
+                        <% if (user.role === "admin") { %>
+                            <a href="/admin" class="btn btn-primary btn-lg"><i class="fas fa-gauge-high me-2"></i>Dashboard Admin</a>
+                        <% } else if (user.role === "petugas") { %>
+                            <a href="/petugas" class="btn btn-primary btn-lg"><i class="fas fa-clipboard-check me-2"></i>Dashboard Petugas</a>
+                        <% } else { %>
+                            <a href="/alat" class="btn btn-primary btn-lg"><i class="fas fa-box-open me-2"></i>Jelajahi Alat</a>
+                        <% } %>
+                        <a href="/peminjaman" class="btn btn-outline-secondary btn-lg"><i class="fas fa-history me-2"></i>Riwayat</a>
                     <% } else { %>
-                        <a href="/alat" class="btn btn-primary btn-lg"><i class="fas fa-box-open me-2"></i>Lihat Alat</a>
+                        <a href="/login" class="btn btn-primary btn-lg"><i class="fas fa-right-to-bracket me-2"></i>Masuk</a>
+                        <a href="/register" class="btn btn-outline-secondary btn-lg"><i class="fas fa-user-plus me-2"></i>Buat Akun</a>
                     <% } %>
-                    <a href="/peminjaman" class="btn btn-outline-secondary btn-lg"><i class="fas fa-history me-2"></i>Riwayat</a>
-                <% } else { %>
-                    <a href="/login" class="btn btn-primary btn-lg"><i class="fas fa-right-to-bracket me-2"></i>Masuk</a>
-                    <a href="/register" class="btn btn-outline-secondary btn-lg"><i class="fas fa-user-plus me-2"></i>Buat Akun</a>
-                <% } %>
+                </div>
             </div>
         </div>
 
         <div class="col-lg-5">
-            <div class="home-hero-panel">
-                <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>Ringkasan Cepat</h6>
-                <div class="row g-3">
+            <div class="home-hero-panel h-100">
+                <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>Snapshot Hari Ini</h6>
+                <div class="row g-3 mb-3">
                     <div class="col-6">
                         <div class="home-metric">
                             <div class="home-metric-label">Alat Tersedia</div>
@@ -36,13 +40,13 @@
                     </div>
                     <div class="col-6">
                         <div class="home-metric">
-                            <div class="home-metric-label">Total Kategori</div>
+                            <div class="home-metric-label">Kategori</div>
                             <div class="home-metric-value" data-counter="<%= totalKategori || 0 %>">0</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="home-metric">
-                            <div class="home-metric-label">Ditampilkan</div>
+                            <div class="home-metric-label">Item Ditampilkan</div>
                             <div class="home-metric-value" data-counter="<%= alat ? alat.length : 0 %>">0</div>
                         </div>
                     </div>
@@ -53,23 +57,26 @@
                         </div>
                     </div>
                 </div>
+                <div class="small text-muted">
+                    Status inventori diperbarui dari data alat aktif pada sistem.
+                </div>
             </div>
         </div>
     </div>
 </section>
 
 <section class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card home-section-card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-boxes-stacked me-2"></i>Alat Tersedia Sekarang</h5>
+    <div class="col-xl-8">
+        <div class="card home-section-card h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0"><i class="fas fa-boxes-stacked me-2"></i>Inventori Tersedia</h5>
                 <a href="/alat" class="btn btn-sm btn-outline-secondary">Lihat Semua</a>
             </div>
             <div class="card-body">
                 <% if (alat && alat.length > 0) { %>
                     <div class="row g-3">
                         <% alat.forEach((item) => { %>
-                            <div class="col-md-6 col-xl-4">
+                            <div class="col-md-6">
                                 <article class="home-alat-card h-100">
                                     <div class="home-alat-thumb">
                                         <% if (item.foto) { %>
@@ -81,14 +88,16 @@
                                         <% } %>
                                     </div>
                                     <div class="home-alat-body">
-                                        <h6 class="mb-1"><%= item.nama_alat %></h6>
-                                        <p class="small text-muted mb-2"><%= item.kategori ? item.kategori.nama_kategori : 'Tanpa kategori' %></p>
-                                        <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                            <h6 class="mb-0"><%= item.nama_alat %></h6>
                                             <span class="badge bg-success">Stok <%= item.stok %></span>
-                                            <% if (typeof user !== 'undefined' && user && user.role === 'peminjam') { %>
+                                        </div>
+                                        <p class="small text-muted mb-3"><%= item.kategori ? item.kategori.nama_kategori : "Tanpa kategori" %></p>
+                                        <div class="d-flex gap-2">
+                                            <% if (typeof user !== "undefined" && user && user.role === "peminjam") { %>
                                                 <a href="/peminjaman/ajukan/<%= item.id %>" class="btn btn-sm btn-primary">Ajukan</a>
                                             <% } else { %>
-                                                <a href="/alat" class="btn btn-sm btn-outline-secondary">Detail</a>
+                                                <a href="/alat" class="btn btn-sm btn-outline-secondary">Lihat Detail</a>
                                             <% } %>
                                         </div>
                                     </div>
@@ -99,20 +108,20 @@
                 <% } else { %>
                     <div class="text-center py-4">
                         <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
-                        <p class="text-muted mb-0">Belum ada alat tersedia saat ini.</p>
+                        <p class="text-muted mb-0">Belum ada alat yang bisa ditampilkan saat ini.</p>
                     </div>
                 <% } %>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-xl-4">
         <div class="card home-section-card h-100">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Status Pengguna</h5>
+                <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Akses Cepat</h5>
             </div>
             <div class="card-body d-flex flex-column">
-                <% if (typeof user !== 'undefined' && user) { %>
+                <% if (typeof user !== "undefined" && user) { %>
                     <div class="home-userbox mb-3">
                         <div class="home-avatar"><%= user.nama.charAt(0).toUpperCase() %></div>
                         <div>
@@ -121,13 +130,14 @@
                         </div>
                     </div>
                     <span class="badge bg-primary align-self-start mb-3"><%= user.role.toUpperCase() %></span>
-                    <p class="text-muted small mb-3">Akses cepat sesuai peran Anda tersedia di bawah ini.</p>
-
+                    <p class="small text-muted mb-3">Gunakan pintasan sesuai peran untuk lanjutkan pekerjaan Anda.</p>
                     <div class="d-grid gap-2 mt-auto">
-                        <% if (user.role === 'admin') { %>
+                        <% if (user.role === "admin") { %>
                             <a href="/admin" class="btn btn-primary"><i class="fas fa-sliders me-2"></i>Kelola Sistem</a>
-                        <% } else if (user.role === 'petugas') { %>
+                            <a href="/admin/laporan" class="btn btn-outline-secondary"><i class="fas fa-file-lines me-2"></i>Lihat Laporan</a>
+                        <% } else if (user.role === "petugas") { %>
                             <a href="/petugas" class="btn btn-primary"><i class="fas fa-clipboard-check me-2"></i>Validasi Peminjaman</a>
+                            <a href="/laporan" class="btn btn-outline-secondary"><i class="fas fa-chart-column me-2"></i>Buka Laporan</a>
                         <% } else { %>
                             <a href="/alat" class="btn btn-primary"><i class="fas fa-box-open me-2"></i>Ajukan Peminjaman</a>
                             <a href="/peminjaman" class="btn btn-outline-secondary"><i class="fas fa-clock-rotate-left me-2"></i>Cek Riwayat</a>
@@ -136,8 +146,8 @@
                 <% } else { %>
                     <div class="text-center my-auto">
                         <div class="home-avatar mx-auto mb-3">G</div>
-                        <h6>Pengunjung</h6>
-                        <p class="text-muted small mb-3">Masuk untuk mulai mengajukan peminjaman alat.</p>
+                        <h6>Akun Pengunjung</h6>
+                        <p class="small text-muted mb-3">Masuk untuk mengajukan, memantau, dan melihat riwayat peminjaman alat.</p>
                         <div class="d-grid gap-2">
                             <a href="/login" class="btn btn-primary"><i class="fas fa-right-to-bracket me-2"></i>Login</a>
                             <a href="/register" class="btn btn-outline-secondary"><i class="fas fa-user-plus me-2"></i>Register</a>
@@ -151,26 +161,26 @@
 
 <section class="card home-section-card mb-4">
     <div class="card-header">
-        <h5 class="mb-0"><i class="fas fa-circle-info me-2"></i>Kebijakan & Panduan Singkat</h5>
+        <h5 class="mb-0"><i class="fas fa-circle-info me-2"></i>Kebijakan & Panduan</h5>
     </div>
     <div class="card-body">
         <div class="row g-3">
             <div class="col-md-4">
                 <div class="home-info-card">
                     <h6><i class="fas fa-calendar-days me-2 text-primary"></i>Batas Peminjaman</h6>
-                    <p class="small text-muted mb-0">Durasi maksimal peminjaman 7 hari. Keterlambatan dikenakan denda Rp <%= overdueFinePerDayFormatted %>/hari.</p>
+                    <p class="small text-muted mb-0">Durasi maksimal 7 hari. Keterlambatan dikenakan denda Rp <%= overdueFinePerDayFormatted %> per hari.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="home-info-card">
-                    <h6><i class="fas fa-shield-halved me-2 text-success"></i>Keamanan Data</h6>
-                    <p class="small text-muted mb-0">Data akun dan aktivitas peminjaman dilindungi, termasuk validasi sesi dan proteksi CSRF.</p>
+                    <h6><i class="fas fa-shield-halved me-2 text-success"></i>Proteksi Data</h6>
+                    <p class="small text-muted mb-0">Akses akun, sesi login, dan alur form dijaga oleh validasi server serta perlindungan keamanan aktif.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="home-info-card">
-                    <h6><i class="fas fa-headset me-2 text-info"></i>Bantuan</h6>
-                    <p class="small text-muted mb-0">Jika ada kendala pada proses peminjaman/pengembalian, hubungi petugas atau admin melalui kanal resmi.</p>
+                    <h6><i class="fas fa-headset me-2 text-info"></i>Bantuan Operasional</h6>
+                    <p class="small text-muted mb-0">Jika terjadi kendala pinjam/pengembalian, hubungi petugas atau admin melalui kanal resmi instansi.</p>
                 </div>
             </div>
         </div>

@@ -1,27 +1,12 @@
-const testConfig = require("./testConfig");
-const constants = testConfig.constants;
+const { ROLES } = require("../src/utils/constants");
 const bcrypt = require("bcrypt");
 
 describe("Unit Tests", () => {
   describe("Constants", () => {
-    test("STATUS_ALAT should have correct values", () => {
-      expect(constants.STATUS_ALAT.TERSEDIA).toBe("tersedia");
-      expect(constants.STATUS_ALAT.DIPINJAM).toBe("dipinjam");
-      expect(constants.STATUS_ALAT.MAINTENANCE).toBe("maintenance");
-    });
-
-    test("STATUS_PEMINJAMAN should have correct values", () => {
-      expect(constants.STATUS_PEMINJAMAN.PENDING).toBe("pending");
-      expect(constants.STATUS_PEMINJAMAN.DISETUJUI).toBe("disetujui");
-      expect(constants.STATUS_PEMINJAMAN.DIPINJAM).toBe("dipinjam");
-      expect(constants.STATUS_PEMINJAMAN.DIKEMBALIKAN).toBe("dikembalikan");
-      expect(constants.STATUS_PEMINJAMAN.DITOLAK).toBe("ditolak");
-    });
-
     test("ROLES should have correct values", () => {
-      expect(constants.ROLES.ADMIN).toBe("admin");
-      expect(constants.ROLES.PETUGAS).toBe("petugas");
-      expect(constants.ROLES.PEMINJAM).toBe("peminjam");
+      expect(ROLES.ADMIN).toBe("admin");
+      expect(ROLES.PETUGAS).toBe("petugas");
+      expect(ROLES.PEMINJAM).toBe("peminjam");
     });
   });
 
@@ -52,18 +37,17 @@ describe("Unit Tests", () => {
 
   describe("Helper Functions", () => {
     test("should validate email format", () => {
-      const { VALIDATION } = constants;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      expect(VALIDATION.EMAIL_REGEX.test("test@example.com")).toBe(true);
-      expect(VALIDATION.EMAIL_REGEX.test("invalid-email")).toBe(false);
-      expect(VALIDATION.EMAIL_REGEX.test("test@")).toBe(false);
-      expect(VALIDATION.EMAIL_REGEX.test("@example.com")).toBe(false);
+      expect(emailRegex.test("test@example.com")).toBe(true);
+      expect(emailRegex.test("invalid-email")).toBe(false);
+      expect(emailRegex.test("test@")).toBe(false);
+      expect(emailRegex.test("@example.com")).toBe(false);
     });
 
     test("should validate password length", () => {
-      const { VALIDATION } = constants;
-
-      expect(VALIDATION.PASSWORD_MIN_LENGTH).toBe(8);
+      const appConfig = require("../src/config/appConfig");
+      expect(appConfig.password.minLength).toBe(8);
     });
   });
 

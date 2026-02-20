@@ -21,7 +21,7 @@ const LogAktivitas = require("./LogAktivitas");
  */
 function defineAssociations() {
   try {
-    logger.info("Starting model associations setup");
+    logger.debug("Starting model associations setup");
 
     // Validate that all models are properly loaded
     const models = { User, Kategori, Alat, Peminjaman, LogAktivitas };
@@ -32,7 +32,7 @@ function defineAssociations() {
     });
 
     // User associations
-    logger.info("Setting up User associations");
+    logger.debug("Setting up User associations");
     User.hasMany(Peminjaman, {
       foreignKey: "user_id",
       as: "peminjaman",
@@ -48,7 +48,7 @@ function defineAssociations() {
     });
 
     // Kategori associations
-    logger.info("Setting up Kategori associations");
+    logger.debug("Setting up Kategori associations");
     Kategori.hasMany(Alat, {
       foreignKey: "kategori_id",
       as: "alat",
@@ -57,7 +57,7 @@ function defineAssociations() {
     });
 
     // Alat associations
-    logger.info("Setting up Alat associations");
+    logger.debug("Setting up Alat associations");
     Alat.belongsTo(Kategori, {
       foreignKey: "kategori_id",
       as: "kategori",
@@ -73,7 +73,7 @@ function defineAssociations() {
     });
 
     // Peminjaman associations
-    logger.info("Setting up Peminjaman associations");
+    logger.debug("Setting up Peminjaman associations");
     Peminjaman.belongsTo(User, {
       foreignKey: "user_id",
       as: "user",
@@ -89,7 +89,7 @@ function defineAssociations() {
     });
 
     // LogAktivitas associations
-    logger.info("Setting up LogAktivitas associations");
+    logger.debug("Setting up LogAktivitas associations");
     LogAktivitas.belongsTo(User, {
       foreignKey: "user_id",
       as: "user",
@@ -97,7 +97,7 @@ function defineAssociations() {
       onUpdate: "CASCADE",
     });
 
-    logger.info("All model associations have been defined successfully");
+    logger.debug("All model associations have been defined successfully");
   } catch (error) {
     logger.error("Failed to define model associations:", error);
     throw error;
@@ -164,7 +164,7 @@ function validateAssociations() {
         result !== "Model not properly defined" && result.hasAssociations,
     );
 
-    logger.info("Association validation completed", {
+    logger.debug("Association validation completed", {
       allValid,
       results: validationResults,
     });

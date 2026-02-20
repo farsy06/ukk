@@ -12,6 +12,12 @@ const {
 
 const { requireAnyRole } = require("./auth");
 const { AuthorizationError } = require("../utils/helpers");
+const { sendWebOrJson } = require("./responseHelpers");
+
+const parsePositiveInt = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
 
 /**
  * Route Helper Middleware
@@ -92,21 +98,18 @@ const validatePeminjaman = [
  * Mendukung multiple roles dan custom error message
  */
 const requireRoles = (roles, options = {}) => {
-  return async (req, res, next) => {
+  const roleMiddleware = requireAnyRole(roles);
+  return (req, res, next) => {
     try {
-      // Gunakan middleware auth yang sudah ada
-      await requireAnyRole(roles)(req, res, (err) => {
+      return roleMiddleware(req, res, (err) => {
         if (err) return next(err);
-
-        // Jika berhasil, lanjutkan
-        next();
+        return next();
       });
     } catch (error) {
-      // Custom error message jika diberikan
       if (options.customMessage) {
-        throw new AuthorizationError(options.customMessage);
+        return next(new AuthorizationError(options.customMessage));
       }
-      next(error);
+      return next(error);
     }
   };
 };
@@ -116,17 +119,28 @@ const requireRoles = (roles, options = {}) => {
  */
 const paginate = (defaultLimit = 10, maxLimit = 50) => {
   return (req, res, next) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || defaultLimit;
+    const page = parsePositiveInt(req.query.page, 1);
+    const limit = parsePositiveInt(req.query.limit, defaultLimit);
     const offset = (page - 1) * limit;
 
     // Validasi limit
     if (limit > maxLimit) {
-      return res.status(400).json({
-        success: false,
-        error: {
+      return sendWebOrJson({
+        req,
+        res,
+        status: 400,
+        web: {
+          mode: "redirect",
+          type: "error",
           message: `Limit maksimal adalah ${maxLimit}`,
-          code: "INVALID_LIMIT",
+          fallback: req.path,
+        },
+        api: {
+          success: false,
+          error: {
+            message: `Limit maksimal adalah ${maxLimit}`,
+            code: "INVALID_LIMIT",
+          },
         },
       });
     }

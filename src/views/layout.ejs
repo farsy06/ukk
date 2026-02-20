@@ -1,9 +1,29 @@
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="light">
+<%
+    const pageTitle = typeof title === "string" && title.trim() ? title : "eSarpra";
+    const currentUser = typeof user !== "undefined" ? user : null;
+    const isLoggedIn = Boolean(currentUser);
+    const userRole = isLoggedIn ? currentUser.role : null;
+    const safeCsrfToken = typeof csrfToken !== "undefined" ? csrfToken : "";
+    const alertItems =
+        typeof alerts !== "undefined" && Array.isArray(alerts) ? alerts : [];
+    const hasAlerts = alertItems.length > 0;
+    const canRenderHtml =
+        typeof allowHtml !== "undefined" ? Boolean(allowHtml) : true;
+    const currentYear = new Date().getFullYear();
+    const currentPath =
+        typeof requestPath === "string" ? requestPath : "";
+    const isAuthPage =
+        currentPath === "/login" ||
+        currentPath === "/register" ||
+        currentPath === "/forgot-password" ||
+        currentPath.startsWith("/reset-password/");
+%>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - eSarpra</title>
+    <title><%= pageTitle %> - eSarpra</title>
     <script>
         (function() {
             const savedTheme = localStorage.getItem("theme") || "light";
@@ -12,134 +32,149 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
+    <% if (isAuthPage) { %>
+        <link href="/css/auth.css" rel="stylesheet">
+    <% } %>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-boxes-stacked"></i>
-                <span>eSarpra</span>
-            </a>
 
-            <div class="d-flex align-items-center gap-2 d-lg-none">
-                <button class="theme-toggle position-relative" type="button" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
-                    <i class="fas fa-moon theme-icon-moon"></i>
-                    <i class="fas fa-sun theme-icon-sun"></i>
-                </button>
-                <button
-                    class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#navbarNav"
-                    aria-controls="navbarNav"
-                    aria-expanded="false"
-                    aria-label="Toggle navigation"
-                >
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+    <header class="site-header">
+        <div class="header-top-bar">
+            <div class="container d-flex align-items-center justify-content-between">
+                <span class="header-eyebrow"><i class="fas fa-circle-check me-1"></i>Sistem Aktif</span>
+                <span class="header-eyebrow"><i class="fas fa-shield-halved me-1"></i>Keamanan Terverifikasi</span>
             </div>
+        </div>
+        <nav class="navbar navbar-expand-lg">
+            <div class="container navbar-shell">
+                <a class="navbar-brand" href="/">
+                    <span class="brand-mark">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </span>
+                    <span class="brand-copy">
+                        <strong>eSarpra</strong>
+                        <small>Equipment Borrowing System</small>
+                    </span>
+                </a>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <% if (typeof user !== "undefined" && user) { %>
-                        <% if (user.role === "peminjam") { %>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/alat"><i class="fas fa-box-open me-1"></i>Daftar Alat</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/peminjaman"><i class="fas fa-history me-1"></i>Riwayat</a>
-                            </li>
-                        <% } else if (user.role === "petugas") { %>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/petugas"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/laporan"><i class="fas fa-file-lines me-1"></i>Laporan</a>
-                            </li>
-                        <% } else if (user.role === "admin") { %>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="kelolaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-cog me-1"></i>Kelola
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="kelolaDropdown">
-                                    <li><a class="dropdown-item" href="/admin/kategori"><i class="fas fa-tags"></i>Kategori</a></li>
-                                    <li><a class="dropdown-item" href="/admin/alat"><i class="fas fa-tools"></i>Alat</a></li>
-                                    <li><a class="dropdown-item" href="/admin/peminjaman"><i class="fas fa-hand-holding"></i>Peminjaman</a></li>
-                                    <li><a class="dropdown-item" href="/admin/user"><i class="fas fa-users"></i>User</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/admin/catatan"><i class="fas fa-history"></i>Aktivitas</a></li>
-                                    <li><a class="dropdown-item" href="/admin/laporan"><i class="fas fa-file-lines"></i>Laporan</a></li>
-                                </ul>
-                            </li>
-                        <% } %>
-                    <% } else { %>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/"><i class="fas fa-house me-1"></i>Beranda</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/tos"><i class="fas fa-scale-balanced me-1"></i>Syarat</a>
-                        </li>
-                    <% } %>
-                </ul>
-
-                <div class="d-none d-lg-flex align-items-center me-2">
-                    <button class="theme-toggle position-relative" type="button" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
-                        <i class="fas fa-moon theme-icon-moon"></i>
-                        <i class="fas fa-sun theme-icon-sun"></i>
+                <div class="d-flex align-items-center gap-2 d-lg-none">
+                    <%- include("_partials/theme-toggle") %>
+                    <button
+                        class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav"
+                        aria-controls="navbarNav"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
+                        <span class="navbar-toggler-icon"></span>
                     </button>
                 </div>
 
-                <ul class="navbar-nav">
-                    <% if (typeof user !== "undefined" && user) { %>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <div class="user-avatar"><%= user.nama.charAt(0).toUpperCase() %></div>
-                                <span><%= user.nama %></span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <li class="px-3 py-2 border-bottom">
-                                    <small class="text-muted d-block">@<%= user.username %></small>
-                                    <small class="text-muted"><%= user.email %></small>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto nav-primary">
+                        <% if (isLoggedIn) { %>
+                            <% if (userRole === "peminjam") { %>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/alat"><i class="fas fa-box-open me-1"></i>Daftar Alat</a>
                                 </li>
-                                <li class="mt-2">
-                                    <span class="badge bg-primary ms-3"><%= user.role.toUpperCase() %></span>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/peminjaman"><i class="fas fa-history me-1"></i>Riwayat</a>
                                 </li>
-                                <li class="mt-2"><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form action="/logout" method="post" class="m-0">
-                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                        <button type="submit" class="dropdown-item text-danger">
-                                            <i class="fas fa-sign-out-alt"></i>Logout
-                                        </button>
-                                    </form>
+                            <% } else if (userRole === "petugas") { %>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/petugas"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
                                 </li>
-                            </ul>
-                        </li>
-                    <% } else { %>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/login"><i class="fas fa-sign-in-alt me-1"></i>Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-primary ms-lg-2 text-white px-3" href="/register">
-                                <i class="fas fa-user-plus me-1"></i>Daftar
-                            </a>
-                        </li>
-                    <% } %>
-                </ul>
-            </div>
-        </div>
-    </nav>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/laporan"><i class="fas fa-file-lines me-1"></i>Laporan</a>
+                                </li>
+                            <% } else if (userRole === "admin") { %>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/admin"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="kelolaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-cog me-1"></i>Kelola
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="kelolaDropdown">
+                                        <li><a class="dropdown-item" href="/admin/kategori"><i class="fas fa-tags"></i>Kategori</a></li>
+                                        <li><a class="dropdown-item" href="/admin/alat"><i class="fas fa-tools"></i>Alat</a></li>
+                                        <li><a class="dropdown-item" href="/admin/peminjaman"><i class="fas fa-hand-holding"></i>Peminjaman</a></li>
+                                        <li><a class="dropdown-item" href="/admin/user"><i class="fas fa-users"></i>User</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/admin/catatan"><i class="fas fa-history"></i>Aktivitas</a></li>
+                                        <li><a class="dropdown-item" href="/admin/laporan"><i class="fas fa-file-lines"></i>Laporan</a></li>
+                                    </ul>
+                                </li>
+                            <% } %>
+                        <% } else { %>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/"><i class="fas fa-house me-1"></i>Beranda</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/tos"><i class="fas fa-scale-balanced me-1"></i>Syarat</a>
+                            </li>
+                        <% } %>
+                    </ul>
 
-    <main class="container mt-4">
-        <% if (typeof alerts !== "undefined" && alerts && alerts.length) { %>
-            <% alerts.forEach((item) => { %>
+                    <div class="d-none d-lg-flex align-items-center me-2">
+                        <%- include("_partials/theme-toggle") %>
+                    </div>
+
+                    <ul class="navbar-nav nav-secondary">
+                        <% if (isLoggedIn) { %>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="user-avatar"><%= currentUser.nama.charAt(0).toUpperCase() %></div>
+                                    <span class="d-none d-lg-inline"><%= currentUser.nama %></span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    <li class="dropdown-user-header">
+                                        <div class="dropdown-user-avatar"><%= currentUser.nama.charAt(0).toUpperCase() %></div>
+                                        <div>
+                                            <div class="dropdown-user-name"><%= currentUser.nama %></div>
+                                            <div class="dropdown-user-meta">@<%= currentUser.username %></div>
+                                            <div class="dropdown-user-meta"><%= currentUser.email %></div>
+                                        </div>
+                                    </li>
+                                    <li class="px-3 pb-2">
+                                        <span class="role-badge"><%= currentUser.role.toUpperCase() %></span>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="/logout" method="post" class="m-0">
+                                            <input type="hidden" name="_csrf" value="<%= safeCsrfToken %>">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="fas fa-sign-out-alt"></i>Logout
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        <% } else { %>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-ghost" href="/login">Masuk</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-cta" href="/register">
+                                    <i class="fas fa-arrow-right me-1"></i>Daftar Sekarang
+                                </a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container site-main mt-4">
+        <% if (hasAlerts) { %>
+            <% alertItems.forEach((item) => { %>
                 <div class="alert <%= item.className %> alert-dismissible fade show" role="alert">
                     <i class="<%= item.icon %> me-1"></i><%= item.text %>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
@@ -147,52 +182,81 @@
             <% }); %>
         <% } %>
 
-        <% if (typeof allowHtml !== "undefined" && allowHtml) { %>
-            <!-- codeql[js/xss]=trusted layout injection gated by allowHtml -->
-            <%- body %><!-- codeql[js/xss] -->
+        <% if (canRenderHtml) { %>
+            <%- body %>
         <% } else { %>
             <%= body %>
         <% } %>
     </main>
 
-    <footer class="py-5 mt-5">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <h5 class="mb-3"><i class="fas fa-boxes-stacked me-2"></i>eSarpra</h5>
-                    <p class="small mb-0 footer-muted">
-                        Sistem informasi peminjaman alat untuk pengelolaan inventori yang lebih rapi, cepat, dan terukur.
-                    </p>
-                </div>
-                <div class="col-md-4">
-                    <h6 class="mb-3">Navigasi</h6>
-                    <ul class="list-unstyled small mb-0">
-                        <li><a href="/" class="d-block mb-2 footer-link">Beranda</a></li>
-                        <li><a href="/alat" class="d-block mb-2 footer-link">Daftar Alat</a></li>
-                        <li><a href="/login" class="d-block mb-2 footer-link">Login</a></li>
-                        <li><a href="/tos" class="d-block footer-link">Syarat & Ketentuan</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h6 class="mb-3">Kontak</h6>
-                    <ul class="list-unstyled small mb-0">
-                        <li class="mb-2 footer-muted"><i class="fas fa-envelope me-2"></i>admin@esarpra.com</li>
-                        <li class="footer-muted"><i class="fas fa-map-marker-alt me-2"></i>Sekolah/Instansi Anda</li>
-                    </ul>
+    <footer class="site-footer">
+        <div class="footer-main">
+            <div class="container">
+                <div class="footer-grid">
+                    <!-- Brand Column -->
+                    <div class="footer-col footer-col-brand">
+                        <a href="/" class="footer-brand-link">
+                            <span class="footer-brand-mark"><i class="fas fa-boxes-stacked"></i></span>
+                            <span class="footer-brand-name">eSarpra</span>
+                        </a>
+                        <p class="footer-tagline">
+                            Sistem informasi peminjaman alat untuk pengelolaan inventori yang lebih rapi, cepat, dan terukur.
+                        </p>
+                        <div class="footer-status-pill">
+                            <span class="status-dot"></span>
+                            Sistem Aktif &amp; Beroperasi
+                        </div>
+                    </div>
+
+                    <!-- Nav Column -->
+                    <div class="footer-col">
+                        <h6 class="footer-col-title">Navigasi</h6>
+                        <nav class="footer-nav">
+                            <a href="/" class="footer-nav-link">Beranda</a>
+                            <a href="/alat" class="footer-nav-link">Daftar Alat</a>
+                            <a href="/login" class="footer-nav-link">Login</a>
+                            <a href="/tos" class="footer-nav-link">Syarat &amp; Ketentuan</a>
+                        </nav>
+                    </div>
+
+                    <!-- Contact Column -->
+                    <div class="footer-col">
+                        <h6 class="footer-col-title">Hubungi Kami</h6>
+                        <ul class="footer-contact-list">
+                            <li>
+                                <span class="contact-icon"><i class="fas fa-envelope"></i></span>
+                                <a href="mailto:info@esarpra.id" class="footer-nav-link">info@esarpra.id</a>
+                            </li>
+                            <li>
+                                <span class="contact-icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <span class="footer-muted-text">Sekolah / Instansi Anda</span>
+                            </li>
+                            <li>
+                                <span class="contact-icon"><i class="fas fa-clock"></i></span>
+                                <span class="footer-muted-text">Senin – Jumat, 08.00–16.00</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <hr class="my-4" style="opacity: 0.1;">
-            <div class="text-center">
-                <small class="footer-muted">&copy; 2026 eSarpra. All rights reserved.</small>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="footer-bottom-inner">
+                    <span class="footer-copy">&copy; <%= currentYear %> eSarpra. Semua hak dilindungi.</span>
+                    <span class="footer-copy footer-copy-mono">v0.2.0</span>
+                </div>
             </div>
         </div>
     </footer>
 
+    <!-- Delete Confirm Modal -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form id="confirmDeleteForm" method="post" action="#">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="_csrf" value="<%= safeCsrfToken %>">
                     <div class="modal-header">
                         <h5 class="modal-title" id="confirmDeleteLabel">Konfirmasi Hapus</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
@@ -212,7 +276,7 @@
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/js/all.min.js"></script>
     <script src="/js/password-utils.js"></script>
     <script src="/js/layout.js"></script>
 </body>

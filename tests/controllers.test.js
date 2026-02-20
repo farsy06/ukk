@@ -2,6 +2,7 @@
 require("dotenv").config({
   path: "./.env.test.local",
   override: true, // Override any existing environment variables
+  quiet: true,
 });
 
 jest.mock("../src/config/logging", () => ({
