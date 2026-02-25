@@ -1,6 +1,11 @@
 const { Sequelize } = require("sequelize");
+const fs = require("fs");
+const path = require("path");
 const logger = require("./logging");
 const mysql = require("mysql2/promise");
+const betterSqlite3DialectModule = require("./betterSqlite3DialectModule");
+
+const SUPPORTED_DIALECTS = new Set(["mysql", "sqlite"]);
 
 const resolveDbPassword = () => {
   if (typeof process.env.DB_PASS !== "undefined") {
@@ -14,37 +19,106 @@ const resolveDbPassword = () => {
   return "";
 };
 
-// Function to create database if it doesn't exist
+const parseBooleanEnv = (value, defaultValue = false) => {
+  if (typeof value !== "string") {
+    return defaultValue;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+};
+
+const resolveDialect = () => {
+  const rawDialect = (process.env.DB_DIALECT || "mysql").trim().toLowerCase();
+  if (SUPPORTED_DIALECTS.has(rawDialect)) {
+    return rawDialect;
+  }
+
+  logger.warn(
+    `DB_DIALECT "${rawDialect}" tidak didukung, menggunakan mysql sebagai default`,
+  );
+  return "mysql";
+};
+
+const resolveSqliteStorage = () => {
+  const rawStorage =
+    typeof process.env.DB_STORAGE === "string"
+      ? process.env.DB_STORAGE.trim()
+      : "";
+  const storagePath = rawStorage || "./data/ukk.sqlite";
+  return path.isAbsolute(storagePath)
+    ? storagePath
+    : path.resolve(process.cwd(), storagePath);
+};
+
+const resolveDatabaseConfig = () => ({
+  dialect: resolveDialect(),
+  name: process.env.DB_NAME || "ukk",
+  user: process.env.DB_USER || "root",
+  password: resolveDbPassword(),
+  host: process.env.DB_HOST || "localhost",
+  port: Number.parseInt(process.env.DB_PORT, 10) || 3306,
+  storage: resolveSqliteStorage(),
+  logging: parseBooleanEnv(process.env.DB_LOGGING, false),
+});
+
+const ensureSqliteStorageDirectory = (storagePath) => {
+  const dir = path.dirname(storagePath);
+  fs.mkdirSync(dir, { recursive: true });
+};
+
+const createSequelizeInstance = (config) => {
+  if (config.dialect === "sqlite") {
+    return new Sequelize({
+      dialect: "sqlite",
+      storage: config.storage,
+      dialectModule: betterSqlite3DialectModule,
+      logging: config.logging,
+    });
+  }
+
+  return new Sequelize(config.name, config.user, config.password, {
+    host: config.host,
+    dialect: "mysql",
+    port: config.port,
+    logging: config.logging,
+  });
+};
+
+// Function to create database if it doesn't exist (MySQL only)
 async function createDatabaseIfNotExists() {
-  const dbName = process.env.DB_NAME || "ukk";
-  const dbUser = process.env.DB_USER || "root";
-  const dbPassword = resolveDbPassword();
-  const dbHost = process.env.DB_HOST || "localhost";
-  const dbPort = process.env.DB_PORT || 3306;
+  const config = resolveDatabaseConfig();
+
+  if (config.dialect === "sqlite") {
+    ensureSqliteStorageDirectory(config.storage);
+    logger.info(`Menggunakan SQLite di ${config.storage}`);
+    return;
+  }
 
   try {
     // Connect without specifying database name
     const connection = await mysql.createConnection({
-      host: dbHost,
-      port: dbPort,
-      user: dbUser,
-      password: dbPassword,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
     });
 
     // Check if database exists
     const [rows] = await connection.execute(
       `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`,
-      [dbName],
+      [config.name],
     );
 
     if (rows.length === 0) {
       logger.info(
-        `Database ${dbName} tidak ditemukan, sedang membuat database...`,
+        `Database ${config.name} tidak ditemukan, sedang membuat database...`,
       );
-      await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-      logger.info(`Database ${dbName} berhasil dibuat!`);
+      await connection.execute(
+        `CREATE DATABASE IF NOT EXISTS \`${config.name}\``,
+      );
+      logger.info(`Database ${config.name} berhasil dibuat!`);
     } else {
-      logger.info(`Database ${dbName} sudah ada`);
+      logger.info(`Database ${config.name} sudah ada`);
     }
 
     await connection.end();
@@ -55,18 +129,7 @@ async function createDatabaseIfNotExists() {
 }
 
 // Initialize Sequelize immediately to ensure it's available when models are imported
-const dbName = process.env.DB_NAME || "ukk";
-const dbUser = process.env.DB_USER || "root";
-const dbPassword = resolveDbPassword();
-const dbHost = process.env.DB_HOST || "localhost";
-const dbPort = process.env.DB_PORT || 3306;
-
-let sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-  host: dbHost,
-  dialect: "mysql",
-  port: dbPort,
-  logging: false, // Set true jika ingin melihat query SQL
-});
+let sequelize = createSequelizeInstance(resolveDatabaseConfig());
 
 const modelModules = [
   "../models/User",
@@ -96,7 +159,12 @@ const reloadModels = () => {
 
 // Re-initialize Sequelize and optionally reload models
 async function initializeSequelize({ reinitializeModels = false } = {}) {
+  const config = resolveDatabaseConfig();
+
   if (!reinitializeModels) {
+    if (config.dialect === "sqlite") {
+      ensureSqliteStorageDirectory(config.storage);
+    }
     return sequelize;
   }
 
@@ -106,12 +174,11 @@ async function initializeSequelize({ reinitializeModels = false } = {}) {
     logger.warn("Gagal menutup koneksi database:", _err.message);
   }
 
-  sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-    host: dbHost,
-    dialect: "mysql",
-    port: dbPort,
-    logging: false, // Set true jika ingin melihat query SQL
-  });
+  if (config.dialect === "sqlite") {
+    ensureSqliteStorageDirectory(config.storage);
+  }
+
+  sequelize = createSequelizeInstance(config);
 
   // Keep exported reference in sync with the latest instance
   module.exports.sequelize = sequelize;
@@ -133,12 +200,13 @@ async function testConnection() {
 
 // Main initialization function
 async function initializeDatabase(options = {}) {
+  const config = resolveDatabaseConfig();
   const autoCreateDatabase =
     typeof options.autoCreateDatabase === "boolean"
       ? options.autoCreateDatabase
       : process.env.NODE_ENV !== "production";
 
-  if (autoCreateDatabase) {
+  if (autoCreateDatabase || config.dialect === "sqlite") {
     await createDatabaseIfNotExists();
   }
 

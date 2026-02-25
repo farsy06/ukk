@@ -10,6 +10,59 @@ const logger = require("../config/logging");
 const appConfig = require("../config/appConfig");
 const { Op } = require("sequelize");
 
+const parseDateOnlyValue = (value) => {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return null;
+    }
+
+    const normalizedDate = new Date(value);
+    normalizedDate.setHours(0, 0, 0, 0);
+    const year = normalizedDate.getFullYear();
+    const month = normalizedDate.getMonth() + 1;
+    const day = normalizedDate.getDate();
+    return {
+      date: normalizedDate,
+      normalized: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    };
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const parsedDate = new Date(trimmed);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    const normalizedDate = new Date(parsedDate);
+    normalizedDate.setHours(0, 0, 0, 0);
+    const year = normalizedDate.getFullYear();
+    const month = normalizedDate.getMonth() + 1;
+    const day = normalizedDate.getDate();
+    return {
+      date: normalizedDate,
+      normalized: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    };
+  }
+
+  const [year, month, day] = trimmed.split("-").map((part) => Number(part));
+  const parsedDate = new Date(year, month - 1, day);
+  parsedDate.setHours(0, 0, 0, 0);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return {
+    date: parsedDate,
+    normalized: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+  };
+};
+
 /**
  * Peminjaman Service
  * Service layer for peminjaman business logic
@@ -318,8 +371,15 @@ class PeminjamanService {
     const alat = await Alat.findByPk(alat_id);
 
     // Validate dates
-    const tanggalPinjam = new Date(tanggal_pinjam);
-    const tanggalKembali = new Date(tanggal_kembali);
+    const tanggalPinjamParsed = parseDateOnlyValue(tanggal_pinjam);
+    const tanggalKembaliParsed = parseDateOnlyValue(tanggal_kembali);
+
+    if (!tanggalPinjamParsed || !tanggalKembaliParsed) {
+      throw new Error("Format tanggal peminjaman tidak valid");
+    }
+
+    const tanggalPinjam = tanggalPinjamParsed.date;
+    const tanggalKembali = tanggalKembaliParsed.date;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -345,8 +405,8 @@ class PeminjamanService {
     const peminjaman = await Peminjaman.create({
       user_id: user.id,
       alat_id,
-      tanggal_pinjam: tanggalPinjam,
-      tanggal_kembali: tanggalKembali,
+      tanggal_pinjam: tanggalPinjamParsed.normalized,
+      tanggal_kembali: tanggalKembaliParsed.normalized,
       jumlah: jumlahPinjam,
       catatan: catatan || null,
       status: "pending",

@@ -14,7 +14,27 @@ document.addEventListener("DOMContentLoaded", () => {
     10,
   );
 
-  const formatDate = (date) => date.toISOString().split("T")[0];
+  const pad2 = (value) => String(value).padStart(2, "0");
+  const formatDate = (date) =>
+    `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  const parseDateInput = (value) => {
+    if (!value || typeof value !== "string") {
+      return null;
+    }
+
+    const [year, month, day] = value.split("-").map((part) => Number(part));
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day)
+    ) {
+      return null;
+    }
+
+    const date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -33,16 +53,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const pinjamDate = tanggalPinjam.value
-      ? new Date(tanggalPinjam.value)
+      ? parseDateInput(tanggalPinjam.value)
       : today;
-    if (Number.isNaN(pinjamDate.getTime())) {
+    if (!pinjamDate) {
       tanggalKembali.min = todayString;
       return;
     }
 
     tanggalKembali.min = formatDate(pinjamDate);
 
-    if (!tanggalKembali.value || new Date(tanggalKembali.value) < pinjamDate) {
+    const kembaliDate = parseDateInput(tanggalKembali.value);
+    if (!kembaliDate || kembaliDate < pinjamDate) {
       tanggalKembali.value = formatDate(pinjamDate);
     }
   };
@@ -80,11 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const pinjamDate =
       tanggalPinjam && tanggalPinjam.value
-        ? new Date(tanggalPinjam.value)
+        ? parseDateInput(tanggalPinjam.value)
         : null;
     const kembaliDate =
       tanggalKembali && tanggalKembali.value
-        ? new Date(tanggalKembali.value)
+        ? parseDateInput(tanggalKembali.value)
         : null;
     const jumlah = jumlahInput
       ? Number.parseInt(jumlahInput.value || "0", 10)

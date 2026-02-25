@@ -214,7 +214,7 @@ LogAktivitas.getActivityByKeyword = function (keyword, limit = 100) {
   return this.findAll({
     where: {
       aktivitas: {
-        [sequelize.Op.iLike]: `%${keyword}%`,
+        [sequelize.Op.like]: `%${keyword}%`,
       },
     },
     include: [

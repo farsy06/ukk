@@ -166,3 +166,7 @@ dist
 
 # Uploaded files
 public/uploads/
+
+# Local SQLite files
+data/
+*.sqlite

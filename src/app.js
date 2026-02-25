@@ -52,7 +52,11 @@ const startupState = {
 };
 
 // Environment validation
-const requiredEnvVars = ["DB_HOST", "DB_NAME", "DB_USER", "SESSION_SECRET"];
+const dbDialect = (appConfig.database.dialect || "mysql").trim().toLowerCase();
+const requiredEnvVars =
+  dbDialect === "sqlite"
+    ? ["SESSION_SECRET"]
+    : ["DB_HOST", "DB_NAME", "DB_USER", "SESSION_SECRET"];
 // Note: DB_PASS can be empty for MySQL root user without password
 const missingEnvVars = requiredEnvVars.filter((env) => !process.env[env]);
 
@@ -80,10 +84,27 @@ async function startServer() {
     logger.debug("Model associations defined");
 
     // Sync schema automatically only for development/test environments
-    if (appConfig.startup.dbSyncMode === "alter") {
+    // Note: SQLite + alter mode can fail because Sequelize emulates ALTER by
+    // creating backup tables and copying data (prone to PK/unique collisions).
+    const dbDialect = (appConfig.database.dialect || "mysql")
+      .trim()
+      .toLowerCase();
+    const requestedSyncMode = appConfig.startup.dbSyncMode;
+    const effectiveSyncMode =
+      dbDialect === "sqlite" && requestedSyncMode === "alter"
+        ? "safe"
+        : requestedSyncMode;
+
+    if (requestedSyncMode === "alter" && effectiveSyncMode === "safe") {
+      logger.warn(
+        "DB_SYNC_MODE=alter tidak didukung stabil pada SQLite; menggunakan safe mode",
+      );
+    }
+
+    if (effectiveSyncMode === "alter") {
       await sequelize.sync({ alter: true });
       logger.info("Database synced (alter mode)");
-    } else if (appConfig.startup.dbSyncMode === "safe") {
+    } else if (effectiveSyncMode === "safe") {
       await sequelize.sync();
       logger.info("Database synced (safe mode)");
     } else {

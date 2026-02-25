@@ -51,6 +51,17 @@ eSarpra (Sarana dan Prasarana) adalah sistem serbaguna untuk mengelola peminjama
    npm start
    ```
 
+## Opsi Database
+
+- Default: `MySQL` (`DB_DIALECT=mysql`)
+- Alternatif: `SQLite` (`DB_DIALECT=sqlite`, set `DB_STORAGE` untuk lokasi file DB)
+- Contoh cepat SQLite:
+
+  ```env
+  DB_DIALECT=sqlite
+  DB_STORAGE=./data/ukk.sqlite
+  ```
+
 ## Catatan
 
 Sesuaikan konfigurasi environment (misalnya database atau port) sesuai kebutuhan proyek UKK.

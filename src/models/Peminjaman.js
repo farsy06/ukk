@@ -2,6 +2,17 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
 const appConfig = require("../config/appConfig");
 
+const parseDateOnly = (value) => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+  const parsed = new Date(year, month - 1, day);
+  parsed.setHours(0, 0, 0, 0);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 /**
  * Peminjaman Model
  * Represents equipment borrowing transactions
@@ -73,8 +84,10 @@ const Peminjaman = sequelize.define(
         notPast(value) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const dateValue = new Date(value);
-          dateValue.setHours(0, 0, 0, 0);
+          const dateValue = parseDateOnly(value);
+          if (!dateValue) {
+            throw new Error("Tanggal pinjam harus berupa tanggal yang valid");
+          }
           if (dateValue < today) {
             throw new Error("Tanggal pinjam tidak boleh di masa lalu");
           }
@@ -91,8 +104,10 @@ const Peminjaman = sequelize.define(
         notPast(value) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const dateValue = new Date(value);
-          dateValue.setHours(0, 0, 0, 0);
+          const dateValue = parseDateOnly(value);
+          if (!dateValue) {
+            throw new Error("Tanggal kembali harus berupa tanggal yang valid");
+          }
           if (dateValue < today) {
             throw new Error("Tanggal kembali tidak boleh di masa lalu");
           }
@@ -317,8 +332,14 @@ const Peminjaman = sequelize.define(
     validate: {
       tanggalLogic() {
         if (this.tanggal_pinjam && this.tanggal_kembali) {
-          const pinjam = new Date(this.tanggal_pinjam);
-          const kembali = new Date(this.tanggal_kembali);
+          const pinjam = parseDateOnly(this.tanggal_pinjam);
+          const kembali = parseDateOnly(this.tanggal_kembali);
+
+          if (!pinjam || !kembali) {
+            throw new Error(
+              "Tanggal pinjam dan tanggal kembali harus berupa tanggal yang valid",
+            );
+          }
 
           if (pinjam > kembali) {
             throw new Error(

@@ -132,7 +132,7 @@ Kategori.searchKategori = function (searchTerm) {
     where: {
       is_active: true,
       nama_kategori: {
-        [sequelize.Op.iLike]: `%${searchTerm}%`,
+        [sequelize.Op.like]: `%${searchTerm}%`,
       },
     },
     include: [

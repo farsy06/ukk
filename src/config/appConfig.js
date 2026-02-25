@@ -111,11 +111,14 @@ const appConfig = {
 
   // Database settings
   database: {
+    dialect: (process.env.DB_DIALECT || "mysql").trim().toLowerCase(),
     host: process.env.DB_HOST || "localhost",
     port: parseIntegerEnv(process.env.DB_PORT, 3306),
     name: process.env.DB_NAME || "ukk",
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASS || process.env.DB_PASSWORD || "",
+    storage: process.env.DB_STORAGE || "./data/ukk.sqlite",
+    logging: parseBooleanEnv(process.env.DB_LOGGING, false),
     autoCreateOnStartup: parseBooleanEnv(
       process.env.DB_AUTO_CREATE,
       environment !== "production",

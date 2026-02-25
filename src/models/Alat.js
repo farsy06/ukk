@@ -249,12 +249,12 @@ Alat.searchAlat = function (searchTerm) {
       [sequelize.Op.or]: [
         {
           nama_alat: {
-            [sequelize.Op.iLike]: `%${searchTerm}%`,
+            [sequelize.Op.like]: `%${searchTerm}%`,
           },
         },
         {
           deskripsi: {
-            [sequelize.Op.iLike]: `%${searchTerm}%`,
+            [sequelize.Op.like]: `%${searchTerm}%`,
           },
         },
       ],
