@@ -68,6 +68,8 @@
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Tersedia</span>
                             <% } else if (item.status === 'dipinjam') { %>
                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Dipinjam</span>
+                            <% } else if (item.status === 'hilang') { %>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Hilang</span>
                             <% } else { %>
                                 <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Maintenance</span>
                             <% } %>

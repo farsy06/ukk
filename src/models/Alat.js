@@ -56,12 +56,12 @@ const Alat = sequelize.define(
       },
     },
     status: {
-      type: DataTypes.ENUM("tersedia", "dipinjam", "maintenance"),
+      type: DataTypes.ENUM("tersedia", "dipinjam", "maintenance", "hilang"),
       allowNull: false,
       defaultValue: "tersedia",
       validate: {
         isIn: {
-          args: [["tersedia", "dipinjam", "maintenance"]],
+          args: [["tersedia", "dipinjam", "maintenance", "hilang"]],
           msg: "Status tidak valid",
         },
       },
@@ -169,7 +169,8 @@ Alat.prototype.canBeBorrowed = function () {
   return (
     this.status === "tersedia" &&
     this.stok > 0 &&
-    this.kondisi !== "rusak_berat"
+    this.kondisi !== "rusak_berat" &&
+    this.status !== "hilang"
   );
 };
 

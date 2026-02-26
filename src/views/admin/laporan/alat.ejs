@@ -95,8 +95,8 @@
                                 <td><%= alat.nama_alat %></td>
                                 <td><%= alat.kategori?.nama_kategori || 'Tidak Diketahui' %></td>
                                 <td>
-                                    <span class="badge <%= alat.status === 'tersedia' ? 'bg-success' : alat.status === 'dipinjam' ? 'bg-warning' : 'bg-danger' %>">
-                                        <%= alat.status %>
+                                    <span class="badge <%= alat.status === 'tersedia' ? 'bg-success' : alat.status === 'dipinjam' ? 'bg-warning' : alat.status === 'hilang' ? 'bg-danger' : 'bg-secondary' %>">
+                                        <%= alat.status === 'hilang' ? 'Hilang' : alat.status %>
                                     </span>
                                 </td>
                                 <td>

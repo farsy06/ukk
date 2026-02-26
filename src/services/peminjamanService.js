@@ -600,7 +600,9 @@ class PeminjamanService {
           alat.kondisi === "rusak_berat" ? "rusak_berat" : "rusak_ringan";
       }
       if (validReturnCondition === "hilang") {
-        newStatus = newStock > 0 ? "tersedia" : "maintenance";
+        // Lost equipment: do not restore stock, mark as lost
+        newStatus = "hilang";
+        newKondisi = "rusak_berat"; // Lost is considered as severe damage
       }
 
       const alatPayload = {

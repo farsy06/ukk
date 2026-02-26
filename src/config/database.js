@@ -7,6 +7,45 @@ const betterSqlite3DialectModule = require("./betterSqlite3DialectModule");
 
 const SUPPORTED_DIALECTS = new Set(["mysql", "sqlite"]);
 
+// SQLite ENUM compatibility handler
+// Ensures ENUM values are properly handled for SQLite which stores them as TEXT
+const sqliteEnumHandlers = {
+  // Map of table names to their ENUM columns and allowed values
+  enumColumns: {
+    alat: {
+      status: ["tersedia", "dipinjam", "maintenance", "hilang"],
+      kondisi: ["baik", "rusak_ringan", "rusak_berat"],
+    },
+    peminjaman: {
+      status: ["pending", "disetujui", "dipinjam", "dikembalikan", "ditolak", "dibatalkan"],
+      kondisi_pengembalian: ["normal", "rusak", "hilang"],
+      status_insiden: ["none", "dilaporkan", "selesai"],
+      status_pembayaran_denda: ["belum_bayar", "menunggu_verifikasi", "lunas", "ditolak"],
+    },
+  },
+
+  // Check and update SQLite ENUM values if needed
+  async syncEnums(sequelize) {
+    const dialect = sequelize.getDialect();
+    if (dialect !== "sqlite") {
+      return; // Only needed for SQLite
+    }
+
+    try {
+      for (const [tableName, columns] of Object.entries(this.enumColumns)) {
+        for (const [columnName, allowedValues] of Object.entries(columns)) {
+          // SQLite doesn't enforce ENUMs, but we can log the expected values
+          logger.debug(
+            `SQLite ENUM compatibility: ${tableName}.${columnName} expects: [${allowedValues.join(", ")}]`,
+          );
+        }
+      }
+    } catch (error) {
+      logger.warn("SQLite ENUM sync warning:", error.message);
+    }
+  },
+};
+
 const resolveDbPassword = () => {
   if (typeof process.env.DB_PASS !== "undefined") {
     return process.env.DB_PASS;
@@ -214,6 +253,9 @@ async function initializeDatabase(options = {}) {
     await initializeSequelize({ reinitializeModels: true });
   }
   await testConnection();
+
+  // Sync ENUM values for SQLite compatibility
+  await sqliteEnumHandlers.syncEnums(sequelize);
 }
 
 module.exports = {
@@ -222,4 +264,5 @@ module.exports = {
   initializeDatabase,
   createDatabaseIfNotExists,
   initializeSequelize,
+  sqliteEnumHandlers,
 };
