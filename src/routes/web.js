@@ -38,6 +38,7 @@ const { asyncHandler } = require("../middleware/asyncHandler");
 const {
   uploadAlatImageSingle,
   uploadPaymentProofSingle,
+  uploadReturnPhotoSingle,
 } = require("../middleware/upload");
 
 // Import caching middleware
@@ -149,8 +150,14 @@ petugasRouter.post(
 );
 petugasRouter.post(
   "/petugas/kembali/:id",
+  uploadReturnPhotoSingle,
   invalidateCache(["peminjaman", "alat", "home"]), // Invalidasi cache peminjaman, alat dan home
   asyncHandler(peminjamanController.returnItem),
+);
+petugasRouter.post(
+  "/petugas/ambil/:id",
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.markPickedUp),
 );
 petugasRouter.post(
   "/petugas/denda/verifikasi/:id",

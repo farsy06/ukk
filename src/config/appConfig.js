@@ -158,6 +158,17 @@ const appConfig = {
     })(),
   },
 
+  // Borrowing rules
+  borrowing: {
+    maxDays: (() => {
+      const parsed = parseIntegerEnv(process.env.BORROW_MAX_DAYS, 7);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        return parsed;
+      }
+      return 7;
+    })(),
+  },
+
   // Security settings
   security: {
     relaxedLocalDev,

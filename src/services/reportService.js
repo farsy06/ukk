@@ -100,9 +100,11 @@ class ReportService {
       total: alat.length,
       tersedia: alat.filter((a) => a.status === "tersedia").length,
       dipinjam: alat.filter((a) => a.status === "dipinjam").length,
-      rusak: alat.filter((a) => a.status === "rusak").length,
+      maintenance: alat.filter((a) => a.status === "maintenance").length,
+      hilang: alat.filter((a) => a.status === "hilang").length,
       baik: alat.filter((a) => a.kondisi === "baik").length,
-      rusakKondisi: alat.filter((a) => a.kondisi === "rusak").length,
+      rusakRingan: alat.filter((a) => a.kondisi === "rusak_ringan").length,
+      rusakBerat: alat.filter((a) => a.kondisi === "rusak_berat").length,
     };
 
     const kategoriStats = {};
@@ -113,11 +115,14 @@ class ReportService {
           total: 0,
           tersedia: 0,
           dipinjam: 0,
-          rusak: 0,
+          maintenance: 0,
+          hilang: 0,
         };
       }
       kategoriStats[kategori].total++;
-      kategoriStats[kategori][item.status]++;
+      if (Object.hasOwn(kategoriStats[kategori], item.status)) {
+        kategoriStats[kategori][item.status]++;
+      }
     });
 
     const reportData = {
@@ -179,10 +184,12 @@ class ReportService {
 
     const stats = {
       total: peminjaman.length,
-      diproses: peminjaman.filter((p) => p.status === "diproses").length,
+      pending: peminjaman.filter((p) => p.status === "pending").length,
+      disetujui: peminjaman.filter((p) => p.status === "disetujui").length,
       dipinjam: peminjaman.filter((p) => p.status === "dipinjam").length,
-      selesai: peminjaman.filter((p) => p.status === "selesai").length,
+      dikembalikan: peminjaman.filter((p) => p.status === "dikembalikan").length,
       ditolak: peminjaman.filter((p) => p.status === "ditolak").length,
+      dibatalkan: peminjaman.filter((p) => p.status === "dibatalkan").length,
       period: {
         start: startDate,
         end: endDate,
@@ -492,20 +499,20 @@ class ReportService {
    */
   invalidateCache() {
     cacheHelper.del("dashboard_statistics");
-    // Clear all report caches - we need to use a different approach since cacheHelper.cache may not be accessible
-    // For now, we'll manually delete known report cache keys
-    const reportKeys = [
-      "user_report_{}",
-      "inventory_report_{}",
-      "peminjaman_report_{}",
-      "activity_report_{}",
-      "report_dashboard",
-      "petugas_report_dashboard",
-    ];
+    cacheHelper.del("report_dashboard");
+    cacheHelper.del("petugas_report_dashboard");
 
-    reportKeys.forEach((key) => {
-      cacheHelper.del(key);
-    });
+    if (typeof cacheHelper.delByPrefix === "function") {
+      cacheHelper.delByPrefix("user_report_");
+      cacheHelper.delByPrefix("inventory_report_");
+      cacheHelper.delByPrefix("peminjaman_report_");
+      cacheHelper.delByPrefix("activity_report_");
+    } else {
+      cacheHelper.del("user_report_{}");
+      cacheHelper.del("inventory_report_{}");
+      cacheHelper.del("peminjaman_report_{}");
+      cacheHelper.del("activity_report_{}");
+    }
   }
 
   /**

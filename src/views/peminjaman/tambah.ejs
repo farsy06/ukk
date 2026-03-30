@@ -59,7 +59,7 @@
                     </div>
                 <% } %>
 
-                <form action="/peminjaman/ajukan" method="POST" id="peminjamanForm" data-max-stok="<%= alat ? alat.stok : 1 %>" data-max-duration-days="7" novalidate>
+                <form action="/peminjaman/ajukan" method="POST" id="peminjamanForm" data-max-stok="<%= alat ? alat.stok : 1 %>" data-max-duration-days="<%= maxBorrowDays %>" novalidate>
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <% if (alat) { %>
                         <input type="hidden" name="alat_id" value="<%= alat.id %>">
@@ -96,7 +96,7 @@
                     <div class="alert alert-info mt-3 mb-4 peminjam-rule-box">
                         <strong><i class="fas fa-circle-info me-1"></i>Peraturan:</strong>
                         <ul class="mb-0 mt-2 ps-3">
-                            <li>Maksimal durasi peminjaman 7 hari.</li>
+                            <li>Maksimal durasi peminjaman <%= maxBorrowDays %> hari.</li>
                             <li>Denda keterlambatan Rp <%= overdueFinePerDayFormatted %> per hari.</li>
                             <li>Pengajuan dapat dibatalkan selama status masih menunggu.</li>
                         </ul>

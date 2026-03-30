@@ -112,6 +112,11 @@ const createTestApp = () => {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
+  app.use((req, res, next) => {
+    res.locals.requestPath = req.path;
+    next();
+  });
+
   // Session configuration
   const sessionConfig = {
     ...testConfig.session,
@@ -130,12 +135,14 @@ const createTestApp = () => {
 
   // Global variables untuk flash messages
   app.use((req, res, next) => {
+    res.locals.alerts = [];
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
     res.locals.overdueFinePerDay = appConfig.fines.overduePerDay;
     res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat(
       "id-ID",
     ).format(appConfig.fines.overduePerDay);
+    res.locals.maxBorrowDays = appConfig.borrowing.maxDays;
     next();
   });
 

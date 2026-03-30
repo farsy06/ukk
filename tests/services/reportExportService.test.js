@@ -142,7 +142,7 @@ describe("Report Export Service", () => {
     const reportData = {
       title: "Laporan Inventori Alat",
       generatedAt: baseDate,
-      stats: { total: 1, tersedia: 1, dipinjam: 0, rusak: 0 },
+      stats: { total: 1, tersedia: 1, dipinjam: 0, maintenance: 0, hilang: 0 },
       alat: [
         {
           nama_alat: "Alat A",
@@ -181,10 +181,12 @@ describe("Report Export Service", () => {
       generatedAt: baseDate,
       stats: {
         total: 1,
-        diproses: 0,
+        pending: 0,
+        disetujui: 0,
         dipinjam: 1,
-        selesai: 0,
+        dikembalikan: 0,
         ditolak: 0,
+        dibatalkan: 0,
       },
       peminjaman: [
         {
@@ -347,10 +349,12 @@ describe("Report Export Service", () => {
       generatedAt: baseDate,
       stats: {
         total: 1,
-        diproses: 0,
+        pending: 0,
+        disetujui: 0,
         dipinjam: 1,
-        selesai: 0,
+        dikembalikan: 0,
         ditolak: 0,
+        dibatalkan: 0,
       },
       peminjaman: [
         {

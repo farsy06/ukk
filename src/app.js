@@ -247,6 +247,7 @@ async function startServer() {
       res.locals.overdueFinePerDayFormatted = new Intl.NumberFormat(
         "id-ID",
       ).format(appConfig.fines.overduePerDay);
+      res.locals.maxBorrowDays = appConfig.borrowing.maxDays;
       next();
     });
 

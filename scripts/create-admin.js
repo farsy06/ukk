@@ -61,7 +61,7 @@ async function createAdminAccount() {
     const username = await ask("Username: ");
     if (!isValidUsername(username))
       throw new Error(
-        "Username tidak valid (3–20 karakter, alfanumerik, _ atau -)",
+        "Username tidak valid (3-20 karakter, alfanumerik, _ atau -)",
       );
 
     const email = await ask("Email: ");

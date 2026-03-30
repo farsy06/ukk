@@ -1,0 +1,131 @@
+/* ── Alat / peminjam ── */
+.peminjam-hero,
+.peminjam-toolbar,
+.peminjam-card,
+.peminjam-detail-card {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.peminjam-hero {
+    padding: 1.2rem;
+    background:
+        radial-gradient(720px 280px at 10% -30%, rgba(217,119,6,0.1), transparent 65%),
+        var(--surface);
+}
+
+.peminjam-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-color);
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.peminjam-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.9rem;
+}
+
+.peminjam-search { width: min(420px, 100%); }
+.peminjam-kategori { width: min(260px, 100%); }
+
+.peminjam-card {
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.peminjam-card:hover {
+    transform: translateY(-3px);
+}
+
+.peminjam-card-media {
+    position: relative;
+    height: 190px;
+    background: var(--surface-2);
+}
+
+.peminjam-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.peminjam-card-placeholder,
+.peminjam-detail-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-color);
+}
+
+.peminjam-card-placeholder {
+    height: 100%;
+    font-size: 2rem;
+}
+
+.peminjam-card-status {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+}
+
+.peminjam-card-body { padding: 1rem; }
+.peminjam-action-btn { border-radius: 0.55rem; }
+
+.peminjam-detail-card { padding: 1rem; }
+
+.peminjam-detail-media {
+    border-radius: 0.65rem;
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+.peminjam-detail-image {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+}
+
+.peminjam-detail-placeholder {
+    min-height: 220px;
+    font-size: 2.2rem;
+}
+
+.peminjam-rule-box {
+    background: rgba(217,119,6,0.08);
+    border-color: rgba(217,119,6,0.2);
+}
+
+@media (max-width: 991.98px) {
+    .peminjam-search,
+    .peminjam-kategori {
+        width: 100%;
+    }
+
+    .peminjam-card-media {
+        height: 170px;
+    }
+
+    .peminjam-detail-image {
+        height: 220px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .peminjam-card {
+        transition: none !important;
+    }
+}

@@ -150,6 +150,15 @@ const Peminjaman = sequelize.define(
         },
       },
     },
+    tanggal_pengambilan: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      validate: {
+        isDate: {
+          msg: "Tanggal pengambilan harus berupa tanggal yang valid",
+        },
+      },
+    },
     catatan: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -260,6 +269,16 @@ const Peminjaman = sequelize.define(
         },
       },
     },
+    foto_pengembalian: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 255],
+          msg: "Path foto pengembalian maksimal 255 karakter",
+        },
+      },
+    },
     tanggal_pembayaran_denda: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -347,12 +366,14 @@ const Peminjaman = sequelize.define(
             );
           }
 
-          // Maksimal peminjaman 30 hari
+          // Maksimal peminjaman berdasarkan konfigurasi
           const diffTime = kembali.getTime() - pinjam.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-          if (diffDays > 30) {
-            throw new Error("Maksimal peminjaman adalah 30 hari");
+          if (diffDays > appConfig.borrowing.maxDays) {
+            throw new Error(
+              `Maksimal peminjaman adalah ${appConfig.borrowing.maxDays} hari`,
+            );
           }
         }
       },
@@ -366,6 +387,18 @@ const Peminjaman = sequelize.define(
         if (this.tanggal_pengembalian && this.status !== "dikembalikan") {
           throw new Error(
             "Tanggal pengembalian hanya boleh diisi jika status dikembalikan",
+          );
+        }
+
+        if (this.status === "dipinjam" && !this.tanggal_pengambilan) {
+          throw new Error(
+            "Peminjaman yang sudah dipinjam harus memiliki tanggal pengambilan",
+          );
+        }
+
+        if (this.tanggal_pengambilan && this.status !== "dipinjam") {
+          throw new Error(
+            "Tanggal pengambilan hanya boleh diisi jika status dipinjam",
           );
         }
       },

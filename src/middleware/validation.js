@@ -285,6 +285,16 @@ const validateTanggalPeminjaman = () => {
       );
     }
 
+    const diffTime = kembali.getTime() - pinjam.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > appConfig.borrowing.maxDays) {
+      logger.warn(`Validation failed: durasi peminjaman terlalu panjang`);
+      throw new ValidationError(
+        `Maksimal peminjaman adalah ${appConfig.borrowing.maxDays} hari`,
+        "tanggal_kembali",
+      );
+    }
+
     next();
   };
 };

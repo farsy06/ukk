@@ -22,8 +22,8 @@
     <div class="col-md-2">
         <div class="card text-white bg-warning">
             <div class="card-body text-center">
-                <h6>Diproses</h6>
-                <h3 class="mb-0"><%= reportData.stats.diproses %></h3>
+                <h6>Pending</h6>
+                <h3 class="mb-0"><%= reportData.stats.pending %></h3>
                 <i class="fas fa-clock fa-2x mt-2"></i>
             </div>
         </div>
@@ -42,8 +42,18 @@
     <div class="col-md-2">
         <div class="card text-white bg-info">
             <div class="card-body text-center">
-                <h6>Selesai</h6>
-                <h3 class="mb-0"><%= reportData.stats.selesai %></h3>
+                <h6>Disetujui</h6>
+                <h3 class="mb-0"><%= reportData.stats.disetujui %></h3>
+                <i class="fas fa-thumbs-up fa-2x mt-2"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card text-white bg-secondary">
+            <div class="card-body text-center">
+                <h6>Dikembalikan</h6>
+                <h3 class="mb-0"><%= reportData.stats.dikembalikan %></h3>
                 <i class="fas fa-check-circle fa-2x mt-2"></i>
             </div>
         </div>
@@ -59,15 +69,6 @@
         </div>
     </div>
 
-    <div class="col-md-2">
-        <div class="card text-white bg-secondary">
-            <div class="card-body text-center">
-                <h6>Popular</h6>
-                <h3 class="mb-0"><%= Object.keys(reportData.popularItems).length %></h3>
-                <i class="fas fa-star fa-2x mt-2"></i>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class="row mt-4">
@@ -85,7 +86,7 @@
                         return date.toLocaleDateString("id-ID");
                     };
                 %>
-                <table class="table table-striped table-hover table-sm">
+                <table class="table table-striped table-hover table-sm align-middle">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -107,7 +108,7 @@
                                 <td><%= formatDate(peminjaman.tanggal_pinjam) %></td>
                                 <td><%= formatDate(peminjaman.tanggal_kembali) %></td>
                                 <td>
-                                    <span class="badge <%= peminjaman.status === 'diproses' ? 'bg-warning' : peminjaman.status === 'dipinjam' ? 'bg-success' : peminjaman.status === 'selesai' ? 'bg-info' : 'bg-danger' %>">
+                                    <span class="badge <%= peminjaman.status === 'pending' ? 'bg-warning text-dark' : peminjaman.status === 'disetujui' ? 'bg-info text-dark' : peminjaman.status === 'dipinjam' ? 'bg-primary' : peminjaman.status === 'dikembalikan' ? 'bg-success' : peminjaman.status === 'ditolak' ? 'bg-danger' : 'bg-secondary' %>">
                                         <%= peminjaman.status %>
                                     </span>
                                 </td>

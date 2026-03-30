@@ -3,6 +3,7 @@ const mockCacheHelper = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
+  delByPrefix: jest.fn(),
 };
 
 const mockLogger = {
@@ -107,7 +108,7 @@ describe("ReportService", () => {
         {
           nama_alat: "Printer",
           status: "dipinjam",
-          kondisi: "rusak",
+          kondisi: "rusak_ringan",
           kategori: { nama_kategori: "Elektronik" },
         },
       ]);
@@ -116,6 +117,7 @@ describe("ReportService", () => {
 
       expect(result.stats.total).toBe(2);
       expect(result.stats.tersedia).toBe(1);
+      expect(result.stats.rusakRingan).toBe(1);
       expect(result.kategoriStats.Elektronik.total).toBe(2);
       expect(mockCacheHelper.set).toHaveBeenCalled();
     });
@@ -250,17 +252,21 @@ describe("ReportService", () => {
         .mockResolvedValueOnce([
           { status: "tersedia", get: () => "2" },
           { status: "dipinjam", get: () => "2" },
+          { status: "maintenance", get: () => "1" },
+          { status: "hilang", get: () => "1" },
         ])
         .mockResolvedValueOnce([
           { kondisi: "baik", get: () => "3" },
-          { kondisi: "rusak", get: () => "1" },
+          { kondisi: "rusak_ringan", get: () => "1" },
         ]);
 
       const result = await reportService.getAlatStatistics();
 
       expect(result.total).toBe(4);
       expect(result.byStatus.tersedia).toBe(2);
-      expect(result.byKondisi.rusak).toBe(1);
+      expect(result.byStatus.maintenance).toBe(1);
+      expect(result.byStatus.hilang).toBe(1);
+      expect(result.byKondisi.rusak_ringan).toBe(1);
     });
   });
 
@@ -344,7 +350,7 @@ describe("ReportService", () => {
       reportService.invalidateCache();
 
       expect(mockCacheHelper.del).toHaveBeenCalledWith("dashboard_statistics");
-      expect(mockCacheHelper.del).toHaveBeenCalledWith("user_report_{}");
+      expect(mockCacheHelper.delByPrefix).toHaveBeenCalledWith("user_report_");
       expect(mockCacheHelper.del).toHaveBeenCalledWith(
         "petugas_report_dashboard",
       );

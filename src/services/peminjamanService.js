@@ -85,6 +85,23 @@ class PeminjamanService {
     }
   }
 
+  removeReturnPhotoFile(filePath) {
+    if (!filePath || typeof filePath !== "string") return;
+
+    const normalizedPath = filePath.replace(/\\/g, "/");
+    if (!normalizedPath.startsWith("/uploads/pengembalian/")) return;
+
+    const absolutePath = path.join(__dirname, "../../public", normalizedPath);
+
+    if (fs.existsSync(absolutePath)) {
+      try {
+        fs.unlinkSync(absolutePath);
+      } catch (error) {
+        logger.warn(`Gagal menghapus foto pengembalian lama: ${error.message}`);
+      }
+    }
+  }
+
   getOverdueFineForReturn(peminjaman, today) {
     if (typeof peminjaman.calculateOverdueFine === "function") {
       return peminjaman.calculateOverdueFine();
@@ -340,6 +357,94 @@ class PeminjamanService {
   }
 
   /**
+   * Check if alat is available for borrowing within specific dates
+   * @param {number} alatId - Alat ID
+   * @param {number} jumlah - Amount requested
+   * @param {string|Date} tanggal_pinjam - Start date
+   * @param {string|Date} tanggal_kembali - End date
+   * @param {number|null} excludeId - Exclude peminjaman ID
+   * @returns {Promise<{available: boolean, message: string, remaining?: number}>}
+   */
+  async checkAlatAvailabilityForDates(
+    alatId,
+    jumlah,
+    tanggal_pinjam,
+    tanggal_kembali,
+    excludeId = null,
+  ) {
+    const alat = await Alat.findByPk(alatId);
+
+    if (!alat) {
+      return { available: false, message: "Alat tidak ditemukan" };
+    }
+
+    if (alat.status !== "tersedia") {
+      return {
+        available: false,
+        message: `Alat tidak tersedia (status: ${alat.status})`,
+      };
+    }
+
+    if (alat.stok <= 0) {
+      return { available: false, message: "Stok alat habis" };
+    }
+
+    const jumlahPinjam = parseInt(jumlah, 10) || 1;
+    if (jumlahPinjam < 1) {
+      return { available: false, message: "Jumlah peminjaman minimal 1" };
+    }
+
+    const startParsed = parseDateOnlyValue(tanggal_pinjam);
+    const endParsed = parseDateOnlyValue(tanggal_kembali);
+
+    if (!startParsed || !endParsed) {
+      return { available: false, message: "Format tanggal peminjaman tidak valid" };
+    }
+
+    const where = {
+      alat_id: alatId,
+      status: ["disetujui", "dipinjam"],
+      tanggal_pinjam: {
+        [Op.lte]: endParsed.normalized,
+      },
+      tanggal_kembali: {
+        [Op.gte]: startParsed.normalized,
+      },
+    };
+
+    if (excludeId) {
+      where.id = { [Op.ne]: excludeId };
+    }
+
+    const reservedRows = await Peminjaman.findAll({
+      attributes: [
+        [
+          Peminjaman.sequelize.fn(
+            "SUM",
+            Peminjaman.sequelize.col("jumlah"),
+          ),
+          "total_reserved",
+        ],
+      ],
+      where,
+      raw: true,
+    });
+
+    const reserved = Number(reservedRows?.[0]?.total_reserved || 0);
+    const remaining = Math.max(alat.stok - reserved, 0);
+
+    if (remaining < jumlahPinjam) {
+      return {
+        available: false,
+        message: `Stok tidak mencukupi untuk tanggal tersebut. Tersedia: ${remaining}, Diminta: ${jumlahPinjam}`,
+        remaining,
+      };
+    }
+
+    return { available: true, message: "Alat tersedia", remaining };
+  }
+
+  /**
    * Create new peminjaman (borrowing request)
    * @param {Object} data - Peminjaman data
    * @param {Object} user - User object
@@ -358,17 +463,6 @@ class PeminjamanService {
     if (jumlahPinjam < 1) {
       throw new Error("Jumlah peminjaman minimal 1");
     }
-
-    // Check alat availability
-    const availability = await this.checkAlatAvailability(
-      alat_id,
-      jumlahPinjam,
-    );
-    if (!availability.available) {
-      throw new Error(availability.message);
-    }
-
-    const alat = await Alat.findByPk(alat_id);
 
     // Validate dates
     const tanggalPinjamParsed = parseDateOnlyValue(tanggal_pinjam);
@@ -397,9 +491,24 @@ class PeminjamanService {
     const diffDays = Math.ceil(
       (tanggalKembali - tanggalPinjam) / (1000 * 60 * 60 * 24),
     );
-    if (diffDays > 7) {
-      throw new Error("Maksimal peminjaman adalah 7 hari");
+    if (diffDays > appConfig.borrowing.maxDays) {
+      throw new Error(
+        `Maksimal peminjaman adalah ${appConfig.borrowing.maxDays} hari`,
+      );
     }
+
+    // Check alat availability for requested dates
+    const availability = await this.checkAlatAvailabilityForDates(
+      alat_id,
+      jumlahPinjam,
+      tanggalPinjamParsed.normalized,
+      tanggalKembaliParsed.normalized,
+    );
+    if (!availability.available) {
+      throw new Error(availability.message);
+    }
+
+    const alat = await Alat.findByPk(alat_id);
 
     // Create peminjaman
     const peminjaman = await Peminjaman.create({
@@ -450,13 +559,17 @@ class PeminjamanService {
       throw new Error("Alat tidak ditemukan");
     }
 
-    // Double check stock availability
-    if (alat.stok < jumlah) {
-      // Reject if stock is insufficient
+    // Double check availability for overlapping dates
+    const dateAvailability = await this.checkAlatAvailabilityForDates(
+      peminjaman.alat_id,
+      jumlah,
+      peminjaman.tanggal_pinjam,
+      peminjaman.tanggal_kembali,
+      peminjaman.id,
+    );
+    if (!dateAvailability.available) {
       await peminjaman.update({ status: "ditolak" });
-      throw new Error(
-        `Stok tidak mencukupi. Tersedia: ${alat.stok}, Diminta: ${jumlah}`,
-      );
+      throw new Error(dateAvailability.message);
     }
 
     // Update peminjaman status
@@ -529,107 +642,158 @@ class PeminjamanService {
    * @param {Object} user - User object (petugas)
    * @returns {Promise<Object>} - Updated peminjaman
    */
-  async returnItem(id, user, returnData = {}) {
+  async returnItem(id, user, returnData = {}, file = null) {
     const peminjaman = await this.getById(id);
 
     if (peminjaman.status !== "disetujui" && peminjaman.status !== "dipinjam") {
       throw new Error("Status peminjaman tidak valid untuk pengembalian");
     }
 
-    const jumlah = peminjaman.jumlah || 1;
-    const today = new Date();
-    const returnConditionRaw = returnData.kondisi_pengembalian || "normal";
-    const returnCondition = String(returnConditionRaw).toLowerCase().trim();
-    const validReturnCondition = ["normal", "rusak", "hilang"].includes(
-      returnCondition,
-    )
-      ? returnCondition
-      : "normal";
-    const incidentNotes = (returnData.catatan_insiden || "").trim() || null;
-    const incidentCostInput = Number(returnData.biaya_insiden || 0);
-    const incidentCost =
-      Number.isFinite(incidentCostInput) && incidentCostInput > 0
-        ? incidentCostInput
-        : 0;
-    const hasIncident = validReturnCondition !== "normal";
-    if (hasIncident && !incidentNotes) {
-      throw new Error("Catatan insiden wajib diisi untuk kondisi rusak/hilang");
+    const returnPhotoPath =
+      file && file.filename
+        ? `/uploads/pengembalian/${file.filename}`
+        : null;
+
+    try {
+      const jumlah = peminjaman.jumlah || 1;
+      const today = new Date();
+      const returnConditionRaw = returnData.kondisi_pengembalian || "normal";
+      const returnCondition = String(returnConditionRaw).toLowerCase().trim();
+      const validReturnCondition = ["normal", "rusak", "hilang"].includes(
+        returnCondition,
+      )
+        ? returnCondition
+        : "normal";
+      const incidentNotes = (returnData.catatan_insiden || "").trim() || null;
+      const incidentCostInput = Number(returnData.biaya_insiden || 0);
+      const incidentCost =
+        Number.isFinite(incidentCostInput) && incidentCostInput > 0
+          ? incidentCostInput
+          : 0;
+      const hasIncident = validReturnCondition !== "normal";
+      if (hasIncident && !incidentNotes) {
+        throw new Error(
+          "Catatan insiden wajib diisi untuk kondisi rusak/hilang",
+        );
+      }
+
+      // Calculate fine for overdue items and incident charge
+      const overdueFine = this.getOverdueFineForReturn(peminjaman, today);
+      const incidentFine = hasIncident ? incidentCost : 0;
+      const totalFine = overdueFine + incidentFine;
+      const incidentStatus = hasIncident
+        ? incidentFine > 0
+          ? "dilaporkan"
+          : "selesai"
+        : "none";
+
+      const previousReturnPhoto = peminjaman.foto_pengembalian;
+
+      // Update peminjaman status
+      await peminjaman.update({
+        status: "dikembalikan",
+        tanggal_pengembalian: today,
+        denda_terlambat: overdueFine,
+        denda_insiden: incidentFine,
+        denda: totalFine,
+        kondisi_pengembalian: validReturnCondition,
+        status_insiden: incidentStatus,
+        catatan_insiden: incidentNotes,
+        status_pembayaran_denda: totalFine > 0 ? "belum_bayar" : "lunas",
+        tanggal_pembayaran_denda: totalFine > 0 ? null : today,
+        catatan_verifikasi_denda: null,
+        foto_pengembalian: returnPhotoPath || previousReturnPhoto || null,
+      });
+
+      if (returnPhotoPath && previousReturnPhoto) {
+        this.removeReturnPhotoFile(previousReturnPhoto);
+      }
+
+      // Add stock back
+      const alat = await Alat.findByPk(peminjaman.alat_id);
+      if (alat) {
+        const shouldRestoreStock = validReturnCondition !== "hilang";
+        const newStock = shouldRestoreStock ? alat.stok + jumlah : alat.stok;
+        let newStatus = alat.status;
+        let newKondisi = alat.kondisi;
+
+        if (validReturnCondition === "normal") {
+          if (newStock > 0) {
+            newStatus = "tersedia";
+          }
+        }
+        if (validReturnCondition === "rusak") {
+          newStatus = "maintenance";
+          newKondisi =
+            alat.kondisi === "rusak_berat" ? "rusak_berat" : "rusak_ringan";
+        }
+        if (validReturnCondition === "hilang") {
+          // Lost equipment: do not restore stock, mark as lost
+          newStatus = "hilang";
+          newKondisi = "rusak_berat"; // Lost is considered as severe damage
+        }
+
+        const alatPayload = {
+          stok: newStock,
+          status: newStatus,
+        };
+
+        if (typeof newKondisi !== "undefined") {
+          alatPayload.kondisi = newKondisi;
+        }
+
+        await alat.update(alatPayload);
+
+        logger.info(
+          `Item returned: ${alat.nama_alat}, condition: ${validReturnCondition}, stock ${alat.stok} -> ${newStock}`,
+        );
+      }
+
+      // Log activity
+      await LogAktivitas.create({
+        user_id: user.id,
+        aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama} (jumlah: ${jumlah}, kondisi: ${validReturnCondition}, denda: Rp ${totalFine})`,
+      });
+
+      // Invalidate cache
+      this.invalidateCache();
+
+      return peminjaman;
+    } catch (error) {
+      if (returnPhotoPath) {
+        this.removeReturnPhotoFile(returnPhotoPath);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Mark item as picked up (disetujui -> dipinjam)
+   * @param {number} id - Peminjaman ID
+   * @param {Object} user - User object (petugas)
+   * @returns {Promise<Object>} - Updated peminjaman
+   */
+  async markPickedUp(id, user) {
+    const peminjaman = await this.getById(id);
+
+    if (peminjaman.status !== "disetujui") {
+      throw new Error("Status peminjaman tidak valid untuk pengambilan");
     }
 
-    // Calculate fine for overdue items and incident charge
-    const overdueFine = this.getOverdueFineForReturn(peminjaman, today);
-    const incidentFine = hasIncident ? incidentCost : 0;
-    const totalFine = overdueFine + incidentFine;
-    const incidentStatus = hasIncident
-      ? incidentFine > 0
-        ? "dilaporkan"
-        : "selesai"
-      : "none";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Update peminjaman status
     await peminjaman.update({
-      status: "dikembalikan",
-      tanggal_pengembalian: today,
-      denda_terlambat: overdueFine,
-      denda_insiden: incidentFine,
-      denda: totalFine,
-      kondisi_pengembalian: validReturnCondition,
-      status_insiden: incidentStatus,
-      catatan_insiden: incidentNotes,
-      status_pembayaran_denda: totalFine > 0 ? "belum_bayar" : "lunas",
-      tanggal_pembayaran_denda: totalFine > 0 ? null : today,
-      catatan_verifikasi_denda: null,
+      status: "dipinjam",
+      tanggal_pengambilan: today,
     });
 
-    // Add stock back
-    const alat = await Alat.findByPk(peminjaman.alat_id);
-    if (alat) {
-      const shouldRestoreStock = validReturnCondition !== "hilang";
-      const newStock = shouldRestoreStock ? alat.stok + jumlah : alat.stok;
-      let newStatus = alat.status;
-      let newKondisi = alat.kondisi;
-
-      if (validReturnCondition === "normal") {
-        if (newStock > 0) {
-          newStatus = "tersedia";
-        }
-      }
-      if (validReturnCondition === "rusak") {
-        newStatus = "maintenance";
-        newKondisi =
-          alat.kondisi === "rusak_berat" ? "rusak_berat" : "rusak_ringan";
-      }
-      if (validReturnCondition === "hilang") {
-        // Lost equipment: do not restore stock, mark as lost
-        newStatus = "hilang";
-        newKondisi = "rusak_berat"; // Lost is considered as severe damage
-      }
-
-      const alatPayload = {
-        stok: newStock,
-        status: newStatus,
-      };
-
-      if (typeof newKondisi !== "undefined") {
-        alatPayload.kondisi = newKondisi;
-      }
-
-      await alat.update(alatPayload);
-
-      logger.info(
-        `Item returned: ${alat.nama_alat}, condition: ${validReturnCondition}, stock ${alat.stok} -> ${newStock}`,
-      );
-    }
-
-    // Log activity
     await LogAktivitas.create({
       user_id: user.id,
-      aktivitas: `Mengkonfirmasi pengembalian alat ${peminjaman.alat.nama_alat} dari ${peminjaman.user.nama} (jumlah: ${jumlah}, kondisi: ${validReturnCondition}, denda: Rp ${totalFine})`,
+      aktivitas: `Menyerahkan alat ${peminjaman.alat.nama_alat} kepada ${peminjaman.user.nama} (jumlah: ${peminjaman.jumlah || 1})`,
     });
 
-    // Invalidate cache
     this.invalidateCache();
-
     return peminjaman;
   }
 
@@ -827,6 +991,9 @@ class PeminjamanService {
     cacheHelper.del("alat_user_index");
     cacheHelper.del("alat_admin_index");
     cacheHelper.del("admin_dashboard_stats");
+    if (typeof cacheHelper.delByPrefix === "function") {
+      cacheHelper.delByPrefix("peminjaman_user_");
+    }
   }
 
   /**

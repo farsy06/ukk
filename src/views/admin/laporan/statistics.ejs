@@ -80,8 +80,8 @@
                     <span class="badge bg-info-subtle text-info border border-info-subtle">Peminjaman</span>
                 </div>
                 <h3 class="mb-1"><%= stats.peminjaman.total %></h3>
-                <small class="text-muted d-block">Diproses: <%= stats.peminjaman.byStatus.diproses || 0 %></small>
-                <small class="text-muted d-block">Selesai: <%= stats.peminjaman.byStatus.selesai || 0 %></small>
+                <small class="text-muted d-block">Pending: <%= stats.peminjaman.byStatus.pending || 0 %></small>
+                <small class="text-muted d-block">Dikembalikan: <%= stats.peminjaman.byStatus.dikembalikan || 0 %></small>
             </div>
         </div>
     </div>
@@ -142,8 +142,12 @@
                         <small class="text-muted">Dipinjam</small>
                     </div>
                     <div class="col-4">
-                        <h5 class="mb-1 text-danger"><%= stats.alat.byStatus.rusak || 0 %></h5>
-                        <small class="text-muted">Rusak</small>
+                        <h5 class="mb-1 text-danger"><%= stats.alat.byStatus.maintenance || 0 %></h5>
+                        <small class="text-muted">Maintenance</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="mb-1 text-secondary"><%= stats.alat.byStatus.hilang || 0 %></h5>
+                        <small class="text-muted">Hilang</small>
                     </div>
                 </div>
             </div>

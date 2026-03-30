@@ -1,0 +1,154 @@
+/* ── Home sections ── */
+.home-hero {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    background:
+        radial-gradient(900px 450px at 5% -20%, rgba(217,119,6,0.12), transparent 55%),
+        radial-gradient(850px 420px at 100% -15%, rgba(28,53,87,0.1), transparent 60%),
+        var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.home-kicker,
+.home-metric-label {
+    text-transform: uppercase;
+    font-family: "DM Mono", monospace;
+}
+
+.home-kicker {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.home-hero-panel {
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    padding: 1rem;
+    background: var(--surface-2);
+}
+
+.home-metric {
+    height: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    background: var(--surface);
+}
+
+.home-metric-label {
+    font-size: 0.7rem;
+    color: var(--muted-color);
+    letter-spacing: 0.06em;
+}
+
+.home-metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: "Playfair Display", serif;
+    line-height: 1.2;
+}
+
+.home-metric-small { font-size: 1rem; }
+
+.home-section-card .card-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.home-alat-card {
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    overflow: hidden;
+    background: var(--surface);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.home-alat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-soft);
+}
+
+.home-alat-thumb {
+    height: 140px;
+    background: var(--surface-2);
+}
+
+.home-alat-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.home-alat-placeholder {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-color);
+    font-size: 2rem;
+}
+
+.home-alat-body { padding: 0.85rem; }
+
+.home-userbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.home-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    background: var(--accent);
+    color: #1A1613;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.home-info-card {
+    height: 100%;
+    padding: 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    background: var(--surface-2);
+}
+
+@media (max-width: 991.98px) {
+    .home-hero {
+        padding: 1.15rem;
+    }
+
+    .home-hero .display-5 {
+        font-size: 2rem;
+    }
+
+    .home-hero-panel {
+        padding: 0.85rem;
+    }
+
+    .home-metric-value {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .home-hero {
+        padding: 1rem;
+    }
+
+    .home-hero .display-5 {
+        font-size: 1.72rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-alat-card {
+        transition: none !important;
+    }
+}

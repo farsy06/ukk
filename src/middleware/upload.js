@@ -8,6 +8,10 @@ const paymentProofUploadDir = path.join(
   __dirname,
   "../../public/uploads/pembayaran",
 );
+const returnPhotoUploadDir = path.join(
+  __dirname,
+  "../../public/uploads/pengembalian",
+);
 
 const ensureUploadDir = (dir) => {
   if (!fs.existsSync(dir)) {
@@ -92,6 +96,43 @@ const uploadPaymentProof = multer({
   limits: { fileSize: 3 * 1024 * 1024 },
 });
 
+const returnPhotoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      ensureUploadDir(returnPhotoUploadDir);
+      cb(null, returnPhotoUploadDir);
+    } catch (err) {
+      cb(err);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeExt = [".jpg", ".jpeg", ".png", ".webp"].includes(ext)
+      ? ext
+      : ".jpg";
+    const uniqueName = `return-${Date.now()}-${Math.round(
+      Math.random() * 1e9,
+    )}${safeExt}`;
+    cb(null, uniqueName);
+  },
+});
+
+const returnPhotoFilter = (_req, file, cb) => {
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  if (file.mimetype && allowedMimeTypes.includes(file.mimetype)) {
+    return cb(null, true);
+  }
+
+  return cb(new Error("Foto pengembalian harus berupa JPG, PNG, atau WEBP"));
+};
+
+const uploadReturnPhoto = multer({
+  storage: returnPhotoStorage,
+  fileFilter: returnPhotoFilter,
+  limits: { fileSize: 3 * 1024 * 1024 },
+});
+
 module.exports = {
   uploadAlatImage,
   uploadAlatImageSingle: (req, res, next) => {
@@ -138,6 +179,32 @@ module.exports = {
           type: "error",
           message,
           fallback: "/peminjaman",
+        },
+        api: {
+          error: "UPLOAD_ERROR",
+          message,
+        },
+      });
+    });
+  },
+  uploadReturnPhotoSingle: (req, res, next) => {
+    uploadReturnPhoto.single("foto_pengembalian")(req, res, (err) => {
+      if (!err) return next();
+
+      const message =
+        err.code === "LIMIT_FILE_SIZE"
+          ? "Ukuran foto pengembalian maksimal 3MB"
+          : err.message || "Upload foto pengembalian gagal";
+
+      return sendWebOrJson({
+        req,
+        res,
+        status: 400,
+        web: {
+          mode: "redirect",
+          type: "error",
+          message,
+          fallback: "/petugas",
         },
         api: {
           error: "UPLOAD_ERROR",

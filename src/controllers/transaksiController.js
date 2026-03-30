@@ -155,11 +155,16 @@ const reject = async (req, res) => {
 const returnItem = async (req, res) => {
   try {
     const { kondisi_pengembalian, catatan_insiden, biaya_insiden } = req.body;
-    await peminjamanService.returnItem(req.params.id, req.user, {
-      kondisi_pengembalian,
-      catatan_insiden,
-      biaya_insiden,
-    });
+    await peminjamanService.returnItem(
+      req.params.id,
+      req.user,
+      {
+        kondisi_pengembalian,
+        catatan_insiden,
+        biaya_insiden,
+      },
+      req.file,
+    );
     pushFlash(req, "success", "Pengembalian alat berhasil dikonfirmasi.");
     res.redirect("/petugas");
   } catch (error) {
@@ -168,6 +173,23 @@ const returnItem = async (req, res) => {
       req,
       "error",
       error.message || "Terjadi kesalahan saat mengembalikan.",
+    );
+    res.redirect("/petugas");
+  }
+};
+
+// Konfirmasi pengambilan alat (petugas)
+const markPickedUp = async (req, res) => {
+  try {
+    await peminjamanService.markPickedUp(req.params.id, req.user);
+    pushFlash(req, "success", "Pengambilan alat berhasil dikonfirmasi.");
+    res.redirect("/petugas");
+  } catch (error) {
+    logger.error("Error in peminjaman pickup:", error);
+    pushFlash(
+      req,
+      "error",
+      error.message || "Terjadi kesalahan saat mengkonfirmasi pengambilan.",
     );
     res.redirect("/petugas");
   }
@@ -279,6 +301,7 @@ module.exports = {
   approve,
   reject,
   returnItem,
+  markPickedUp,
   cancel,
   submitFineProof,
   verifyFinePayment,

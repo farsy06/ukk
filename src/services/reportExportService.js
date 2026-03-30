@@ -150,7 +150,8 @@ const buildInventoryPdf = (reportData) =>
       ["Total", reportData.stats.total],
       ["Tersedia", reportData.stats.tersedia],
       ["Dipinjam", reportData.stats.dipinjam],
-      ["Rusak", reportData.stats.rusak],
+      ["Maintenance", reportData.stats.maintenance],
+      ["Hilang", reportData.stats.hilang],
     ]);
     addSectionTitle(doc, "Daftar Alat");
     reportData.alat.forEach((alat, index) => {
@@ -226,10 +227,12 @@ const buildPeminjamanPdf = (reportData, filters) =>
     addSectionTitle(doc, "Ringkasan");
     addKeyValue(doc, [
       ["Total", reportData.stats.total],
-      ["Diproses", reportData.stats.diproses],
+      ["Pending", reportData.stats.pending],
+      ["Disetujui", reportData.stats.disetujui],
       ["Dipinjam", reportData.stats.dipinjam],
-      ["Selesai", reportData.stats.selesai],
+      ["Dikembalikan", reportData.stats.dikembalikan],
       ["Ditolak", reportData.stats.ditolak],
+      ["Dibatalkan", reportData.stats.dibatalkan],
     ]);
     addSectionTitle(doc, "Daftar Peminjaman");
     reportData.peminjaman.forEach((item, index) => {

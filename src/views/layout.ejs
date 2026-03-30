@@ -19,6 +19,18 @@
         currentPath === "/register" ||
         currentPath === "/forgot-password" ||
         currentPath.startsWith("/reset-password/");
+    const pageStyles = [];
+
+    if (currentPath === "/") {
+        pageStyles.push("/css/home.css");
+    }
+
+    if (
+        currentPath.startsWith("/alat") ||
+        currentPath.startsWith("/peminjaman/ajukan/")
+    ) {
+        pageStyles.push("/css/alat.css");
+    }
 %>
 <head>
     <meta charset="UTF-8">
@@ -36,6 +48,9 @@
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
+    <% pageStyles.forEach((href) => { %>
+        <link href="<%= href %>" rel="stylesheet">
+    <% }); %>
     <% if (isAuthPage) { %>
         <link href="/css/auth.css" rel="stylesheet">
     <% } %>
@@ -233,7 +248,7 @@
                             </li>
                             <li>
                                 <span class="contact-icon"><i class="fas fa-clock"></i></span>
-                                <span class="footer-muted-text">Senin – Jumat, 08.00–16.00</span>
+                                <span class="footer-muted-text">Senin - Jumat, 08.00-16.00</span>
                             </li>
                         </ul>
                     </div>
@@ -245,7 +260,7 @@
             <div class="container">
                 <div class="footer-bottom-inner">
                     <span class="footer-copy">&copy; <%= currentYear %> eSarpra. Semua hak dilindungi.</span>
-                    <span class="footer-copy footer-copy-mono">v0.2.0</span>
+                    <span class="footer-copy footer-copy-mono">v0.3.0</span>
                 </div>
             </div>
         </div>

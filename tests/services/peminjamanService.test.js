@@ -3,6 +3,7 @@ const mockCacheHelper = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
+  delByPrefix: jest.fn(),
 };
 
 const mockLogger = {
@@ -221,8 +222,8 @@ describe("PeminjamanService", () => {
   describe("create", () => {
     it("should create peminjaman and log activity", async () => {
       jest
-        .spyOn(peminjamanService, "checkAlatAvailability")
-        .mockResolvedValue({ available: true });
+        .spyOn(peminjamanService, "checkAlatAvailabilityForDates")
+        .mockResolvedValue({ available: true, remaining: 3 });
 
       const Alat = require("../../src/models/Alat");
       Alat.findByPk.mockResolvedValue({ id: 1, nama_alat: "Laptop" });
@@ -233,6 +234,10 @@ describe("PeminjamanService", () => {
 
       const LogAktivitas = require("../../src/models/LogAktivitas");
       LogAktivitas.create.mockResolvedValue({ id: 1 });
+
+      jest
+        .spyOn(peminjamanService, "checkAlatAvailabilityForDates")
+        .mockResolvedValue({ available: true, remaining: 3 });
 
       const invalidateSpy = jest
         .spyOn(peminjamanService, "invalidateCache")
@@ -273,6 +278,8 @@ describe("PeminjamanService", () => {
         status: "pending",
         jumlah: 2,
         alat_id: 5,
+        tanggal_pinjam: "2026-04-01",
+        tanggal_kembali: "2026-04-02",
         user: { nama: "User" },
         update: jest.fn(),
       };
@@ -291,6 +298,10 @@ describe("PeminjamanService", () => {
 
       const LogAktivitas = require("../../src/models/LogAktivitas");
       LogAktivitas.create.mockResolvedValue({ id: 1 });
+
+      jest
+        .spyOn(peminjamanService, "checkAlatAvailabilityForDates")
+        .mockResolvedValue({ available: true, remaining: 3 });
 
       const invalidateSpy = jest
         .spyOn(peminjamanService, "invalidateCache")
@@ -311,14 +322,23 @@ describe("PeminjamanService", () => {
         status: "pending",
         jumlah: 5,
         alat_id: 5,
+        tanggal_pinjam: "2026-04-01",
+        tanggal_kembali: "2026-04-02",
         user: { nama: "User" },
         update: jest.fn(),
       };
 
       jest.spyOn(peminjamanService, "getById").mockResolvedValue(peminjaman);
 
+      jest
+        .spyOn(peminjamanService, "checkAlatAvailabilityForDates")
+        .mockResolvedValue({
+          available: false,
+          message: "Stok tidak mencukupi untuk tanggal tersebut. Tersedia: 2, Diminta: 5",
+        });
+
       const Alat = require("../../src/models/Alat");
-      Alat.findByPk.mockResolvedValue({ stok: 2 });
+      Alat.findByPk.mockResolvedValue({ stok: 2, status: "tersedia" });
 
       await expect(peminjamanService.approve(1, mockUser)).rejects.toThrow(
         "Stok tidak mencukupi",
@@ -464,6 +484,9 @@ describe("PeminjamanService", () => {
       expect(mockCacheHelper.del).toHaveBeenCalledWith("alat_user_index");
       expect(mockCacheHelper.del).toHaveBeenCalledWith("alat_admin_index");
       expect(mockCacheHelper.del).toHaveBeenCalledWith("admin_dashboard_stats");
+      expect(mockCacheHelper.delByPrefix).toHaveBeenCalledWith(
+        "peminjaman_user_",
+      );
     });
   });
 });

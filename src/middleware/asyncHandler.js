@@ -63,12 +63,17 @@ const errorHandler = (err, req, res, next) => {
 
   const safeUnlinkUpload = (filePath) => {
     if (typeof filePath !== "string") return;
-    const uploadsRoot = path.resolve(__dirname, "../../public/uploads/alat");
+    const allowedRoots = [
+      path.resolve(__dirname, "../../public/uploads/alat"),
+      path.resolve(__dirname, "../../public/uploads/pembayaran"),
+      path.resolve(__dirname, "../../public/uploads/pengembalian"),
+    ];
     const resolvedPath = path.resolve(filePath);
-    const uploadsRootWithSep = uploadsRoot.endsWith(path.sep)
-      ? uploadsRoot
-      : `${uploadsRoot}${path.sep}`;
-    if (!resolvedPath.startsWith(uploadsRootWithSep)) return;
+    const isAllowed = allowedRoots.some((root) => {
+      const rootWithSep = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+      return resolvedPath.startsWith(rootWithSep);
+    });
+    if (!isAllowed) return;
     if (fs.existsSync(resolvedPath)) {
       fs.unlinkSync(resolvedPath);
     }
