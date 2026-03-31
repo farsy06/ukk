@@ -262,9 +262,7 @@ const cacheHelper = {
     const normalizedPrefix = String(prefix || "");
     if (!normalizedPrefix) return 0;
 
-    const keys = cache
-      .keys()
-      .filter((key) => key.startsWith(normalizedPrefix));
+    const keys = cache.keys().filter((key) => key.startsWith(normalizedPrefix));
 
     keys.forEach((key) => cache.del(key));
     return keys.length;

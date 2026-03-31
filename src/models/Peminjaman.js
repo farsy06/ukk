@@ -396,9 +396,12 @@ const Peminjaman = sequelize.define(
           );
         }
 
-        if (this.tanggal_pengambilan && this.status !== "dipinjam") {
+        if (
+          this.tanggal_pengambilan &&
+          !["dipinjam", "dikembalikan"].includes(this.status)
+        ) {
           throw new Error(
-            "Tanggal pengambilan hanya boleh diisi jika status dipinjam",
+            "Tanggal pengambilan hanya boleh diisi jika status dipinjam atau dikembalikan",
           );
         }
       },

@@ -187,7 +187,8 @@ class ReportService {
       pending: peminjaman.filter((p) => p.status === "pending").length,
       disetujui: peminjaman.filter((p) => p.status === "disetujui").length,
       dipinjam: peminjaman.filter((p) => p.status === "dipinjam").length,
-      dikembalikan: peminjaman.filter((p) => p.status === "dikembalikan").length,
+      dikembalikan: peminjaman.filter((p) => p.status === "dikembalikan")
+        .length,
       ditolak: peminjaman.filter((p) => p.status === "ditolak").length,
       dibatalkan: peminjaman.filter((p) => p.status === "dibatalkan").length,
       period: {

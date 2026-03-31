@@ -1,0 +1,76 @@
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-file-circle-plus"></i> Tambah Peminjaman</h4>
+            </div>
+            <div class="card-body">
+                <% if (error) { %>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> <%= error %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+
+                <form action="/admin/peminjaman/tambah" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="user_id" class="form-label">Peminjam <span class="text-danger">*</span></label>
+                            <select class="form-select" id="user_id" name="user_id" required>
+                                <option value="">Pilih peminjam</option>
+                                <% users.forEach((item) => { %>
+                                    <option value="<%= item.id %>" <%= data && String(data.user_id) === String(item.id) ? 'selected' : '' %>>
+                                        <%= item.nama %> (@<%= item.username %>)
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="alat_id" class="form-label">Alat <span class="text-danger">*</span></label>
+                            <select class="form-select" id="alat_id" name="alat_id" required>
+                                <option value="">Pilih alat</option>
+                                <% alat.forEach((item) => { %>
+                                    <option value="<%= item.id %>" <%= data && String(data.alat_id) === String(item.id) ? 'selected' : '' %>>
+                                        <%= item.nama_alat %> - stok <%= item.stok %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="tanggal_pinjam" class="form-label">Tanggal Pinjam <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="tanggal_pinjam" name="tanggal_pinjam" value="<%= data ? data.tanggal_pinjam : '' %>" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="tanggal_kembali" class="form-label">Tanggal Kembali <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="tanggal_kembali" name="tanggal_kembali" value="<%= data ? data.tanggal_kembali : '' %>" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="jumlah" class="form-label">Jumlah <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="jumlah" name="jumlah" min="1" value="<%= data && data.jumlah ? data.jumlah : 1 %>" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="catatan" class="form-label">Catatan</label>
+                            <textarea class="form-control" id="catatan" name="catatan" rows="3"><%= data && data.catatan ? data.catatan : '' %></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="/admin/peminjaman" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

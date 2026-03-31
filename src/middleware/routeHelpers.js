@@ -11,7 +11,7 @@ const {
 } = require("./validation");
 
 const { requireAnyRole } = require("./auth");
-const { AuthorizationError } = require("../utils/helpers");
+const { AuthorizationError, ValidationError } = require("../utils/helpers");
 const { sendWebOrJson } = require("./responseHelpers");
 
 const parsePositiveInt = (value, fallback) => {
@@ -58,6 +58,37 @@ const validateUserCreation = [
   validatePassword("password"),
   validatePasswordMatch("password", "confirmPassword"),
   validateRole(["petugas", "peminjam"]),
+];
+
+/**
+ * Middleware untuk validasi update user oleh admin
+ * Password bersifat opsional, tetapi jika diisi harus valid dan cocok.
+ */
+const validateUserUpdate = [
+  validateRequired(["nama", "username", "email", "role"]),
+  validateEmail("email"),
+  validateRole(["petugas", "peminjam"]),
+  (req, res, next) => {
+    const { password, confirmPassword } = req.body;
+    if (!password && !confirmPassword) {
+      return next();
+    }
+    if (!password || !confirmPassword) {
+      throw new ValidationError(
+        "Password baru dan konfirmasi password harus diisi",
+        "password",
+      );
+    }
+
+    return validatePassword("password")(req, res, (passwordError) => {
+      if (passwordError) return next(passwordError);
+      return validatePasswordMatch("password", "confirmPassword")(
+        req,
+        res,
+        next,
+      );
+    });
+  },
 ];
 
 /**
@@ -188,6 +219,7 @@ const rateLimitEndpoint = (options = {}) => {
 module.exports = {
   validateUserRegistration,
   validateUserCreation,
+  validateUserUpdate,
   validateKategori,
   validateAlatCreate,
   validateAlatUpdate,

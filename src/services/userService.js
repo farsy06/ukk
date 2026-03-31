@@ -173,6 +173,75 @@ class UserService {
   }
 
   /**
+   * Update user by admin
+   * @param {number} id - User ID
+   * @param {Object} data - User data
+   * @param {Object} adminUser - Admin user object
+   * @returns {Promise<Object>} - Updated user
+   */
+  async update(id, data, adminUser) {
+    const user = await User.findByPk(id);
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    if (user.role === ROLES.ADMIN) {
+      throw new Error("Tidak dapat mengubah data user admin");
+    }
+
+    const username = String(data.username || "").trim();
+    const email = String(data.email || "")
+      .trim()
+      .toLowerCase();
+
+    const existingUsername = await User.findOne({
+      where: {
+        username,
+        id: {
+          [require("sequelize").Op.ne]: id,
+        },
+      },
+    });
+    if (existingUsername) {
+      throw new Error("Username sudah digunakan");
+    }
+
+    const existingEmail = await User.findOne({
+      where: {
+        email,
+        id: {
+          [require("sequelize").Op.ne]: id,
+        },
+      },
+    });
+    if (existingEmail) {
+      throw new Error("Email sudah digunakan");
+    }
+
+    const payload = {
+      nama: String(data.nama || "").trim(),
+      username,
+      email,
+      role: data.role,
+    };
+
+    if (typeof data.password === "string" && data.password.trim()) {
+      payload.password = data.password;
+    }
+
+    await user.update(payload);
+
+    await LogAktivitas.create({
+      user_id: adminUser.id,
+      aktivitas: `Mengupdate user: ${user.nama} menjadi ${payload.nama} (${payload.role})`,
+    });
+
+    await this.invalidateCache();
+
+    return this.getById(id);
+  }
+
+  /**
    * Delete user
    * @param {number} id - User ID
    * @param {Object} adminUser - Admin user object

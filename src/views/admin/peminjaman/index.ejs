@@ -10,6 +10,8 @@
 <div class="row mt-4">
     <div class="col-12">
         <%- include('../../_partials/table-toolbar', {
+            addUrl: '/admin/peminjaman/tambah',
+            addLabel: 'Tambah Peminjaman',
             refreshUrl: '/admin/peminjaman',
             searchPlaceholder: 'Cari peminjaman...'
         }) %>
@@ -171,22 +173,62 @@
                                                     <i class="fas fa-ellipsis-vertical"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
-                                                    <% if (item.status === 'pending') { %>
+                                                    <% if (['pending', 'ditolak', 'dibatalkan'].includes(item.status)) { %>
                                                         <li>
-                                                            <a href="/admin/peminjaman/setujui/<%= item.id %>" class="dropdown-item text-success">
-                                                                <i class="fas fa-check me-2"></i> Setujui
+                                                            <a href="/admin/peminjaman/edit/<%= item.id %>" class="dropdown-item">
+                                                                <i class="fas fa-pen-to-square me-2"></i> Edit
                                                             </a>
                                                         </li>
+                                                    <% } %>
+                                                    <% if (item.status === 'pending') { %>
                                                         <li>
-                                                            <a href="/admin/peminjaman/tolak/<%= item.id %>" class="dropdown-item text-danger">
-                                                                <i class="fas fa-times me-2"></i> Tolak
-                                                            </a>
+                                                            <form action="/admin/peminjaman/setujui/<%= item.id %>" method="post" class="d-inline">
+                                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                                <button type="submit" class="dropdown-item text-success" onclick="return confirm('Setujui peminjaman ini?')">
+                                                                    <i class="fas fa-check me-2"></i> Setujui
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <form action="/admin/peminjaman/tolak/<%= item.id %>" method="post" class="d-inline">
+                                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Tolak peminjaman ini?')">
+                                                                    <i class="fas fa-times me-2"></i> Tolak
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    <% } else if (item.status === 'disetujui') { %>
+                                                        <li>
+                                                            <form action="/admin/peminjaman/ambil/<%= item.id %>" method="post" class="d-inline">
+                                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                                <button type="submit" class="dropdown-item text-primary" onclick="return confirm('Konfirmasi pengambilan alat ini?')">
+                                                                    <i class="fas fa-handshake me-2"></i> Konfirmasi Ambil
+                                                                </button>
+                                                            </form>
                                                         </li>
                                                     <% } else if (item.status === 'dipinjam') { %>
                                                         <li>
-                                                            <a href="/admin/peminjaman/kembalikan/<%= item.id %>" class="dropdown-item text-info">
+                                                            <button
+                                                                type="button"
+                                                                class="dropdown-item text-info open-return-modal"
+                                                                data-id="<%= item.id %>"
+                                                                data-item-name="<%= item.alat.nama_alat %>"
+                                                                data-user-name="<%= item.user.nama %>"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#returnItemModal"
+                                                            >
                                                                 <i class="fas fa-undo me-2"></i> Kembalikan
-                                                            </a>
+                                                            </button>
+                                                        </li>
+                                                    <% } else if (['pending', 'ditolak', 'dibatalkan'].includes(item.status)) { %>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <form action="/admin/peminjaman/hapus/<%= item.id %>" method="post" class="d-inline">
+                                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Hapus data peminjaman ini?')">
+                                                                    <i class="fas fa-trash me-2"></i> Hapus
+                                                                </button>
+                                                            </form>
                                                         </li>
                                                     <% } else { %>
                                                         <li>
@@ -239,12 +281,64 @@
     </div>
 </div>
 
+<div class="modal fade" id="returnItemModal" tabindex="-1" aria-labelledby="returnItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="returnItemForm" method="post" action="#" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="returnItemModalLabel">Konfirmasi Pengembalian</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Alat <strong id="returnItemName">-</strong> oleh <strong id="returnUserName">-</strong>.
+                    </p>
+                    <div class="mb-3">
+                        <label for="kondisi_pengembalian" class="form-label">Kondisi</label>
+                        <select class="form-select" name="kondisi_pengembalian" id="kondisi_pengembalian">
+                            <option value="normal">Normal</option>
+                            <option value="rusak">Rusak</option>
+                            <option value="hilang">Hilang</option>
+                        </select>
+                    </div>
+                    <div id="incidentFields" class="d-none">
+                        <div class="mb-3">
+                            <label for="biaya_insiden" class="form-label">Biaya Insiden (Rp)</label>
+                            <input type="number" min="0" step="1000" class="form-control" name="biaya_insiden" id="biaya_insiden" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="catatan_insiden" class="form-label">Catatan Insiden</label>
+                            <textarea class="form-control" name="catatan_insiden" id="catatan_insiden" rows="3" placeholder="Jelaskan kerusakan/kehilangan"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="foto_pengembalian" class="form-label">Foto Kondisi (opsional)</label>
+                        <input type="file" class="form-control" name="foto_pengembalian" id="foto_pengembalian" accept="image/jpeg,image/png,image/webp">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info">Konfirmasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
         const clearSearch = document.getElementById('clearSearch');
         const table = document.getElementById('peminjamanTable');
         const rows = table.querySelectorAll('tbody tr');
+        const returnItemForm = document.getElementById('returnItemForm');
+        const returnItemName = document.getElementById('returnItemName');
+        const returnUserName = document.getElementById('returnUserName');
+        const returnCondition = document.getElementById('kondisi_pengembalian');
+        const incidentFields = document.getElementById('incidentFields');
+        const incidentNotes = document.getElementById('catatan_insiden');
+        const incidentCost = document.getElementById('biaya_insiden');
 
         // Search functionality
         if (searchInput) {
@@ -280,6 +374,33 @@
                 searchInput.dispatchEvent(new Event('input'));
             }
         });
+
+        const returnTriggers = document.querySelectorAll('.open-return-modal');
+        returnTriggers.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const itemName = this.getAttribute('data-item-name') || '-';
+                const userName = this.getAttribute('data-user-name') || '-';
+                if (returnItemForm) returnItemForm.setAttribute('action', `/admin/peminjaman/kembalikan/${id}`);
+                if (returnItemName) returnItemName.textContent = itemName;
+                if (returnUserName) returnUserName.textContent = userName;
+                if (returnCondition) returnCondition.value = 'normal';
+                if (incidentFields) incidentFields.classList.add('d-none');
+                if (incidentNotes) {
+                    incidentNotes.value = '';
+                    incidentNotes.required = false;
+                }
+                if (incidentCost) incidentCost.value = '';
+            });
+        });
+
+        if (returnCondition) {
+            returnCondition.addEventListener('change', function() {
+                const isIncident = this.value !== 'normal';
+                if (incidentFields) incidentFields.classList.toggle('d-none', !isIncident);
+                if (incidentNotes) incidentNotes.required = isIncident;
+            });
+        }
 
     });
 </script>

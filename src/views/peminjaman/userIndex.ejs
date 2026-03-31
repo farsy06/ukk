@@ -49,6 +49,8 @@
                                             item.status === 'dikembalikan' &&
                                             fineAmount > 0 &&
                                             (paymentStatus === 'belum_bayar' || paymentStatus === 'ditolak');
+                                        const canReturn =
+                                            item.status === 'disetujui' || item.status === 'dipinjam';
                                     %>
                                     <tr>
                                         <td class="text-center"><%= index + 1 %></td>
@@ -122,6 +124,17 @@
                                                         <i class="fas fa-times me-1"></i>Batal
                                                     </button>
                                                 </form>
+                                            <% } else if (canReturn) { %>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-info open-return-modal"
+                                                    data-id="<%= item.id %>"
+                                                    data-item-name="<%= item.alat ? item.alat.nama_alat : '-' %>"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#returnItemModal"
+                                                >
+                                                    <i class="fas fa-undo me-1"></i>Kembalikan
+                                                </button>
                                             <% } else if (canUploadProof) { %>
                                                 <form action="/peminjaman/bayar-denda/<%= item.id %>" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-2">
                                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -152,4 +165,84 @@
     </div>
 </section>
 
+<div class="modal fade" id="returnItemModal" tabindex="-1" aria-labelledby="returnItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="returnItemForm" method="post" action="#" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="returnItemModalLabel">Form Pengembalian Alat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Anda akan mengembalikan <strong id="returnItemName">-</strong>.
+                    </p>
+                    <div class="mb-3">
+                        <label for="kondisi_pengembalian" class="form-label">Kondisi Alat</label>
+                        <select class="form-select" name="kondisi_pengembalian" id="kondisi_pengembalian">
+                            <option value="normal">Normal</option>
+                            <option value="rusak">Rusak</option>
+                            <option value="hilang">Hilang</option>
+                        </select>
+                    </div>
+                    <div id="incidentFields" class="d-none">
+                        <div class="mb-3">
+                            <label for="biaya_insiden" class="form-label">Biaya Insiden (Rp)</label>
+                            <input type="number" min="0" step="1000" class="form-control" name="biaya_insiden" id="biaya_insiden" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="catatan_insiden" class="form-label">Catatan Insiden</label>
+                            <textarea class="form-control" name="catatan_insiden" id="catatan_insiden" rows="3" placeholder="Jelaskan jika alat rusak/hilang"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="foto_pengembalian" class="form-label">Foto Kondisi (opsional)</label>
+                        <input type="file" class="form-control" name="foto_pengembalian" id="foto_pengembalian" accept="image/jpeg,image/png,image/webp">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info">Kirim Pengembalian</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="/js/peminjaman-user-index.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const returnItemForm = document.getElementById('returnItemForm');
+        const returnItemName = document.getElementById('returnItemName');
+        const returnCondition = document.getElementById('kondisi_pengembalian');
+        const incidentFields = document.getElementById('incidentFields');
+        const incidentNotes = document.getElementById('catatan_insiden');
+        const incidentCost = document.getElementById('biaya_insiden');
+        const triggers = document.querySelectorAll('.open-return-modal');
+
+        triggers.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const itemName = this.getAttribute('data-item-name') || '-';
+                if (returnItemForm) returnItemForm.setAttribute('action', `/peminjaman/kembalikan/${id}`);
+                if (returnItemName) returnItemName.textContent = itemName;
+                if (returnCondition) returnCondition.value = 'normal';
+                if (incidentFields) incidentFields.classList.add('d-none');
+                if (incidentNotes) {
+                    incidentNotes.value = '';
+                    incidentNotes.required = false;
+                }
+                if (incidentCost) incidentCost.value = '';
+            });
+        });
+
+        if (returnCondition) {
+            returnCondition.addEventListener('change', function() {
+                const isIncident = this.value !== 'normal';
+                if (incidentFields) incidentFields.classList.toggle('d-none', !isIncident);
+                if (incidentNotes) incidentNotes.required = isIncident;
+            });
+        }
+    });
+</script>

@@ -274,6 +274,35 @@ class PeminjamanService {
     });
   }
 
+  async getAdminFormOptions() {
+    const [users, alat] = await Promise.all([
+      User.findAll({
+        where: {
+          role: "peminjam",
+          is_active: true,
+        },
+        attributes: ["id", "nama", "username", "email"],
+        order: [["nama", "ASC"]],
+      }),
+      Alat.findAll({
+        where: {
+          status: {
+            [Op.ne]: "hilang",
+          },
+        },
+        include: [
+          {
+            model: Kategori,
+            as: "kategori",
+          },
+        ],
+        order: [["nama_alat", "ASC"]],
+      }),
+    ]);
+
+    return { users, alat };
+  }
+
   /**
    * Get peminjaman for petugas (pending, disetujui, dipinjam)
    * @returns {Promise<Array>} - Array of peminjaman
@@ -398,7 +427,10 @@ class PeminjamanService {
     const endParsed = parseDateOnlyValue(tanggal_kembali);
 
     if (!startParsed || !endParsed) {
-      return { available: false, message: "Format tanggal peminjaman tidak valid" };
+      return {
+        available: false,
+        message: "Format tanggal peminjaman tidak valid",
+      };
     }
 
     const where = {
@@ -419,10 +451,7 @@ class PeminjamanService {
     const reservedRows = await Peminjaman.findAll({
       attributes: [
         [
-          Peminjaman.sequelize.fn(
-            "SUM",
-            Peminjaman.sequelize.col("jumlah"),
-          ),
+          Peminjaman.sequelize.fn("SUM", Peminjaman.sequelize.col("jumlah")),
           "total_reserved",
         ],
       ],
@@ -645,14 +674,18 @@ class PeminjamanService {
   async returnItem(id, user, returnData = {}, file = null) {
     const peminjaman = await this.getById(id);
 
+    if (user.role === "peminjam" && peminjaman.user_id !== user.id) {
+      throw new Error(
+        "Anda tidak memiliki akses untuk mengembalikan peminjaman ini",
+      );
+    }
+
     if (peminjaman.status !== "disetujui" && peminjaman.status !== "dipinjam") {
       throw new Error("Status peminjaman tidak valid untuk pengembalian");
     }
 
     const returnPhotoPath =
-      file && file.filename
-        ? `/uploads/pengembalian/${file.filename}`
-        : null;
+      file && file.filename ? `/uploads/pengembalian/${file.filename}` : null;
 
     try {
       const jumlah = peminjaman.jumlah || 1;
@@ -795,6 +828,113 @@ class PeminjamanService {
 
     this.invalidateCache();
     return peminjaman;
+  }
+
+  async createByAdmin(data, adminUser) {
+    const targetUser = await User.findByPk(data.user_id);
+
+    if (!targetUser || targetUser.role !== "peminjam") {
+      throw new Error("Peminjam yang dipilih tidak valid");
+    }
+
+    if (!targetUser.is_active) {
+      throw new Error("Peminjam yang dipilih sedang nonaktif");
+    }
+
+    const peminjaman = await this.create(
+      {
+        alat_id: data.alat_id,
+        tanggal_pinjam: data.tanggal_pinjam,
+        tanggal_kembali: data.tanggal_kembali,
+        jumlah: data.jumlah,
+        catatan: data.catatan,
+      },
+      targetUser,
+    );
+
+    await LogAktivitas.create({
+      user_id: adminUser.id,
+      aktivitas: `Menambahkan data peminjaman untuk ${targetUser.nama} (peminjaman #${peminjaman.id})`,
+    });
+
+    this.invalidateCache();
+    return peminjaman;
+  }
+
+  async updateByAdmin(id, data, adminUser) {
+    const peminjaman = await this.getById(id);
+
+    if (!["pending", "ditolak", "dibatalkan"].includes(peminjaman.status)) {
+      throw new Error(
+        "Hanya data peminjaman yang belum berjalan yang dapat diedit admin",
+      );
+    }
+
+    const targetUser = await User.findByPk(data.user_id);
+    if (!targetUser || targetUser.role !== "peminjam") {
+      throw new Error("Peminjam yang dipilih tidak valid");
+    }
+
+    const jumlahPinjam = parseInt(data.jumlah, 10) || 1;
+    if (jumlahPinjam < 1) {
+      throw new Error("Jumlah peminjaman minimal 1");
+    }
+
+    const tanggalPinjamParsed = parseDateOnlyValue(data.tanggal_pinjam);
+    const tanggalKembaliParsed = parseDateOnlyValue(data.tanggal_kembali);
+
+    if (!tanggalPinjamParsed || !tanggalKembaliParsed) {
+      throw new Error("Format tanggal peminjaman tidak valid");
+    }
+
+    const availability = await this.checkAlatAvailabilityForDates(
+      data.alat_id,
+      jumlahPinjam,
+      tanggalPinjamParsed.normalized,
+      tanggalKembaliParsed.normalized,
+      peminjaman.id,
+    );
+
+    if (!availability.available) {
+      throw new Error(availability.message);
+    }
+
+    await peminjaman.update({
+      user_id: targetUser.id,
+      alat_id: parseInt(data.alat_id, 10),
+      tanggal_pinjam: tanggalPinjamParsed.normalized,
+      tanggal_kembali: tanggalKembaliParsed.normalized,
+      jumlah: jumlahPinjam,
+      catatan: data.catatan || null,
+      status: data.status || "pending",
+    });
+
+    await LogAktivitas.create({
+      user_id: adminUser.id,
+      aktivitas: `Mengupdate data peminjaman #${peminjaman.id} untuk ${targetUser.nama}`,
+    });
+
+    this.invalidateCache();
+    return peminjaman;
+  }
+
+  async deleteByAdmin(id, adminUser) {
+    const peminjaman = await this.getById(id);
+
+    if (!["pending", "ditolak", "dibatalkan"].includes(peminjaman.status)) {
+      throw new Error(
+        "Data peminjaman yang sudah berjalan tidak dapat dihapus admin",
+      );
+    }
+
+    await peminjaman.destroy();
+
+    await LogAktivitas.create({
+      user_id: adminUser.id,
+      aktivitas: `Menghapus data peminjaman #${id}`,
+    });
+
+    this.invalidateCache();
   }
 
   async submitFineProof(id, user, file) {

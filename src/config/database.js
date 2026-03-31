@@ -17,10 +17,22 @@ const sqliteEnumHandlers = {
       kondisi: ["baik", "rusak_ringan", "rusak_berat"],
     },
     peminjaman: {
-      status: ["pending", "disetujui", "dipinjam", "dikembalikan", "ditolak", "dibatalkan"],
+      status: [
+        "pending",
+        "disetujui",
+        "dipinjam",
+        "dikembalikan",
+        "ditolak",
+        "dibatalkan",
+      ],
       kondisi_pengembalian: ["normal", "rusak", "hilang"],
       status_insiden: ["none", "dilaporkan", "selesai"],
-      status_pembayaran_denda: ["belum_bayar", "menunggu_verifikasi", "lunas", "ditolak"],
+      status_pembayaran_denda: [
+        "belum_bayar",
+        "menunggu_verifikasi",
+        "lunas",
+        "ditolak",
+      ],
     },
   },
 

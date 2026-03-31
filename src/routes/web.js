@@ -48,6 +48,7 @@ const { invalidateCache } = require("../middleware/caching");
 const {
   validateUserRegistration,
   validateUserCreation,
+  validateUserUpdate,
   validateKategori,
   validateAlatCreate,
   validateAlatUpdate,
@@ -128,6 +129,12 @@ peminjamRouter.post(
   uploadPaymentProofSingle,
   invalidateCache(["peminjaman", "home"]),
   asyncHandler(peminjamanController.submitFineProof),
+);
+peminjamRouter.post(
+  "/peminjaman/kembalikan/:id",
+  uploadReturnPhotoSingle,
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.returnItem),
 );
 
 router.use("/", peminjamRouter);
@@ -247,6 +254,69 @@ adminRouter.get(
   paginate(10, 100),
   asyncHandler(peminjamanController.adminIndex),
 );
+adminRouter.get(
+  "/peminjaman/tambah",
+  asyncHandler(peminjamanController.adminShowCreate),
+);
+adminRouter.post(
+  "/peminjaman/tambah",
+  validateRequired([
+    "user_id",
+    "alat_id",
+    "tanggal_pinjam",
+    "tanggal_kembali",
+    "jumlah",
+  ]),
+  validateTanggalPeminjaman(),
+  validateJumlahPeminjaman(),
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.adminCreate),
+);
+adminRouter.get(
+  "/peminjaman/edit/:id",
+  asyncHandler(peminjamanController.adminShowEdit),
+);
+adminRouter.post(
+  "/peminjaman/edit/:id",
+  validateRequired([
+    "user_id",
+    "alat_id",
+    "tanggal_pinjam",
+    "tanggal_kembali",
+    "jumlah",
+    "status",
+  ]),
+  validateTanggalPeminjaman(),
+  validateJumlahPeminjaman(),
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.adminUpdate),
+);
+adminRouter.post(
+  "/peminjaman/hapus/:id",
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.adminDestroy),
+);
+adminRouter.post(
+  "/peminjaman/setujui/:id",
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.approve),
+);
+adminRouter.post(
+  "/peminjaman/tolak/:id",
+  invalidateCache(["peminjaman", "home"]),
+  asyncHandler(peminjamanController.reject),
+);
+adminRouter.post(
+  "/peminjaman/ambil/:id",
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.markPickedUp),
+);
+adminRouter.post(
+  "/peminjaman/kembalikan/:id",
+  uploadReturnPhotoSingle,
+  invalidateCache(["peminjaman", "alat", "home"]),
+  asyncHandler(peminjamanController.returnItem),
+);
 
 // Kelola user
 adminRouter.get(
@@ -255,11 +325,18 @@ adminRouter.get(
   asyncHandler(adminController.userIndex),
 );
 adminRouter.get("/user/tambah", asyncHandler(adminController.showCreateUser));
+adminRouter.get("/user/edit/:id", asyncHandler(adminController.showEditUser));
 adminRouter.post(
   "/user/tambah",
   validateUserCreation,
   invalidateCache(["user"]), // Invalidasi cache user
   asyncHandler(adminController.createUser),
+);
+adminRouter.post(
+  "/user/edit/:id",
+  validateUserUpdate,
+  invalidateCache(["user"]),
+  asyncHandler(adminController.updateUser),
 );
 adminRouter.post(
   "/user/hapus/:id",

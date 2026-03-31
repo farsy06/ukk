@@ -143,6 +143,22 @@ const showCreateUser = (req, res) => {
   }
 };
 
+const showEditUser = async (req, res) => {
+  try {
+    const targetUser = await userService.getById(req.params.id);
+
+    res.render("admin/user/edit", {
+      title: "Edit User",
+      error: null,
+      data: targetUser,
+      targetUser,
+    });
+  } catch (error) {
+    logger.error("Error displaying edit user form:", error);
+    res.status(404).send("User tidak ditemukan");
+  }
+};
+
 /**
  * Process creation of new user
  * @param {Object} req - Express request object
@@ -170,6 +186,43 @@ const createUser = async (req, res) => {
     res.status(400).render("admin/user/tambah", {
       title: "Tambah User",
       error: error.message,
+    });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { nama, username, email, password, role } = req.body;
+
+    await userService.update(
+      req.params.id,
+      {
+        nama,
+        username,
+        email,
+        password,
+        role,
+      },
+      req.user,
+    );
+
+    pushFlash(req, "success", "User berhasil diperbarui");
+    res.redirect("/admin/user");
+  } catch (error) {
+    logger.error("Error in update user:", error);
+    res.status(400).render("admin/user/edit", {
+      title: "Edit User",
+      error: error.message,
+      data: {
+        id: req.params.id,
+        nama: req.body.nama,
+        username: req.body.username,
+        email: req.body.email,
+        role: req.body.role,
+      },
+      targetUser: {
+        id: req.params.id,
+      },
     });
   }
 };
@@ -475,7 +528,9 @@ module.exports = {
   dashboard,
   userIndex,
   showCreateUser,
+  showEditUser,
   createUser,
+  updateUser,
   destroyUser,
   toggleUserActivation,
   logIndex,

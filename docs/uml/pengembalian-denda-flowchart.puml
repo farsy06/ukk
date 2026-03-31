@@ -2,9 +2,9 @@
 title Flowchart - Pengembalian Alat & Perhitungan Denda (eSarpra)
 
 start
-:Petugas membuka dashboard\n/ petugas;
+:Aktor membuka halaman pengembalian\n(peminjam/petugas/admin);
 :Pilih transaksi peminjaman;
-:POST /petugas/kembali/:id;
+:POST endpoint pengembalian\nsesuai role;
 :Load data peminjaman\n(+ user & alat);
 
 if (Status disetujui/dipinjam?) then (Ya)
@@ -28,8 +28,8 @@ if (Status disetujui/dipinjam?) then (Ya)
   else (Tidak)
     :Set status_pembayaran_denda = lunas;
   endif
-  :LogAktivitas\n"Konfirmasi pengembalian...";
-  :Redirect /petugas;
+  :LogAktivitas\n"Proses pengembalian...";
+  :Redirect sesuai role;
 else (Tidak)
   :Tolak request\n"Status peminjaman tidak valid";
 endif

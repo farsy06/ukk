@@ -23,6 +23,7 @@ Dokumen ini menyajikan metode pengembangan **Waterfall (sederhana/prototype)**, 
   - Mengajukan peminjaman.
   - Membatalkan pengajuan selama masih `pending`.
   - Melihat riwayat peminjaman.
+  - Mengembalikan alat dari halaman riwayat peminjaman.
 - **Petugas**
   - Login.
   - Melihat daftar peminjaman aktif (pending/disetujui/dipinjam).
@@ -33,7 +34,9 @@ Dokumen ini menyajikan metode pengembangan **Waterfall (sederhana/prototype)**, 
   - Login.
   - Dashboard statistik.
   - CRUD kategori & alat.
-  - Manajemen user (buat/hapus non-admin).
+  - Manajemen user (tambah/edit/hapus non-admin).
+  - CRUD data peminjaman.
+  - Aksi lanjutan peminjaman (setujui/tolak/konfirmasi ambil/kembalikan).
   - Melihat log aktivitas.
   - Melihat laporan (route `/admin/laporan`).
 
@@ -72,7 +75,7 @@ Deliverable:
 - Node.js + Express (`src/app.js`)
 - View: EJS (`src/views/`)
 - ORM: Sequelize (`src/models/`)
-- DB: MySQL (konfigurasi di `src/config/database`)
+- DB utama pengumpulan: MySQL (aplikasi juga mendukung SQLite untuk development/testing melalui konfigurasi di `src/config/database`)
 
 #### Lapisan aplikasi (ringkas)
 
@@ -273,9 +276,7 @@ Hasil render (SVG):
 
 - `docs/diagram/ERD eSarpra.svg`
 
-<!-- markdownlint-disable MD033 -->
-<img src="diagram/ERD%20eSarpra.svg" alt="ERD eSarpra" width="900" />
-<!-- markdownlint-enable MD033 -->
+![ERD eSarpra](diagram/ERD%20eSarpra.svg)
 
 ### 3.1 ERD (Entity Relationship Diagram)
 
@@ -372,7 +373,7 @@ flowchart LR
   F --> G[Controller<br/>src/controllers/*]
   G --> H[Service Layer<br/>src/services/*]
   H --> I[Sequelize Models<br/>src/models/*]
-  I --> J[(MySQL Database)]
+  I --> J[(Database MySQL / SQLite)]
   G --> K[EJS Views<br/>src/views/*]
 ```
 
@@ -394,11 +395,9 @@ Hasil render (SVG):
 - `docs/diagram/Flowchart - Pengajuan Peminjaman Alat (eSarpra).svg`
 - `docs/diagram/Flowchart - Pengembalian Alat & Perhitungan Denda (eSarpra).svg`
 
-<!-- markdownlint-disable MD033 -->
-<img src="diagram/Flowchart%20-%20Proses%20Login%20(eSarpra).svg" alt="Flowchart Login" width="900" />
-<img src="diagram/Flowchart%20-%20Pengajuan%20Peminjaman%20Alat%20(eSarpra).svg" alt="Flowchart Peminjaman" width="900" />
-<img src="diagram/Flowchart%20-%20Pengembalian%20Alat%20%26%20Perhitungan%20Denda%20(eSarpra).svg" alt="Flowchart Pengembalian + Denda" width="900" />
-<!-- markdownlint-enable MD033 -->
+![Flowchart Login](diagram/Flowchart%20-%20Proses%20Login%20(eSarpra).svg)
+![Flowchart Peminjaman](diagram/Flowchart%20-%20Pengajuan%20Peminjaman%20Alat%20(eSarpra).svg)
+![Flowchart Pengembalian + Denda](diagram/Flowchart%20-%20Pengembalian%20Alat%20%26%20Perhitungan%20Denda%20(eSarpra).svg)
 
 ### 4.1 Proses Login
 
@@ -544,19 +543,22 @@ Sumber implementasi: `src/controllers/transaksiController.js` (`showCreate`, `cr
 
 Catatan implementasi:
 
-- Pengembalian dikonfirmasi oleh **petugas** via `POST /petugas/kembali/:id` (`src/controllers/transaksiController.js#returnItem`).
-- Perhitungan denda tersedia sebagai **metode komputasi** di model `Peminjaman`:
+- Pengembalian dapat diproses melalui:
+  - **Peminjam** via `POST /peminjaman/kembalikan/:id`
+  - **Petugas** via `POST /petugas/kembali/:id`
+  - **Admin** via `POST /admin/peminjaman/kembalikan/:id`
+- Perhitungan denda tersedia sebagai metode komputasi di model `Peminjaman`:
   - `Peminjaman.prototype.calculateOverdueFine()`
-  - `Peminjaman.prototype.calculateTotalFine()`
-  - `Peminjaman.prototype.getFineBreakdown()`
+  - `Peminjaman.prototype.calculateIncidentFine()`
+  - `Peminjaman.prototype.calculateFine()`
 - Saat pengembalian, denda disimpan ke `denda`, `denda_terlambat`, dan `denda_insiden`.
 
 #### Flowchart Pengembalian
 
 ```mermaid
 flowchart TD
-  R0([Mulai]) --> R1[Petugas pilih transaksi di /petugas]
-  R1 --> R2[POST /petugas/kembali/:id]
+  R0([Mulai]) --> R1[Peminjam/Petugas/Admin pilih transaksi pengembalian]
+  R1 --> R2[POST /peminjaman-kembalikan]
   R2 --> R3[Load peminjaman + relasi user & alat]
   R3 --> R4{Status disetujui/dipinjam?}
   R4 -- Tidak --> Rerr[Error: status tidak valid] --> Rend([Selesai])
@@ -570,14 +572,14 @@ flowchart TD
   R9 --> R10
   R10 --> R11[Simpan denda & status pembayaran]
   R11 --> R12[LogAktivitas: konfirmasi pengembalian]
-  R12 --> R13[Redirect /petugas]
+  R12 --> R13[Redirect sesuai role]
   R13 --> Rend
 ```
 
 #### Pseudocode Pengembalian
 
 ```text
-function konfirmasiPengembalian(petugas, peminjaman_id):
+function konfirmasiPengembalian(aktor, peminjaman_id):
   peminjaman = load Peminjaman by id (include user, alat)
   if peminjaman.status not in ["disetujui", "dipinjam"]:
     throw error
@@ -603,7 +605,7 @@ function konfirmasiPengembalian(petugas, peminjaman_id):
   simpan ke: denda_terlambat, denda_insiden, denda
   status_pembayaran_denda = totalDenda > 0 ? "belum_bayar" : "lunas"
 
-  log(petugas.id, "Mengkonfirmasi pengembalian ...")
+  log(aktor.id, "Memproses pengembalian ...")
   save(peminjaman)
   return { peminjaman, totalDenda }
 ```
@@ -731,6 +733,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `GET /peminjaman/ajukan/:id` (form)
 - `POST /peminjaman/ajukan` (submit)
 - `POST /peminjaman/batal/:id` (batal)
+- `POST /peminjaman/kembalikan/:id` (proses pengembalian oleh peminjam)
 - `POST /peminjaman/bayar-denda/:id` (upload bukti pembayaran denda)
 
 #### Input Peminjaman
@@ -758,7 +761,7 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `src/controllers/transaksiController.js`: `userIndex()`, `showCreate()`, `create()`, `cancel()`, `submitFineProof()`
 - `src/services/peminjamanService.js`: `checkAlatAvailability()`, `create()`, `cancel()`, `submitFineProof()`
 
-### 5.5 Modul Persetujuan & Pengembalian (Petugas)
+### 5.5 Modul Persetujuan & Pengembalian (Peminjam/Petugas/Admin)
 
 #### Rute utama Persetujuan & Pengembalian
 
@@ -766,6 +769,8 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 - `POST /petugas/setujui/:id`
 - `POST /petugas/tolak/:id`
 - `POST /petugas/kembali/:id`
+- `POST /peminjaman/kembalikan/:id`
+- `POST /admin/peminjaman/kembalikan/:id`
 - `POST /petugas/denda/verifikasi/:id`
 - `POST /petugas/denda/tolak/:id`
 - `POST /petugas/denda/cash/:id`
@@ -773,19 +778,22 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 #### Input Persetujuan & Pengembalian
 
 - `id` peminjaman dari parameter route
-- Saat pengembalian: `kondisi_pengembalian`, `catatan_insiden`, `biaya_insiden`
+- Saat pengembalian oleh aktor berwenang: `kondisi_pengembalian`, `catatan_insiden`, `biaya_insiden`
 - Saat verifikasi denda: `catatan_verifikasi_denda`
 
 #### Proses Persetujuan & Pengembalian
 
 - Approve:
+  - Dapat dilakukan oleh `petugas` atau `admin`.
   - Hanya `pending`.
   - Update status peminjaman → `disetujui`.
   - Kurangi stok alat; bila stok menjadi 0 maka status alat → `dipinjam`.
 - Reject:
+  - Dapat dilakukan oleh `petugas` atau `admin`.
   - Hanya `pending`.
   - Update status peminjaman → `ditolak`.
 - Return:
+  - Dapat dipicu oleh `peminjam`, `petugas`, atau `admin` sesuai route masing-masing.
   - Status harus `disetujui` atau `dipinjam`.
   - Update status peminjaman → `dikembalikan` dan set `tanggal_pengembalian`.
   - Hitung total denda: `denda_terlambat + denda_insiden`.
@@ -797,21 +805,23 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 
 #### Output Persetujuan & Pengembalian
 
-- Dashboard petugas diperbarui (termasuk stok alat pada tabel); flash message sukses/gagal.
+- Redirect kembali ke halaman sesuai role (`/peminjaman`, `/petugas`, atau `/admin/peminjaman`) dengan flash message sukses/gagal.
 - Status insiden dan status pembayaran denda ikut diperbarui.
 
 #### Fungsi/Method terkait Persetujuan & Pengembalian
 
-- `src/controllers/transaksiController.js`: `petugasIndex()`, `approve()`, `reject()`, `returnItem()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
-- `src/services/peminjamanService.js`: `getForPetugas()`, `approve()`, `reject()`, `returnItem()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
-- `src/models/Peminjaman.js`: `calculateOverdueFine()`, `calculateTotalFine()`, `getFineBreakdown()`
+- `src/controllers/transaksiController.js`: `userIndex()`, `petugasIndex()`, `adminIndex()`, `approve()`, `reject()`, `returnItem()`, `markPickedUp()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
+- `src/services/peminjamanService.js`: `getByUserId()`, `getForPetugas()`, `getAllForAdminPaginated()`, `approve()`, `reject()`, `returnItem()`, `markPickedUp()`, `verifyFinePayment()`, `rejectFinePayment()`, `markFinePaidCash()`
+- `src/models/Peminjaman.js`: `calculateOverdueFine()`, `calculateIncidentFine()`, `calculateFine()`
 
 ### 5.6 Modul Admin Dashboard, User, Log Aktivitas, dan Laporan
 
 #### Rute utama Dashboard, User, Log & Laporan
 
 - Dashboard admin: `GET /admin`
-- Manajemen user: `GET /admin/user`, `GET/POST /admin/user/tambah`, `POST /admin/user/hapus/:id`, `POST /admin/user/toggle/:id`
+- Manajemen user: `GET /admin/user`, `GET/POST /admin/user/tambah`, `GET/POST /admin/user/edit/:id`, `POST /admin/user/hapus/:id`, `POST /admin/user/toggle/:id`
+- Manajemen peminjaman: `GET /admin/peminjaman`, `GET/POST /admin/peminjaman/tambah`, `GET/POST /admin/peminjaman/edit/:id`, `POST /admin/peminjaman/hapus/:id`
+- Aksi peminjaman admin: `POST /admin/peminjaman/setujui/:id`, `POST /admin/peminjaman/tolak/:id`, `POST /admin/peminjaman/ambil/:id`, `POST /admin/peminjaman/kembalikan/:id`
 - Log aktivitas: `GET /admin/catatan`
 - Laporan admin: `GET /admin/laporan/*`
 - Laporan petugas: `GET /laporan/*`
@@ -825,7 +835,8 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 #### Proses Dashboard, User, Log & Laporan
 
 - Dashboard: ambil statistik dari service (dengan cache).
-- User: create/delete non-admin, toggle aktif/nonaktif, log aktivitas.
+- User: create/edit/delete non-admin, toggle aktif/nonaktif, log aktivitas.
+- Peminjaman admin: tambah/edit/hapus data, setujui/tolak, konfirmasi pengambilan, dan pengembalian.
 - Log: tampilkan `log_aktivitas` join `users`.
 - Laporan: generate agregasi dari service report, render view laporan.
 - Jika `format` diisi: generate file export (PDF/XLSX) lalu kirim sebagai attachment download.
@@ -838,8 +849,10 @@ Berikut dokumentasi modul sesuai pembagian fungsi pada repo.
 
 #### Fungsi/Method terkait Dashboard, User, Log & Laporan
 
-- `src/controllers/adminController.js`: `dashboard()`, `userIndex()`, `createUser()`, `destroyUser()`, `toggleUserActivation()`, `logIndex()`, `reportIndex()`, `petugasReportIndex()`, `generate*()`
-- `src/services/userService.js`: `getDashboardStats()`, `getAllUsersPaginated()`, `create()`, `delete()`, `toggleActive()`, `getActivityLogs()`
+- `src/controllers/adminController.js`: `dashboard()`, `userIndex()`, `showCreateUser()`, `createUser()`, `showEditUser()`, `updateUser()`, `destroyUser()`, `toggleUserActivation()`, `logIndex()`, `reportIndex()`, `petugasReportIndex()`, `generate*()`
+- `src/controllers/transaksiController.js`: `adminIndex()`, `adminShowCreate()`, `adminCreate()`, `adminShowEdit()`, `adminUpdate()`, `adminDestroy()`
+- `src/services/userService.js`: `getDashboardStats()`, `getAllUsersPaginated()`, `getById()`, `create()`, `update()`, `delete()`, `toggleActive()`, `getActivityLogs()`
+- `src/services/peminjamanService.js`: `getAdminFormOptions()`, `createByAdmin()`, `updateByAdmin()`, `deleteByAdmin()`
 - `src/services/reportService.js`: `generateReportDashboard()`, `generateUserReport()`, `generateInventoryReport()`, `generatePeminjamanReport()`, `generateActivityReport()`, `generateStatistics()`
 - `src/services/reportExportService.js`: `build*Pdf()`, `build*Excel()` (export laporan PDF/XLSX)
 
@@ -867,6 +880,7 @@ Sumber: `src/routes/web.js`
 - `GET /peminjaman/ajukan/:id`
 - `POST /peminjaman/ajukan`
 - `POST /peminjaman/batal/:id`
+- `POST /peminjaman/kembalikan/:id`
 - `POST /peminjaman/bayar-denda/:id`
 
 ### Petugas (auth + role petugas)
@@ -884,8 +898,26 @@ Sumber: `src/routes/web.js`
 - `GET /admin`
 - Kategori: `/admin/kategori*`
 - Alat: `/admin/alat*`
-- Peminjaman: `GET /admin/peminjaman`
+- Peminjaman: `/admin/peminjaman*`
 - User: `/admin/user*`
 - User activation: `POST /admin/user/toggle/:id`
 - Catatan: `GET /admin/catatan`
 - Laporan admin: `GET /admin/laporan*`
+
+---
+
+## 7) Lampiran Database SQL
+
+Artefak database untuk kebutuhan pengumpulan tersedia pada:
+
+- `docs/sql/ukk_mysql.sql`
+
+Isi file tersebut mencakup:
+
+- Struktur tabel utama dan foreign key.
+- Index untuk query penting.
+- `FUNCTION fn_hitung_denda_terlambat`.
+- `PROCEDURE sp_setujui_peminjaman`.
+- `PROCEDURE sp_kembalikan_alat`.
+- `TRIGGER trg_peminjaman_before_update_denda`.
+- Contoh transaksi `START TRANSACTION ... ROLLBACK`.

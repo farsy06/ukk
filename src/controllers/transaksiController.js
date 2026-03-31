@@ -4,12 +4,18 @@ const logger = require("../config/logging");
 const { getPagination } = require("../utils/helpers");
 const { pushFlash } = require("../utils/flash");
 
+const getPeminjamanRedirectPath = (user) => {
+  if (!user || !user.role) return "/peminjaman";
+  if (user.role === "admin") return "/admin/peminjaman";
+  if (user.role === "petugas") return "/petugas";
+  return "/peminjaman";
+};
+
 // Menampilkan form pengajuan peminjaman
 const showCreate = async (req, res) => {
   try {
     const alat = await alatService.getById(req.params.id);
 
-    // Check availability
     const availability = await peminjamanService.checkAlatAvailability(
       alat.id,
       1,
@@ -105,6 +111,100 @@ const adminIndex = async (req, res) => {
   }
 };
 
+const adminShowCreate = async (req, res) => {
+  try {
+    const { users, alat } = await peminjamanService.getAdminFormOptions();
+
+    res.render("admin/peminjaman/tambah", {
+      title: "Tambah Peminjaman",
+      users,
+      alat,
+      data: null,
+      error: null,
+      user: req.user,
+    });
+  } catch (error) {
+    logger.error("Error in admin show create peminjaman:", error);
+    res.status(500).send("Terjadi kesalahan");
+  }
+};
+
+const adminCreate = async (req, res) => {
+  try {
+    await peminjamanService.createByAdmin(req.body, req.user);
+    pushFlash(req, "success", "Data peminjaman berhasil ditambahkan.");
+    res.redirect("/admin/peminjaman");
+  } catch (error) {
+    logger.error("Error in admin create peminjaman:", error);
+    const { users, alat } = await peminjamanService.getAdminFormOptions();
+    res.status(400).render("admin/peminjaman/tambah", {
+      title: "Tambah Peminjaman",
+      users,
+      alat,
+      data: req.body,
+      error: error.message || "Terjadi kesalahan",
+      user: req.user,
+    });
+  }
+};
+
+const adminShowEdit = async (req, res) => {
+  try {
+    const [peminjaman, options] = await Promise.all([
+      peminjamanService.getById(req.params.id),
+      peminjamanService.getAdminFormOptions(),
+    ]);
+
+    res.render("admin/peminjaman/edit", {
+      title: "Edit Peminjaman",
+      peminjaman,
+      users: options.users,
+      alat: options.alat,
+      data: peminjaman,
+      error: null,
+      user: req.user,
+    });
+  } catch (error) {
+    logger.error("Error in admin show edit peminjaman:", error);
+    res.status(404).send("Data peminjaman tidak ditemukan");
+  }
+};
+
+const adminUpdate = async (req, res) => {
+  try {
+    await peminjamanService.updateByAdmin(req.params.id, req.body, req.user);
+    pushFlash(req, "success", "Data peminjaman berhasil diperbarui.");
+    res.redirect("/admin/peminjaman");
+  } catch (error) {
+    logger.error("Error in admin update peminjaman:", error);
+    const options = await peminjamanService.getAdminFormOptions();
+    res.status(400).render("admin/peminjaman/edit", {
+      title: "Edit Peminjaman",
+      peminjaman: { id: req.params.id },
+      users: options.users,
+      alat: options.alat,
+      data: {
+        ...req.body,
+        id: req.params.id,
+      },
+      error: error.message || "Terjadi kesalahan",
+      user: req.user,
+    });
+  }
+};
+
+const adminDestroy = async (req, res) => {
+  try {
+    await peminjamanService.deleteByAdmin(req.params.id, req.user);
+    pushFlash(req, "success", "Data peminjaman berhasil dihapus.");
+    res.redirect("/admin/peminjaman");
+  } catch (error) {
+    logger.error("Error in admin delete peminjaman:", error);
+    pushFlash(req, "error", error.message || "Terjadi kesalahan");
+    res.redirect("/admin/peminjaman");
+  }
+};
+
 // Menampilkan daftar peminjaman untuk petugas
 const petugasIndex = async (req, res) => {
   try {
@@ -121,12 +221,12 @@ const petugasIndex = async (req, res) => {
   }
 };
 
-// Setujui peminjaman (petugas)
+// Setujui peminjaman
 const approve = async (req, res) => {
   try {
     await peminjamanService.approve(req.params.id, req.user);
     pushFlash(req, "success", "Peminjaman berhasil disetujui.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in peminjaman approve:", error);
     pushFlash(
@@ -134,24 +234,24 @@ const approve = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat menyetujui.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
-// Tolak peminjaman (petugas)
+// Tolak peminjaman
 const reject = async (req, res) => {
   try {
     await peminjamanService.reject(req.params.id, req.user);
     pushFlash(req, "success", "Peminjaman berhasil ditolak.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in peminjaman reject:", error);
     pushFlash(req, "error", error.message || "Terjadi kesalahan saat menolak.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
-// Konfirmasi pengembalian alat (petugas)
+// Konfirmasi pengembalian alat
 const returnItem = async (req, res) => {
   try {
     const { kondisi_pengembalian, catatan_insiden, biaya_insiden } = req.body;
@@ -165,8 +265,8 @@ const returnItem = async (req, res) => {
       },
       req.file,
     );
-    pushFlash(req, "success", "Pengembalian alat berhasil dikonfirmasi.");
-    res.redirect("/petugas");
+    pushFlash(req, "success", "Pengembalian alat berhasil diproses.");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in peminjaman return:", error);
     pushFlash(
@@ -174,16 +274,16 @@ const returnItem = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat mengembalikan.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
-// Konfirmasi pengambilan alat (petugas)
+// Konfirmasi pengambilan alat
 const markPickedUp = async (req, res) => {
   try {
     await peminjamanService.markPickedUp(req.params.id, req.user);
     pushFlash(req, "success", "Pengambilan alat berhasil dikonfirmasi.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in peminjaman pickup:", error);
     pushFlash(
@@ -191,7 +291,7 @@ const markPickedUp = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat mengkonfirmasi pengambilan.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
@@ -236,7 +336,7 @@ const verifyFinePayment = async (req, res) => {
       req.body.catatan_verifikasi_denda,
     );
     pushFlash(req, "success", "Pembayaran denda berhasil diverifikasi.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in verify fine payment:", error);
     pushFlash(
@@ -244,7 +344,7 @@ const verifyFinePayment = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat memverifikasi pembayaran.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
@@ -256,7 +356,7 @@ const rejectFinePayment = async (req, res) => {
       req.body.catatan_verifikasi_denda,
     );
     pushFlash(req, "success", "Bukti pembayaran ditolak.");
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in reject fine payment:", error);
     pushFlash(
@@ -264,7 +364,7 @@ const rejectFinePayment = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat menolak bukti pembayaran.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
@@ -280,7 +380,7 @@ const markFinePaidCash = async (req, res) => {
       "success",
       "Pembayaran tunai berhasil dicatat sebagai lunas.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   } catch (error) {
     logger.error("Error in mark fine paid cash:", error);
     pushFlash(
@@ -288,7 +388,7 @@ const markFinePaidCash = async (req, res) => {
       "error",
       error.message || "Terjadi kesalahan saat mencatat pembayaran tunai.",
     );
-    res.redirect("/petugas");
+    res.redirect(getPeminjamanRedirectPath(req.user));
   }
 };
 
@@ -297,6 +397,11 @@ module.exports = {
   create,
   userIndex,
   adminIndex,
+  adminShowCreate,
+  adminCreate,
+  adminShowEdit,
+  adminUpdate,
+  adminDestroy,
   petugasIndex,
   approve,
   reject,
